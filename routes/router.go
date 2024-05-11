@@ -13,5 +13,5 @@ func SetupRouter(r *gin.Engine) {
 
 	r.GET("/", dashboardController.Index)
 
-	r.GET("/home", dashboardController.Home)
+	r.GET("/user", dashboardController.User)
 }

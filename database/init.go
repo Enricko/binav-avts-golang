@@ -2,32 +2,39 @@ package database
 
 import (
     "os"
-	"log"
+	"fmt"
 	"golang-app/app/models"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+    _ "github.com/jinzhu/gorm/dialects/postgres"
+    "github.com/jinzhu/gorm"
 
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 
 func Init() {
-    // Get database connection details from environment variables
 	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+    dbPort := os.Getenv("DB_PORT")
+    dbUser := os.Getenv("DB_USER")
+    dbName := os.Getenv("DB_NAME")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbSSLMode := os.Getenv("DB_SSL_MODE")
 
-	// Construct the DSN (Data Source Name)
-	dsn := "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " sslmode=disable"
+    dbConnection := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
+        dbHost,
+        dbPort,
+        dbUser,
+        dbName,
+        dbPassword,
+        dbSSLMode,
+    )
 
-	// Connect to PostgreSQL database
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database")
-	}
+    var errDb error
+    // Connect to PostgreSQL database
+    DB, errDb = gorm.Open("postgres", dbConnection)
+    if errDb != nil {
+        panic("failed to connect database")
+    }
 
-	db.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.User{})
 }

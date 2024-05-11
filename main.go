@@ -24,4 +24,6 @@ func main() {
 	routes.SetupRouter(r)
 
 	r.Run("127.0.0.1:8080")
+	
+	defer database.DB.Close()
 }
