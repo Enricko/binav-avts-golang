@@ -35,9 +35,9 @@ func (r *DashboardController) User(c *gin.Context) {
 	// Retrieve all users from the database
 	err := database.DB.Find(&users).Error
 
-	if err!= nil {
-        fmt.Println(err)
-    }
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	data := gin.H{
 		"title": "Home Page",
