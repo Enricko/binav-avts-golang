@@ -23,6 +23,8 @@ func main() {
 	r.LoadHTMLGlob("templates/**/*")
 	routes.SetupRouter(r)
 
+	r.Static("/public", "./public")
+	
 	r.Run("127.0.0.1:8080")
 	
 	defer database.DB.Close()

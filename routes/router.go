@@ -13,4 +13,7 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/", dashboardController.Index)
 
 	r.GET("/user", dashboardController.User)
+
+	pendudukController := controllers.NewPendudukController()
+	r.GET("/penduduk", pendudukController.Index)
 }
