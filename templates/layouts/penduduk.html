@@ -15,22 +15,17 @@
                         <table id="penduduk" class="display" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Nama</th>
-                                    <th>Usia</th>
-                                    <th>Kota</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                {{ range .users}}
                                 <tr>
-                                    <td>John Doe</td>
-                                    <td>30</td>
-                                    <td>New York</td>
+                                    <td>{{ .Username }}</td>
+                                    <td>{{ .Email }}</td>
                                 </tr>
-                                <tr>
-                                    <td>Jane Smith</td>
-                                    <td>25</td>
-                                    <td>Los Angeles</td>
-                                </tr>
+                                {{ end }}
                             </tbody>
                         </table>
                     </div>
