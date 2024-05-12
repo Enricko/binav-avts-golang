@@ -17,9 +17,9 @@ func NewPendudukController() *PendudukController {
 }
 func (r *PendudukController) Index(c *gin.Context) {
 	// Data to pass to the index.html template
-	data := gin.H{
+	app := gin.H{
 		"title": "Dashboard Panel",
 	}
 
-	c.HTML(http.StatusOK, "penduduk.html", data)
+	c.HTML(http.StatusOK, "penduduk.html", app)
 }

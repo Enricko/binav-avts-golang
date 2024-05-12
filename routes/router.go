@@ -10,7 +10,7 @@ func SetupRouter(r *gin.Engine) {
 
 	dashboardController := controllers.NewDashboardController()
 
-	r.GET("/", dashboardController.Index)
+	r.GET("/dashboard", dashboardController.Index)
 
 	r.GET("/user", dashboardController.User)
 

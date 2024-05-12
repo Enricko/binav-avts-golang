@@ -23,7 +23,7 @@ func NewDashboardController() *DashboardController {
 func (r *DashboardController) Index(c *gin.Context) {
 	// Data to pass to the index.html template
 	data := gin.H{
-		"title": "Index Page",
+		"title": "Welcome Administrator",
 	}
 	// Render the index.html template with data
 	c.HTML(http.StatusOK, "dashboard.html", data)
