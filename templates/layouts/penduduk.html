@@ -12,26 +12,14 @@
                 <main>
                     <div class="container-fluid px-4">
                         <h1 class="mt-4">Penduduk</h1>
-                        <table id="penduduk" class="display" style="width:100%">
+                        <table id="penduduk_table" class="display" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>Nama</th>
                                     <th>Usia</th>
-                                    <th>Kota</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>John Doe</td>
-                                    <td>30</td>
-                                    <td>New York</td>
-                                </tr>
-                                <tr>
-                                    <td>Jane Smith</td>
-                                    <td>25</td>
-                                    <td>Los Angeles</td>
-                                </tr>
-                            </tbody>
+
                         </table>
                     </div>
                 </main>
@@ -41,14 +29,23 @@
             </div>
         </div>
         {{ template "script" }}
-        <script>
-           $(document).ready(function() {
-                $('#penduduk').DataTable({
-                    searching: true
-                });
+        <script type="text/javascript">
+        $(function () {
+                table_penduduk();
             });
 
+            function table_penduduk() {
+                $('#penduduk_table').DataTable({
+                    ajax: '/penduduk/data',
+                    processing:true,
+                    serverSide: true,
+                    columns: [
+                        { data: 'nama', className: 'text-center' },
+                        { data: 'usia', className: 'text-center' },
+                    ],
+                    responsive: true,
+                });
+            }
         </script>
-        
     </body>
 </html>
