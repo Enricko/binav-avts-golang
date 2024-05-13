@@ -42,9 +42,9 @@ func (r *PendudukController) Index(c *gin.Context) {
 
 func (r *PendudukController) List(start, length int) ([]map[string]interface{}, int) {
     data := [][]string{
-        {"John", "25"},
-        {"Doe", "30"},
-        {"Jane", "28"},
+        {"John",
+         "25", 
+        },
     }
     var formattedData []map[string]interface{}
     for _, row := range data {

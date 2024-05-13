@@ -1,51 +1,104 @@
 {{ template "header" . }}
-    <body class="sb-nav-fixed">
-        <!-- Navbar -->
-        {{ template "navbar" }}
-         <!-- Navbar -->
-        <div id="layoutSidenav">
-            <!-- Sidenav -->
-            {{ template "sidenav" }}
-            <!-- Sidenav -->
+<main>
+    <div class="modal fade" id="modal_edit" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header bg-info">
+              <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
 
-            <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid px-4">
-                        <h1 class="mt-4">Penduduk</h1>
-                        <table id="penduduk_table" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>Usia</th>
-                                </tr>
-                            </thead>
-
-                        </table>
-                    </div>
-                </main>
-                <!-- Footer -->
-                {{ template "footer" . }}
-                <!-- Footer -->
+            </div>
+            <div class="modal-body">
+              ...
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div class="container-fluid px-4 mt-5 ">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-dark rounded p-3">
+                <li class="breadcrumb-item active text-white" aria-current="page">Dashboard</li>
+                <li class="breadcrumb-item active text-white" aria-current="page">Penduduk</li>
+            </ol>
+        </nav>
+        
+        <div class="border rounded p-3">
+            <div class="table-penduduk">
+                <table id="penduduk_table" class="display table-responsive table-bordered" style="width:100%">
+                    <thead style="background-color: #212529; color: white;">
+                        <tr>
+                            <th>Nama</th>
+                            <th>Usia</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <!-- Add your table content here -->
+                </table>
             </div>
         </div>
-        {{ template "script" }}
-        <script type="text/javascript">
-        $(function () {
-                table_penduduk();
-            });
+        
+        
+    </div>
 
-            function table_penduduk() {
-                $('#penduduk_table').DataTable({
-                    ajax: '/penduduk/data',
-                    processing:true,
-                    serverSide: true,
-                    columns: [
-                        { data: 'nama', className: 'text-center' },
-                        { data: 'usia', className: 'text-center' },
-                    ],
-                    responsive: true,
-                });
-            }
-        </script>
-    </body>
-</html>
+</main>
+<!-- Modal -->
+
+<!-- Footer -->
+{{ template "footer" . }}
+<!-- Footer -->
+
+
+<script type="text/javascript">
+    $(function () {
+        table_penduduk();
+    });
+
+
+    function table_penduduk() {
+        $('#penduduk_table').DataTable({
+            ajax: '/penduduk/data',
+            processing: true,
+            serverSide: true,
+            searching: true,
+            columns: [
+                { data: 'nama', className: 'text-center' },
+                { data: 'usia', className: 'text-center' },
+                { 
+                    data: 'aksi',
+                    className: 'text-center',
+                    render: function(data, type, row, meta){
+                        return '<button class="btn btn-warning btn-xs " id="edit_data"><i class="fas fa-pencil"></i></button>';
+                    }
+                },
+            ],
+            responsive: true,
+        });
+    }
+
+
+
+    var tambah_penduduk = function () {
+    $('div#modal_edit').modal('show');
+};
+
+// Kemudian, gunakan fungsi tersebut sebagai pengait untuk klik pada elemen dengan id 'edit_data'
+$(document).on('click', '#edit_data', function(){
+    tambah_penduduk();
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
