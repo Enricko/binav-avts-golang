@@ -3,12 +3,12 @@
 
     <!-- modal tambah penduduk -->
     <!-- Modal -->
-    <div class="modal fade" id="exampleModal" tabindex="-1"
-        aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal fade" id="insertModal" role="dialog" tabindex="-1"
+        aria-labelledby="insertModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal
+                    <h1 class="modal-title fs-5" id="insertModalLabel">Modal
                         title</h1>
                     <button type="button" class="btn-close"
                         data-bs-dismiss="modal" aria-label="Close"></button>
@@ -75,7 +75,7 @@
         <div class="border rounded p-3">
             <button class="btn btn-primary" id="tambah_data"
                 style="float: right;" data-bs-toggle="modal"
-                data-bs-target="#exampleModal"><i
+                data-bs-target="#insertModal"><i
                     class="fas fa-plus"></i></button>
 
             <table id="user-table"
@@ -131,7 +131,6 @@
             event.preventDefault();
             var formData = new FormData(event.target);
             var json = JSON.stringify(Object.fromEntries(formData));
-            console.log("adad");
             fetch('/user/insert', {
                 method: 'POST',
                 headers: {
@@ -139,17 +138,35 @@
                     'X-CSRF-Token': formData.get('_csrf')
                 },
                 body: json
-            }).then(response => response.json()).then(data => {
+            }).then(response => {
+                // Check if response status is in the 200-299 range
+                if (!response.ok) {
+                    // Handle non-successful response status
+                    return response.json().then(errorData => {
+                        Swal.fire({
+                            title: "Error",
+                            text: errorData.message,
+                            icon: "error"
+                        });
+                    });
+                }
+                $('#insertModal').modal('hide');
+                return response.json();
+            }).then(data => {
                 itemTable.ajax.reload();
-
-                console.log(data);
+                document.getElementById('formInsert').reset();
+                Swal.fire({
+                    title: "Success",
+                    text: data.message,
+                    icon: "success"
+                });
             });
         });
-        
+
         // Reload the table data every 30 seconds
         setInterval(() => {
             itemTable.ajax.reload(null, false); // false to keep the current page
-        }, 30000); // 30 seconds
+        }, 60000); // 30 seconds
 
     });
 

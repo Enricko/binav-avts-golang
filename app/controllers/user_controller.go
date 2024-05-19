@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
-
 )
 
 type UserController struct {
@@ -109,9 +108,18 @@ func (r *UserController) InsertData(c *gin.Context) {
 
 	err := database.DB.Create(&data).Error
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
+			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
+			return
+
+		} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
+			c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "data inserted"})
+	c.JSON(http.StatusOK, gin.H{"message": "Data Inserted"})
 }
