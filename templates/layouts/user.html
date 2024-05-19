@@ -1,0 +1,156 @@
+{{ template "header" . }}
+<main>
+
+    <!-- modal tambah penduduk -->
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1"
+        aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal
+                        title</h1>
+                    <button type="button" class="btn-close"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formInsert">
+                        <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
+                        <div class="mb-3">
+                            <label for="Username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="Username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="Email" class="form-label">Email</label>
+                            <input type="text" class="form-control" id="Email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Close</button>
+                        <button id="button" type="submit" class="btn btn-primary">Save
+                            changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- modal tambah penduduk -->
+
+    <!-- modal edit penduduk -->
+    <div class="modal fade" id="modal_edit" tabindex="-1" role="dialog"
+        aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal Edit
+                        Penduduk</h5>
+
+                </div>
+                <div class="modal-body">
+                    <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit.
+                        Facere sint vel quibusdam architecto possimus autem
+                        quasi, optio animi quod eum.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        data-dismiss="modal">Tutup</button>
+                    <button type="button"
+                        class="btn btn-success">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- modal edit penduduk -->
+    <div class="container-fluid px-4 mt-5 ">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-dark rounded p-3">
+                <li class="breadcrumb-item active text-white"
+                    aria-current="page">Dashboard</li>
+                <li class="breadcrumb-item active text-white"
+                    aria-current="page">Penduduk</li>
+            </ol>
+        </nav>
+
+        <div class="border rounded p-3">
+            <button class="btn btn-primary" id="tambah_data"
+                style="float: right;" data-bs-toggle="modal"
+                data-bs-target="#exampleModal"><i
+                    class="fas fa-plus"></i></button>
+
+            <table id="user-table"
+                class="display table-responsive table-bordered"
+                style="width:100%">
+                <thead style="background-color: #212529; color: white;">
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="item-list">
+                </tbody>
+                <!-- Add your table content here -->
+            </table>
+        </div>
+
+    </div>
+
+</main>
+<!-- Modal -->
+
+<!-- Footer -->
+{{ template "footer" . }}
+<!-- Footer -->
+
+<script type="text/javascript">
+   document.addEventListener('DOMContentLoaded', function() {
+
+        const itemTable = $('#user-table').DataTable({
+            ajax: 'user/data',
+            processing: true,
+            serverSide: true,
+            searching: true, // Enable search feature
+            columns: [
+                { data: 'ID', className: 'text-center' },
+                { data: 'Username', className: 'text-center' },
+                { data: 'Email', className: 'text-center' },
+                { 
+                    data: 'aksi',
+                    className: 'text-center',
+                    width: '10%',
+                    render: function(data, type, row, meta){
+                        return '<button class="btn btn-warning btn-xs " id="edit_data"><i class="fas fa-pencil"></i></button>';
+                    }
+                },
+            ],
+            responsive: true,
+        });
+        document.getElementById('formInsert').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(event.target);
+            var json = JSON.stringify(Object.fromEntries(formData));
+            console.log("adad");
+            fetch('/user/insert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': formData.get('_csrf')
+                },
+                body: json
+            }).then(response => response.json()).then(data => {
+                itemTable.ajax.reload();
+
+                console.log(data);
+            });
+        });
+        
+        // Reload the table data every 30 seconds
+        setInterval(() => {
+            itemTable.ajax.reload(null, false); // false to keep the current page
+        }, 30000); // 30 seconds
+
+    });
+
+</script>

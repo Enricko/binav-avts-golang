@@ -4,6 +4,7 @@ import (
 	"golang-app/app/controllers"
 
 	"github.com/gin-gonic/gin"
+
 )
 
 func SetupRouter(r *gin.Engine) {
@@ -12,10 +13,14 @@ func SetupRouter(r *gin.Engine) {
 
 	r.GET("/dashboard", dashboardController.Index)
 
-	r.GET("/user", dashboardController.User)
-
 	pendudukController := controllers.NewPendudukController()
 	r.GET("/penduduk", pendudukController.Index)
 
 	r.GET("/penduduk/data", pendudukController.DataPenduduk)
+
+	userController := controllers.NewUserController()
+	r.GET("/user", userController.Index)
+
+	r.GET("/user/data", userController.GetUsers)
+	r.POST("/user/insert", userController.InsertData)
 }
