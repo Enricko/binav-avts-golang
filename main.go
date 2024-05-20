@@ -24,7 +24,7 @@ func main() {
 
 	r := gin.Default()
 
-	store := cookie.NewStore([]byte(os.Getenv("SECRET")))
+	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.Use(csrf.Middleware(csrf.Options{

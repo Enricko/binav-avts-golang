@@ -105,28 +105,40 @@
 <!-- Footer -->
 
 <script type="text/javascript">
+    var csrfToken = document.querySelector('input[name="_csrf"]').value;
+
+    const itemTable = $('#user-table').DataTable({
+        ajax: 'user/data',
+        processing: true,
+        serverSide: true,
+        searching: true, // Enable search feature
+        responsive: true,
+        columns: [
+            { data: 'ID', className: 'text-center' },
+            { data: 'Username', className: 'text-center' },
+            { data: 'Email', className: 'text-center' },
+            { 
+                data: 'aksi',
+                className: 'text-center',
+                width: '10%',
+                render: function(data, type, row, meta){
+                    return `
+                    <div class="row">
+                        <div class="col-auto mb-1">
+                            <button class="btn btn-warning btn-xs " id="edit_data"><i class="fas fa-pencil"></i></button>
+                        </div>
+
+                        <div class="col-auto mb-1">
+                            <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
+                }
+            },
+        ],
+    });
    document.addEventListener('DOMContentLoaded', function() {
 
-        const itemTable = $('#user-table').DataTable({
-            ajax: 'user/data',
-            processing: true,
-            serverSide: true,
-            searching: true, // Enable search feature
-            columns: [
-                { data: 'ID', className: 'text-center' },
-                { data: 'Username', className: 'text-center' },
-                { data: 'Email', className: 'text-center' },
-                { 
-                    data: 'aksi',
-                    className: 'text-center',
-                    width: '10%',
-                    render: function(data, type, row, meta){
-                        return '<button class="btn btn-warning btn-xs " id="edit_data"><i class="fas fa-pencil"></i></button>';
-                    }
-                },
-            ],
-            responsive: true,
-        });
+        
         document.getElementById('formInsert').addEventListener('submit', function(event) {
             event.preventDefault();
             var formData = new FormData(event.target);
@@ -139,35 +151,106 @@
                 },
                 body: json
             }).then(response => {
-                // Check if response status is in the 200-299 range
-                if (!response.ok) {
-                    // Handle non-successful response status
-                    return response.json().then(errorData => {
-                        Swal.fire({
-                            title: "Error",
-                            text: errorData.message,
-                            icon: "error"
-                        });
+                return response.json().then(data => {
+                    return { status: response.status, body: data };
+                });
+            }).then(data => {
+                if (data.status < 300) {
+                    itemTable.ajax.reload();
+                    $('#insertModal').modal('hide');
+                    document.getElementById('formInsert').reset();
+                    Swal.fire({
+                        title: "Success",
+                        text: data.body.message,
+                        icon: "success"
+                    });
+                }else{
+                    Swal.fire({
+                        title: "Error",
+                        text: data.body.message,
+                        icon: "error"
                     });
                 }
-                $('#insertModal').modal('hide');
-                return response.json();
-            }).then(data => {
-                itemTable.ajax.reload();
-                document.getElementById('formInsert').reset();
+            }).catch(error => {
                 Swal.fire({
-                    title: "Success",
-                    text: data.message,
-                    icon: "success"
+                    title: "Something went wrong",
+                    text: error.message,
+                    icon: "error"
                 });
             });
         });
 
+       
+
+
         // Reload the table data every 30 seconds
         setInterval(() => {
             itemTable.ajax.reload(null, false); // false to keep the current page
-        }, 60000); // 30 seconds
+        }, 600000); // 30 seconds
 
     });
+
+    function deleteData(id){
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: "btn btn-success",
+                cancelButton: "btn btn-danger"
+            },
+            buttonsStyling: false
+            });
+            swalWithBootstrapButtons.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, delete it!",
+                cancelButtonText: "No, cancel!",
+                reverseButtons: true
+            }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/user/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    }
+                }).then(response => {
+                    return response.json().then(data => {
+                        return { status: response.status, body: data };
+                    });
+                }).then(data => {
+                    if (data.status < 300) {
+                        itemTable.ajax.reload();
+                        swalWithBootstrapButtons.fire({
+                            title: "Deleted!",
+                            text: data.body.message,
+                            icon: "success"
+                        });
+                    }else{
+                        swalWithBootstrapButtons.fire({
+                            title: "Deleted Failed!",
+                            text: data.body.message,
+                            icon: "error"
+                        });
+                    }
+                    
+                }).catch(error => {
+                    console.log(error);
+                    // var statusMessageDiv = document.getElementById('statusMessage');
+                    // statusMessageDiv.innerText = `Error: ${error}`;
+                });
+                
+            } else if (
+                /* Read more about handling dismissals below */
+                result.dismiss === Swal.DismissReason.cancel
+            ) {
+                swalWithBootstrapButtons.fire({
+                    title: "Cancelled",
+                    text: "Your imaginary file is safe :)",
+                    icon: "error"
+                });
+            }
+        });
+    }
 
 </script>

@@ -12,6 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
+	"gorm.io/gorm"
+
 )
 
 type UserController struct {
@@ -122,4 +124,33 @@ func (r *UserController) InsertData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Data Inserted"})
+}
+
+func (r *UserController) DeleteData(c *gin.Context) {
+	idParam := c.Param("id")
+	fmt.Println("asdasdads",idParam)
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID"})
+		return
+	}
+
+	// Check if user exists
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Delete the user
+	if err := database.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User Deleted"})
 }
