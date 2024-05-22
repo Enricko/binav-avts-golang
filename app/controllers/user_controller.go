@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
-
 )
 
 type UserController struct {
@@ -100,11 +99,33 @@ func (r *UserController) GetUsers(c *gin.Context) {
 	})
 
 }
+func (r *UserController) GetUser(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID"})
+		return
+	}
+
+	// Check if user exists
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data": user,
+	})
+}
 
 func (r *UserController) InsertData(c *gin.Context) {
 	var data models.User
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -126,9 +147,44 @@ func (r *UserController) InsertData(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Data Inserted"})
 }
 
+func (r *UserController) UpdateData(c *gin.Context) {
+	id := c.Param("id")
+	var input models.User
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	user.Email = input.Email
+	user.Username = input.Username
+
+	err := database.DB.Save(&user).Error
+	if err != nil {
+		if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
+			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
+			return
+
+		} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
+			c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User updated successfully",
+	})
+}
 func (r *UserController) DeleteData(c *gin.Context) {
 	idParam := c.Param("id")
-	fmt.Println("asdasdads",idParam)
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID"})

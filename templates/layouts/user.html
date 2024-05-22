@@ -1,15 +1,14 @@
 {{ template "header" . }}
 <main>
 
-    <!-- modal tambah penduduk -->
+    <!-- modal tambah User -->
     <!-- Modal -->
     <div class="modal fade" id="insertModal" role="dialog" tabindex="-1"
         aria-labelledby="insertModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="insertModalLabel">Modal
-                        title</h1>
+                    <h1 class="modal-title fs-5" id="insertModalLabel">Insert User</h1>
                     <button type="button" class="btn-close"
                         data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -35,33 +34,45 @@
             </div>
         </div>
     </div>
-    <!-- modal tambah penduduk -->
+    <!-- modal tambah User -->
 
-    <!-- modal edit penduduk -->
-    <div class="modal fade" id="modal_edit" tabindex="-1" role="dialog"
-        aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
+    <!-- modal Edit User -->
+    <!-- Modal -->
+    <div class="modal fade" id="updateModal" role="dialog" tabindex="-1"
+        aria-labelledby="updateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h5 class="modal-title" id="exampleModalLabel">Modal Edit
-                        Penduduk</h5>
-
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="updateModalLabel">Edit User</h1>
+                    <button type="button" class="btn-close"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-                        Facere sint vel quibusdam architecto possimus autem
-                        quasi, optio animi quod eum.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        data-dismiss="modal">Tutup</button>
-                    <button type="button"
-                        class="btn btn-success">Simpan</button>
-                </div>
+                    <form id="formUpdate">
+                        <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
+                        <input type="hidden" name="id" id="edit_id">
+                        <div class="mb-3">
+                            <label for="edit_username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="text" class="form-control" id="edit_email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Close</button>
+                        <button id="button" type="submit" class="btn btn-primary">Save
+                            changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    <!-- modal edit penduduk -->
+    <!-- modal Edit User -->
+
+   
     <div class="container-fluid px-4 mt-5 ">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-dark rounded p-3">
@@ -89,8 +100,6 @@
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="item-list">
-                </tbody>
                 <!-- Add your table content here -->
             </table>
         </div>
@@ -108,11 +117,15 @@
     var csrfToken = document.querySelector('input[name="_csrf"]').value;
 
     const itemTable = $('#user-table').DataTable({
-        ajax: 'user/data',
+        ajax: '/user/data',
         processing: true,
         serverSide: true,
         searching: true, // Enable search feature
         responsive: true,
+        columnDefs: [
+            { "orderable": true, "targets": 0 },  // Enable sorting on the first column (First Name)
+            { "orderable": false, "targets": '_all' }  // Disable sorting on all other columns
+        ],
         columns: [
             { data: 'ID', className: 'text-center' },
             { data: 'Username', className: 'text-center' },
@@ -125,7 +138,7 @@
                     return `
                     <div class="row">
                         <div class="col-auto mb-1">
-                            <button class="btn btn-warning btn-xs " id="edit_data"><i class="fas fa-pencil"></i></button>
+                            <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
                         </div>
 
                         <div class="col-auto mb-1">
@@ -180,16 +193,89 @@
             });
         });
 
-       
+        document.getElementById('formUpdate').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(event.target);
+            var json = JSON.stringify(Object.fromEntries(formData));
+            var id = document.getElementById('edit_id').value;
+            fetch(`/user/update/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': formData.get('_csrf')
+                },
+                body: json
+            }).then(response => {
+                return response.json().then(data => {
+                    return { status: response.status, body: data };
+                });
+            }).then(data => {
+                if (data.status < 300) {
+                    itemTable.ajax.reload();
+                    $('#updateModal').modal('hide');
+                    document.getElementById('formUpdate').reset();
+                    Swal.fire({
+                        title: "Success",
+                        text: data.body.message,
+                        icon: "success"
+                    });
+                }else{
+                    Swal.fire({
+                        title: "Error",
+                        text: data.body.message,
+                        icon: "error"
+                    });
+                }
+            }).catch(error => {
+                Swal.fire({
+                    title: "Something went wrong",
+                    text: error.message,
+                    icon: "error"
+                });
+            });
+        });
 
-
-        // Reload the table data every 30 seconds
+        // Reload the table data every 60 seconds
         setInterval(() => {
             itemTable.ajax.reload(null, false); // false to keep the current page
-        }, 600000); // 30 seconds
+        }, 60000); // 60 seconds
 
     });
 
+    function updateForm(id) {
+        fetch(`/user/getData/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(response => {
+            return response.json().then(data => {
+                return { status: response.status, body: data };
+            });
+        }).then(data => {
+            if (data.status < 300) {
+                console.log(data.body.data.Username);
+                document.getElementById('edit_id').value = data.body.data.ID;
+                document.getElementById('edit_email').value = data.body.data.Email;
+                document.getElementById('edit_username').value = data.body.data.Username;
+            }else{
+                $('#updateModal').modal('hide');
+                Swal.fire({
+                    title: "Error",
+                    text: data.body.message,
+                    icon: "error"
+                });
+            }
+        }).catch(error => {
+            $('#updateModal').modal('hide');
+            Swal.fire({
+                title: "Something went wrong",
+                text: error.message,
+                icon: "error"
+            });
+        });
+    }
+    
     function deleteData(id){
         const swalWithBootstrapButtons = Swal.mixin({
             customClass: {
