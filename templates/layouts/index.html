@@ -1,4 +1,29 @@
 {{ template "header" . }}
-<button onclick="handleUrlSubmit()">Load KMZ</button>
-<div id="map"></div>
+<div style="display: flex; flex-direction: column; height: 100vh">
+    <nav class="navbar bg-body-tertiary menu-nav">
+        <div class="container-fluid">
+            <div class="dropdown">
+                <button
+                    class="btn"
+                    style="border: 0"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <i class="bi bi-list menu-icon"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="dropdown-item">
+                        <a>Vessel</a>
+                    </li>
+
+                    <li><a class="dropdown-item"
+                            data-bs-toggle="modal"
+                            data-bs-target="#mappingTable">Pipeline</a></li>
+                    <li><a class="dropdown-item" href="#">Client</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div id="map" style="width: 100vw; height: 100vh"></div>
+</div>
 {{template "footer" .}}

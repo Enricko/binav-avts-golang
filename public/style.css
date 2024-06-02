@@ -1,0 +1,66 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    /* font-family: mon, sans-serif; */
+  }
+
+.menu-icon{
+  font-size: 25px;
+  color: white;
+  padding: 5px;
+}
+.menu-nav{
+  background-color: #0E286C;
+}
+
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.carousel-indicators [data-bs-target] {
+  box-sizing: content-box;
+  flex: 0 1 auto;
+  width: 10px; /* change width */
+  height: 10px; /* change height */
+  padding: 0;
+  margin-right: 3px;
+  margin-left: 3px;
+  text-indent: -999px;
+  cursor: pointer;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  opacity: .5;
+  transition: opacity .6s ease;
+  border-radius: 100%; 
+}
+
+#loader {
+  /* Center the loader */
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* Adjust loader size and styles */
+  width: 100px;
+  height: 100px;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  border-radius: 50%;
+  /* Add your loader animation styles here (e.g., using CSS animations) */
+}
+
+#loader.show {
+  display: block;
+}
+
+table.dataTable td {
+    word-wrap: break-word; /* Allows long words to be broken and wrap onto the next line */
+    word-break: break-all; /* Break words at any character to prevent overflow */
+    white-space: normal; /* Allow the text to wrap to the next line */
+    overflow-wrap: break-word; /* Ensure text will wrap within the container */
+}

@@ -9,7 +9,6 @@ import (
 	// _ "github.com/jinzhu/gorm/dialects/postgres" // Postgres
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" // MYSQL
-
 )
 
 var DB *gorm.DB
@@ -37,7 +36,7 @@ func Init() {
 		panic("failed to connect database")
 	}
 
-	err := DB.AutoMigrate(&models.User{},&models.Mapping{}, &models.Kapal{}, &models.IPKapal{}).Error
+	err := DB.AutoMigrate(&models.User{}, &models.Mapping{}, &models.Kapal{}, &models.IPKapal{}).Error
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -49,4 +48,6 @@ func Init() {
 	if err := DB.Model(&models.Mapping{}).AddForeignKey("id_user", "users(id_user)", "CASCADE", "CASCADE").Error; err != nil {
 		log.Fatal("Failed to set up foreign key:", err)
 	}
+
+	DB.LogMode(true)
 }
