@@ -1,6 +1,6 @@
 {{ template "header" . }}
 <div style="display: flex; flex-direction: column; height: 100vh">
-    <nav class="navbar bg-body-tertiary menu-nav">
+    <!-- <nav class="navbar bg-body-tertiary menu-nav">
         <div class="container-fluid">
             <div class="dropdown">
                 <button
@@ -23,7 +23,29 @@
                 </ul>
             </div>
         </div>
-    </nav>
+    </nav> -->
+    <div class="dropdown">
+        <button
+    id="front-div"
+    class="btn btn-primary rounded-pill"
+    style="border: 0 ;z-index: 2; position: absolute; margin: 15px; background-color: white;"
+    type="button"
+    data-bs-toggle="dropdown"
+    aria-expanded="false">
+    <i class="bi bi-list menu-icon" style="color: black;"></i>
+</button>
+<ul class="dropdown-menu">
+    <li class="dropdown-item">
+        <a>Vessel</a>
+    </li>
+
+    <li><a class="dropdown-item"
+            data-bs-toggle="modal"
+            data-bs-target="#mappingTable">Pipeline</a></li>
+    <li><a class="dropdown-item" href="#">Client</a></li>
+</ul>
+    </div>
+    
     <div id="map" style="width: 100vw; height: 100vh"></div>
 </div>
 {{template "footer" .}}
