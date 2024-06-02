@@ -4,6 +4,49 @@
         <h1 class="mt-4">Dashboard</h1>
         
     </div>
+    <div id="data"></div>
+    <script>
+        const websocketUrl = 'ws://localhost:8080/ws/kapal';
+        let websocket;
+        let reconnectInterval = 5000; // 5 seconds
+
+        function connectWebSocket() {
+            websocket = new WebSocket(websocketUrl);
+
+            websocket.onopen = function() {
+                console.log('WebSocket connection established.');
+                // Optionally, send a message to the server to confirm the connection
+                // websocket.send(JSON.stringify({ type: 'ping' }));
+            };
+
+            websocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                // Handle incoming data and update the HTML content
+                document.getElementById('data').innerText = event.data;
+            };
+
+            websocket.onclose = function(event) {
+                console.log('WebSocket connection closed. Reconnecting...');
+                setTimeout(connectWebSocket, reconnectInterval);
+            };
+
+            websocket.onerror = function(error) {
+                console.log('WebSocket error: ', error);
+                websocket.close();
+            };
+        }
+
+        function startHeartbeat() {
+            setInterval(function() {
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000); // 30 seconds
+        }
+
+        connectWebSocket();
+        startHeartbeat();
+    </script>
 </main>
 
 

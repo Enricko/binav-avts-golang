@@ -4,27 +4,28 @@ import (
 	"golang-app/app/controllers"
 
 	"github.com/gin-gonic/gin"
-
 )
 
 func SetupRouter(r *gin.Engine) {
 
-	dashboardController := controllers.NewDashboardController()
+	mainController := controllers.NewController()
+	r.GET("/", mainController.Index)
 
-	r.GET("/dashboard", dashboardController.Index)
+	telnetController := controllers.NewTelnetController()
 
-	pendudukController := controllers.NewPendudukController()
-	r.GET("/penduduk", pendudukController.Index)
+	r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
 
-	r.GET("/penduduk/data", pendudukController.DataPenduduk)
+	mappingController := controllers.NewMappingController()
+	r.GET("/mappings", mappingController.GetMappings)
+	r.GET("/kmz/:id", mappingController.GetKMZFile)
 
 	userController := controllers.NewUserController()
 	r.GET("/user", userController.Index)
 
 	r.GET("/user/data", userController.GetUsers)
 	r.POST("/user/insert", userController.InsertData)
-	
-    r.DELETE("/user/delete/:id", userController.DeleteData)
-    r.GET("/user/getData/:id", userController.GetUser)
-    r.PUT("/user/update/:id", userController.UpdateData)
+
+	r.DELETE("/user/delete/:id", userController.DeleteData)
+	r.GET("/user/getData/:id", userController.GetUser)
+	r.PUT("/user/update/:id", userController.UpdateData)
 }

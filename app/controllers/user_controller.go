@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
+
 )
 
 type UserController struct {
@@ -32,7 +33,7 @@ func (r *UserController) Index(c *gin.Context) {
 		"csrfToken": csrf.GetToken(c),
 	}
 	// Render the index.html template with data
-	c.HTML(http.StatusOK, "user.html", data)
+	c.HTML(http.StatusOK, "dashboard.html", data)
 }
 func (r *UserController) GetUsers(c *gin.Context) {
 	// TODO: Change if want to use another model here
@@ -73,11 +74,11 @@ func (r *UserController) GetUsers(c *gin.Context) {
 	case 0: // Assuming sorting is based on ID column
 		if orderDirection == "asc" {
 			sort.Slice(filteredData, func(i, j int) bool {
-				return filteredData[i].ID < filteredData[j].ID
+				return filteredData[i].IdUser < filteredData[j].IdUser
 			})
 		} else {
 			sort.Slice(filteredData, func(i, j int) bool {
-				return filteredData[i].ID > filteredData[j].ID
+				return filteredData[i].IdUser > filteredData[j].IdUser
 			})
 		}
 		// Add cases for other columns if needed
@@ -148,40 +149,40 @@ func (r *UserController) InsertData(c *gin.Context) {
 }
 
 func (r *UserController) UpdateData(c *gin.Context) {
-	id := c.Param("id")
-	var input models.User
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
+	// id := c.Param("id")
+	// var input models.User
+	// if err := c.ShouldBindJSON(&input); err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	// 	return
+	// }
 
-	var user models.User
-	if err := database.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
-		return
-	}
+	// var user models.User
+	// if err := database.DB.First(&user, id).Error; err != nil {
+	// 	c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+	// 	return
+	// }
 
-	user.Email = input.Email
-	user.Username = input.Username
+	// user.Email = input.Email
+	// user.Username = input.Username
 
-	err := database.DB.Save(&user).Error
-	if err != nil {
-		if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
-			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
-			return
+	// err := database.DB.Save(&user).Error
+	// if err != nil {
+	// 	if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
+	// 		c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
+	// 		return
 
-		} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
-			c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
-			return
-		}
+	// 	} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
+	// 		c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
+	// 		return
+	// 	}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user"})
-		return
-	}
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user"})
+	// 	return
+	// }
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User updated successfully",
-	})
+	// c.JSON(http.StatusOK, gin.H{
+	// 	"message": "User updated successfully",
+	// })
 }
 func (r *UserController) DeleteData(c *gin.Context) {
 	idParam := c.Param("id")

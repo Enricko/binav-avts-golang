@@ -12,7 +12,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	csrf "github.com/utrack/gin-csrf"
+
 )
+
+func CORSMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+        c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Authorization, X-Requested-With")
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+
+        if c.Request.Method == "OPTIONS" {
+            c.AbortWithStatus(204)
+            return
+        }
+
+        c.Next()
+    }
+}
 
 func main() {
 	err := godotenv.Load(".env")
@@ -23,6 +40,7 @@ func main() {
 	database.Init()
 
 	r := gin.Default()
+    r.Use(CORSMiddleware())
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
@@ -42,5 +60,5 @@ func main() {
 
 	r.Run("127.0.0.1:8080")
 
-	defer database.DB.Close()
-}
+		defer database.DB.Close()
+	}

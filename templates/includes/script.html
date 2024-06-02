@@ -3,6 +3,134 @@
 <script src="/public/sbadmin/js/jquery-3.7.1.min.js"></script>
 <script src="/public/libs/datatable/datatables.min.js"></script>
 <script src="/public/libs/swalfire/sweetalert2.all.min.js"></script>
-<script src="/public/libs/custom.js"></script>   
-<script src="/public/libs/select2/dist/js/select2.min.js"></script>        
+<script src="/public/libs/custom.js"></script>
+<script src="/public/libs/select2/dist/js/select2.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js"></script>
+<script>
+     function getBaseURL() {
+            // Get the full URL
+            const fullURL = window.location.href;
+            // Get the protocol and hostname
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            // Combine them to get the base URL
+            const baseURL = `${protocol}//${host}/`;
+            return baseURL;
+        }
+        
+     let map;
+        const kmzLayers = [];
+
+        function initMap() {
+            const balikpapan = { lat: -1.2692, lng: 116.8253 }; // Balikpapan, Indonesia
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: balikpapan,
+                zoom: 12
+            });
+
+            fetchKMZFiles();
+            initWebSocket();
+        }
+
+        function fetchKMZFiles() {
+            fetch('/mappings')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(mapping => {
+                        console.log('Mapping:', mapping);
+                        if (mapping.status) {
+                            console.log('Loading KMZ file:', mapping.File);
+                            loadKMZLayer(mapping.File);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching mappings:', error));
+        }
+
+        function loadKMZLayer(filePath) {
+            // const kmzUrl = `${getBaseURL()}public/${filePath}`;
+            const kmzUrl = `https://a4d6-140-213-164-88.ngrok-free.app/public/testMWPA.kmz`;
+            console.log('Loading KMZ file:', kmzUrl);
+            const kmzLayer = new google.maps.KmlLayer({
+                url: kmzUrl,
+                map: map,
+                preserveViewport: true  // Prevent the map from zooming to fit the KML/KMZ
+            });
+            kmzLayer.addListener('status_changed', function() {
+                if (kmzLayer.getStatus() !== 'OK') {
+                    console.error('Error loading KMZ layer:', kmzLayer.getStatus());
+                }
+            });
+            
+            kmzLayers.push(kmzLayer);
+        }
+
+        function initWebSocket() {
+            const socket = new WebSocket('ws://localhost:8080/ws/kapal');
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketData(data);
+            };
+
+            socket.onopen = function() {
+                console.log('WebSocket connection established');
+            };
+
+            socket.onclose = function() {
+                console.log('WebSocket connection closed');
+            };
+
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function handleWebSocketData(data) {
+            Object.keys(data).forEach(key => {
+                const { gga } = data[key];
+
+                if (gga !== "Error connecting") {
+                    console.log('WebSocket data:', key, gga);
+                    const coordinates = parseGGA(gga);
+                    
+                    if (coordinates) {
+                        updateMarker(key, coordinates);
+                    }
+                }
+                console.log('WebSocket tes', key, gga);
+            });
+        }
+
+        function parseGGA(ggaString) {
+            // Assuming GGA string contains latitude and longitude in a certain format
+            // Replace this with actual parsing logic for your GGA data format
+            // Example of a simple parser for "lat,lng" format
+            try {
+                const parts = ggaString.split(',');
+                const lat = parseFloat(parts[0]);
+                const lng = parseFloat(parts[1]);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    return { lat, lng };
+                }
+            } catch (error) {
+                console.error('Error parsing GGA string:', error);
+            }
+            return null;
+        }
+
+        function updateMarker(id, { lat, lng }) {
+            if (!markers[id]) {
+                const marker = new google.maps.Marker({
+                    position: { lat, lng },
+                    map: map,
+                    icon: 'YOUR_CUSTOM_MARKER_IMAGE_URL' // Custom marker image
+                });
+                markers[id] = marker;
+            } else {
+                markers[id].setPosition(new google.maps.LatLng(lat, lng));
+            }
+        }
+</script>
 {{ end }}

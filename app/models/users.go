@@ -1,38 +1,11 @@
 package models
 
-import (
-	"encoding/json"
-	"strconv"
-
-	"github.com/jinzhu/gorm"
-)
+import "time"
 
 type User struct {
-	Username string `gorm:"unique_index" binding:"required"`
-	Email    string `gorm:"unique_index" binding:"required"`
-	gorm.Model
-}
-
-func (u *User) UnmarshalJSON(data []byte) error {
-	var aux struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Username string `json:"username"`
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	id, err := strconv.ParseUint(aux.ID, 10, 32)
-	if err != nil {
-		return err
-	}
-
-	u.ID = uint(id)
-	u.Email = aux.Email
-	u.Username = aux.Username
-
-	return nil
+	IdUser    string    `gorm:"primary_key" binding:"required" json:"id_user"`
+	Name      string    `gorm:"varchar(300);not null;" json:"Name" binding:"required"`
+	Password  string    `gorm:"varchar(300);not null;" json:"password" binding:"required,min=6"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at`
 }

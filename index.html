@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Telnet to WebSocket Example</title>
+</head>
+<body>
+    <h1>Telnet to WebSocket Example</h1>
+    <div id="messages"></div>
+
+    <script>
+        let socket = new WebSocket("ws://localhost:8080/ws/kapal");
+
+        socket.onmessage = function(event) {
+            let messages = document.getElementById('messages');
+            let data = JSON.parse(event.data);
+            for (let key in data) {
+                let message = document.createElement('div');
+                message.textContent = `${key}: ${data[key]}`;
+                messages.appendChild(message);
+            }
+        };
+    </script>
+</body>
+</html>
