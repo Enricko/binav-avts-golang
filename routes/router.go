@@ -11,10 +11,6 @@ func SetupRouter(r *gin.Engine) {
 	mainController := controllers.NewController()
 	r.GET("/", mainController.Index)
 
-	telnetController := controllers.NewTelnetController()
-
-	r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
-
 	mappingController := controllers.NewMappingController()
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)

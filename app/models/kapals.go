@@ -13,7 +13,7 @@ const (
 
 type Kapal struct {
 	CallSign         string    `gorm:"primary_key" binding:"required" json:"call_sign"`
-	Status           bool      `json:"status;not null" binding:"required"`
+	Status           bool      `gorm:"not null" json:"status;" binding:"required"`
 	Flag             string    `gorm:"varchar(300);not null;" json:"flag" binding:"required"`
 	Kelas            string    `gorm:"varchar(300);not null;" json:"kelas" binding:"required"`
 	Builder          string    `gorm:"varchar(300);not null;" json:"builder" binding:"required"`
