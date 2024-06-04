@@ -1,0 +1,58 @@
+{{define "insertClient"}}
+<div class="modal fade" id="insertClient" tabindex="-2" role="dialog" aria-labelledby="insertClientLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content ">
+            <div class="modal-header">
+                <h5 class="modal-title">Insert Client</h5>
+                <button type="button" class="btn-close" data-bs-target="#clientTable" data-bs-toggle="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ">
+                <form>
+            
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="text"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Name"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="email"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Email"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="password"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Password"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="password"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Password Confirmation"
+                        />
+                      </div>
+                      
+                  </form>
+                
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-danger" data-bs-target="#clientTable" data-bs-toggle="modal">Cancel</button>
+                <button class="btn btn-primary" data-bs-target="#clientTable" data-bs-toggle="modal">Submit</button>
+              </div>
+              
+        </div>
+    </div>
+</div>
+
+
+{{end}}

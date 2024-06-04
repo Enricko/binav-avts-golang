@@ -1,6 +1,6 @@
 {{ template "header" . }}
-<div style="display: flex; flex-direction: column; height: 100vh">
-    <nav class="navbar bg-body-tertiary menu-nav">
+<div style="display: flex; height: 100vh">
+  <!-- <nav class="navbar bg-body-tertiary menu-nav">
         <div class="container-fluid">
             <div class="dropdown">
                 <button
@@ -23,7 +23,67 @@
                 </ul>
             </div>
         </div>
-    </nav>
-    <div id="map" style="width: 100vw; height: 100vh"></div>
+    </nav> -->
+
+  <div
+    class="row justify-content-around"
+    style="z-index: 2; position: absolute"
+  >
+    <div class="btn-group" style="align-items: center">
+      <div class="dropdown">
+        <button
+          id="front-div"
+          class="btn btn-primary rounded-pill"
+          style="border: 0; margin: 15px; background-color: white"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          <i class="bi bi-list menu-icon" style="color: black"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <a
+              class="dropdown-item"
+              data-bs-toggle="modal"
+              data-bs-target="#vesselTable"
+              >Vessel</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="dropdown-item"
+              data-bs-toggle="modal"
+              data-bs-target="#mappingTable"
+              >Pipeline</a
+            >
+          </li>
+          <li>
+            <a
+              class="dropdown-item"
+              data-bs-toggle="modal"
+              data-bs-target="#clientTable"
+              >Client</a
+            >
+          </li>
+        </ul>
+      </div>
+
+      <div class="autoComplete_wrapper">
+        <input
+          id="autoComplete"
+          type="search"
+          dir="ltr"
+          spellcheck="false"
+          autocorrect="off"
+          autocomplete="off"
+          autocapitalize="off"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div id="map" style="width: 100vw; height: 100vh"></div>
 </div>
 {{template "footer" .}}

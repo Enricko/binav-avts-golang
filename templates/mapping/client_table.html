@@ -1,17 +1,17 @@
-{{define "mappingTable" }}
-{{template "insertMapping" .}}
-<div class="modal fade" id="mappingTable" tabindex="-1" role="dialog" aria-labelledby="mappingTableLabel" aria-hidden="true">
+{{define "clientTable" }}
+{{template "insertClient" .}}
+<div class="modal fade" id="clientTable" tabindex="-1" role="dialog" aria-labelledby="clientTableLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl">
         <div class="modal-content ">
             <div class="modal-header">
-                <h5 class="modal-title">Table Pipeline</h5>
+                <h5 class="modal-title">Table Client</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body ">
                 <div class="border rounded p-3">
                     <button class="btn btn-primary mb-2" id="tambah_data"
                         style="float: right;" data-bs-toggle="modal"
-                        data-bs-target="#insertMapping">Tambah Data +</button>
+                        data-bs-target="#insertClient">Tambah Data +</button>
 
                     <table id="mapping-table"
                         class="display table-responsive table-bordered"
@@ -19,9 +19,9 @@
                         <thead style="background-color: #212529; color: white;">
                             <tr>
                                 <th>ID</th>
-                                <th>Username</th>
                                 <th>Name</th>
-                                <th>File</th>
+                                <th>Email</th>
+                                <th>Send Email</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>

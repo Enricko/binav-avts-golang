@@ -1,0 +1,85 @@
+{{define "insertVessel"}}
+<div class="modal fade" id="insertVessel" tabindex="-2" role="dialog" aria-labelledby="insertVesselLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content ">
+            <div class="modal-header">
+                <h5 class="modal-title">Insert Vessel</h5>
+                <button type="button" class="btn-close" data-bs-target="#vesselTable" data-bs-toggle="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ">
+                <form>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-7">
+                          <input type="text" class="form-control" placeholder="Call Sign" aria-label="Call Sign">
+                        </div>
+                        <div class="col-sm">
+                          <input type="text" class="form-control" placeholder="Flag" aria-label="Flag">
+                        </div>
+                      </div>
+            
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="text"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Class"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="text"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Builder"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="text"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Year Built"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <input
+                          type="text"
+                          class="form-control "
+                          id="floatingInput"
+                          placeholder="Heading Direction"
+                        />
+                      </div>
+                      <div class="form-floating-sm mb-3">
+                        <select class="form-select">
+                            
+                            <option value="" selected disabled>Vessel Size</option>
+                            <option value="1">Small</option>
+                            <option value="2">Medium</option>
+                            <option value="3">Large</option>
+                          </select>
+                      </div>
+                      <div class="mb-3">
+                        <label for="formFile" class="form-label">Upload File</label>
+                        <input class="form-control" type="file" id="formFile" />
+                      </div>
+                      <label for="formFile" class="form-label">Instalation</label>
+                      <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+                        <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
+                      </div>
+                      
+                  </form>
+                
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-danger" data-bs-target="#vesselTable" data-bs-toggle="modal">Cancel</button>
+                <button class="btn btn-primary" data-bs-target="#vesselTable" data-bs-toggle="modal">Submit</button>
+              </div>
+              
+        </div>
+    </div>
+</div>
+
+
+{{end}}
