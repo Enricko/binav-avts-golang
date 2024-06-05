@@ -21,8 +21,10 @@ func SetupRouter(r *gin.Engine) {
 
 	r.GET("/user/data", userController.GetUsers)
 	r.POST("/user/insert", userController.InsertData)
+	r.GET("/user/data/autocomplete", userController.GetAllUser)
 
 	r.DELETE("/user/delete/:id", userController.DeleteData)
 	r.GET("/user/getData/:id", userController.GetUser)
 	r.PUT("/user/update/:id", userController.UpdateData)
+
 }

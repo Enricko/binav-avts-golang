@@ -100,6 +100,7 @@ func (r *UserController) GetUsers(c *gin.Context) {
 	})
 
 }
+
 func (r *UserController) GetUser(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -120,6 +121,17 @@ func (r *UserController) GetUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"data": user,
+	})
+}
+func (r *UserController) GetAllUser(c *gin.Context) {
+	// Check if user exists
+	var data []models.User
+	if err := database.DB.Find(&data).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data": data,
 	})
 }
 

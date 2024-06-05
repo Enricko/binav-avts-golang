@@ -22,5 +22,5 @@ func (r *Controller) Index(c *gin.Context) {
 		"csrfToken": csrf.GetToken(c),
 	}
 	// Render the index.html template with data
-	c.HTML(http.StatusOK, "dashboard.html", data)
+	c.HTML(http.StatusOK, "index.html", data)
 }

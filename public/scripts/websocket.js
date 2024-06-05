@@ -1,5 +1,8 @@
 const websocketUrl = `ws://localhost:8080/ws/kapal`;
 
+let autoCompleteInstance;
+let currentDevices = [];
+
 function connectWebSocket() {
     websocket = new WebSocket(websocketUrl);
 
@@ -12,6 +15,13 @@ function connectWebSocket() {
         for (const device in data) {
             if (data.hasOwnProperty(device)) {
                 console.log(device);
+                const newDevices = Object.keys(data);
+
+                // Check if there is a change in device data
+                if (newDevices.sort().toString() !== currentDevices.sort().toString()) {
+                    currentDevices = newDevices;
+                    updateAutoComplete(currentDevices);
+                }
                 // const gga = data[device].gga;
                 // const parsedData = parseGGA(gga);
                 // updateMarkerPosition(device, parsedData.latitude, parsedData.longitude);
