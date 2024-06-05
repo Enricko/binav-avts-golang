@@ -7,82 +7,11 @@
 <script src="/public/libs/select2/dist/js/select2.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+<script src="/public/scripts/table_reader.js"></script>
+<script src="/public/scripts/auto_complete.js"></script>
+<script src="/public/scripts/websocket.js"></script>
 
 <script>
-    const autoCompleteJS = new autoComplete({
-  name: "autoComplete",
-
-  selector: "#autoComplete",
-  placeHolder: "Choose Client",
-  data: {
-      src: ["Sauce - Thousand Island", "Wild Boar - Tenderloin", "Goat - Whole Cut"],
-      cache: true,
-  },
-  resultsList: {
-      element: (list, data) => {
-          if (!data.results.length) {
-              // Create "No Results" message element
-              const message = document.createElement("div");
-              // Add class to the created element
-              message.setAttribute("class", "no_result");
-              // Add message text content
-              message.innerHTML = `<span>Found No Results for "${data.query}"</span>`;
-              // Append message element to the results list
-              list.prepend(message);
-          }
-      },
-      noResults: true,
-  },
-  resultItem: {
-      highlight: true
-  },
-  events: {
-      input: {
-          selection: (event) => {
-              const selection = event.detail.selection.value;
-              autoCompleteJS.input.value = selection;
-          }
-      }
-  }
-});
-
-const vesselSearch = new autoComplete({
-  name: "vesselSearch",
-
-  selector: "#vesselSearch",
-  placeHolder: "Search...",
-  data: {
-      src: ["Sauce - Thousand Island", "Wild Boar - Tenderloin", "Goat - Whole Cut"],
-      cache: true,
-  },
-  resultsList: {
-      element: (list, data) => {
-          if (!data.results.length) {
-              // Create "No Results" message element
-              const message = document.createElement("div");
-              // Add class to the created element
-              message.setAttribute("class", "no_result");
-              // Add message text content
-              message.innerHTML = `<span>Found No Results for "${data.query}"</span>`;
-              // Append message element to the results list
-              list.prepend(message);
-          }
-      },
-      noResults: true,
-  },
-  resultItem: {
-      highlight: true
-  },
-  events: {
-      input: {
-          selection: (event) => {
-              const selection = event.detail.selection.value;
-              vesselSearch.input.value = selection;
-          }
-      }
-  }
-});
-
     function getBaseURL() {
         // Get the full URL
         const fullURL = window.location.href;
@@ -100,6 +29,9 @@ const vesselSearch = new autoComplete({
     let markers = {}; // Store markers for each device
     const initialZoom = 16; // Initial zoom level
 
+    initMap();
+
+
     function initMap() {
         const balikpapan = { lat: -1.2692, lng: 116.8253 }; // Balikpapan, Indonesia
         // const balikpapan = { lat: -1.048336054, lng: 117.3793261225 }; // Balikpapan, Indonesia
@@ -107,15 +39,6 @@ const vesselSearch = new autoComplete({
             center: balikpapan,
             zoom: initialZoom
         });
-        
-        // marker = new google.maps.Marker({
-        //   position: balikpapan,
-        //   map: map,
-        //   icon: {
-        //     url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-        //     scaledSize: calculateMarkerSize(map.getZoom()),
-        //   },
-        // });
 
         map.addListener('zoom_changed', function() {
             updateMarkerSizes(map.getZoom());
@@ -136,105 +59,6 @@ const vesselSearch = new autoComplete({
         return new google.maps.Size(sizeInPixels, sizeInPixels * 2.5);
     }
 
-    const websocketUrl = `ws://localhost:8080/ws/kapal`;
-
-    function connectWebSocket() {
-        websocket = new WebSocket(websocketUrl);
-
-        websocket.onopen = function() {
-            console.log('WebSocket connection established.');
-        };
-
-        websocket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            for (const device in data) {
-                if (data.hasOwnProperty(device)) {
-                    const gga = data[device].gga;
-                    const parsedData = parseGGA(gga);
-                    updateMarkerPosition(device, parsedData.latitude, parsedData.longitude);
-                }
-            }
-        };
-
-        websocket.onclose = function(event) {
-            console.log('WebSocket connection closed. Reconnecting...');
-            setTimeout(connectWebSocket, reconnectInterval);
-        };
-
-        websocket.onerror = function(error) {
-            console.log('WebSocket error: ', error);
-            websocket.close();
-        };
-    }
-
-    // Parse NMEA GGA sentence
-    function parseGGA(gga) {
-        const fields = gga.split(',');
-        const latitudeDMS = parseFloat(fields[2]);
-        const latitudeDirection = fields[3];
-        const longitudeDMS = parseFloat(fields[4]);
-        const longitudeDirection = fields[5];
-
-        const latitude = convertDMSToDecimal(latitudeDMS, latitudeDirection);
-        const longitude = convertDMSToDecimal(longitudeDMS, longitudeDirection);
-
-        // console.log('Latitude:', latitude, 'Longitude:', longitude);
-        return { latitude, longitude };
-    }
-
-    function convertDMSToDecimal(degrees, direction) {
-        // Extract degrees, minutes, and seconds
-        const d = Math.floor(degrees / 100);
-        const m = degrees % 100;
-        const s = (degrees - (d * 100) - m) * 60;
-
-        // Convert to decimal degrees
-        let decimalDegrees = d + (m / 60) + (s / 3600);
-
-        // Adjust for negative direction
-        if (direction === 'S' || direction === 'W') {
-            decimalDegrees = -decimalDegrees;
-        }
-
-        return decimalDegrees;
-    }
-
-    // Update marker position or create new marker
-    function updateMarkerPosition(device, latitude, longitude) {
-        const customMarkerIcon = {
-            url: 'https://binav-avts.id/assets/assets/ship.png', // Replace with your custom marker image URL
-            scaledSize: calculateMarkerSize(map.getZoom()),
-        };
-
-        if (!markers.hasOwnProperty(device)) {
-            markers[device] = new google.maps.Marker({
-                position: { lat: -1.2692, lng: 116.8253 },
-                map: map,
-                title: device,
-                icon: customMarkerIcon,
-            });
-        } else {
-            markers[device].setPosition({ lat: -1.2692, lng: 116.8253 });
-            markers[device].setIcon(customMarkerIcon); // Update marker icon
-        }
-    }
-
-    // Update marker sizes based on zoom level
-    function updateMarkerSizes(zoom) {
-        for (const device in markers) {
-            if (markers.hasOwnProperty(device)) {
-                const marker = markers[device];
-                marker.setIcon({
-                    url: "https://binav-avts.id/assets/assets/ship.png",
-                    scaledSize: calculateMarkerSize(zoom),
-                });
-            }
-        }
-    }
-
-    // Start WebSocket connection and map initialization
-    connectWebSocket();
-    initMap();
     // url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
     function fetchKMZFiles() {
         fetch('/mappings')
@@ -331,49 +155,7 @@ const vesselSearch = new autoComplete({
     //     }
     // }
 
-    const itemTable = $('#mapping-table').DataTable({
-        ajax: '/mapping/data',
-        processing: true,
-        serverSide: true,
-        searching: true, // Enable search feature
-        responsive: true,
-        columnDefs: [
-            { "orderable": true, "targets": 0 },  // Enable sorting on the first column (First Name)
-            { "orderable": false, "targets": '_all' }  // Disable sorting on all other columns
-        ],
-        columns: [
-            { data: 'id_mapping', className: 'text-center' },
-            { data: 'user.name', className: 'text-center' },
-            { data: 'name', className: 'text-center' },
-            { data: 'file', className: 'text-center' },
-            { data: 'status', className: 'text-center' },
-            { 
-                data: 'aksi',
-                className: 'text-center',
-                width: '10%',
-                render: function(data, type, row, meta){
-                    return `
-                    <div class="row">
-                        <div class="col-auto mb-1">
-                            <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
-                        </div>
-
-                        <div class="col-auto mb-1">
-                            <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>`;
-                }
-            },
-        ],
-    });
     
-    document.addEventListener('DOMContentLoaded', function() {
-    // Reload the table data every 60 seconds
-        setInterval(() => {
-            itemTable.ajax.reload(null, false); // false to keep the current page
-        }, 60000); // 60 seconds
-
-    });
     
 </script>
 {{ end }}

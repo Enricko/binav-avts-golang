@@ -20,8 +20,8 @@ type Kapal struct {
 	YearBuilt        uint      `gorm:";not null;" json:"year_built" binding:"required"`
 	HeadingDirection int64     `gorm:"varchar(300);not null;" json:"heading_direction" binding:"required"`
 	Size             Size      `gorm:"not null;type:enum('small','medium','large','extra_large')" json:"size" binding:"required"`
-	XmlFile          string    `gorm:"type:TEXT;not null;" json:"XmlFile" binding:"required"`
-	Image            string    `gorm:"type:TEXT;not null;" json:"Image" binding:"required"`
+	XmlFile          string    `gorm:"type:TEXT;not null;" json:"xml_file" binding:"required"`
+	Image            string    `gorm:"type:TEXT;not null;" json:"image" binding:"required"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }

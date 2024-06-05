@@ -1,43 +1,40 @@
 {{define "insertMapping"}}
 <div class="modal fade" id="insertMapping" tabindex="-2" role="dialog" aria-labelledby="insertMappingLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg">
-        <div class="modal-content ">
-            <div class="modal-header">
-                <h5 class="modal-title">Insert Pipeline</h5>
-                <button type="button" class="btn-close" data-bs-target="#mappingTable" data-bs-toggle="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body ">
-                <div class="autoComplete_wrapper mb-3 "  >
-                    <input id="autoComplete"  type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off" autocapitalize="off">
-                </div>
-                <div class="form-floating-sm mb-3">
-                    <input
-                      type="email"
-                      class="form-control "
-                      id="floatingInput"
-                      placeholder="Name"
-                    />
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="formFile" class="form-label">Upload File</label>
-                    <input class="form-control" type="file" id="formFile" />
-                  </div>
-                  <label for="formFile" class="form-label">Instalation</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
-                    <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
-                  </div>
-                
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-danger" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
-                <button class="btn btn-primary" data-bs-target="#mappingTable" data-bs-toggle="modal">Submit</button>
-              </div>
-              
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content ">
+      <div class="modal-header">
+        <h5 class="modal-title">Insert Pipeline</h5>
+        <button type="button" class="btn-close" data-bs-target="#mappingTable" data-bs-toggle="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body ">
+          <input 
+          class="form-control mb-3 " id="selectClient" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off" autocapitalize="off">
+        <div class="form-floating-sm mb-3">
+          <input
+            type="email"
+            class="form-control "
+            id="floatingInput"
+            placeholder="Name" />
         </div>
-    </div>
-</div>
 
+        <div class="mb-3">
+          <label for="formFile" class="form-label">Upload File</label>
+          <input class="form-control" type="file" id="formFile" />
+        </div>
+        <label for="formFile" class="form-label">Instalation</label>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+          <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
+        <button class="btn btn-primary" data-bs-target="#mappingTable" data-bs-toggle="modal">Submit</button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 {{end}}
