@@ -48,7 +48,6 @@ $('#insertMapping').on('shown.bs.modal', async () =>{
 
 
 function autoCompleteVesselSearch(data){
-    console.log("autoCompleteVesselSearch", data);
     const vesselSearch = new autoComplete({
         selector: "#vesselSearch",
         placeHolder: "Search...",

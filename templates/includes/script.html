@@ -26,10 +26,7 @@
     let map;
     const kmzLayers = [];
     
-    let markers = {}; // Store markers for each device
     const initialZoom = 16; // Initial zoom level
-
-    initMap();
 
 
     function initMap() {
@@ -48,7 +45,7 @@
       
 
         fetchKMZFiles();
-        initWebSocket();
+        connectWebSocket();
     }
 
     function calculateMarkerSize(zoom) {
@@ -88,74 +85,6 @@
         });
         
         kmzLayers.push(kmzLayer);
-    }
-
-    // function initWebSocket() {
-    //     const socket = new WebSocket('ws://localhost:8080/ws/kapal');
-
-    //     socket.onmessage = function(event) {
-    //         const data = JSON.parse(event.data);
-    //     };
-
-    //     socket.onopen = function() {
-    //         console.log('WebSocket connection established');
-    //     };
-
-    //     socket.onclose = function() {
-    //         console.log('WebSocket connection closed');
-    //     };
-
-    //     socket.onerror = function(error) {
-    //         console.error('WebSocket error:', error);
-    //     };
-    // }
-
-    // function handleWebSocketData(data) {
-    //     Object.keys(data).forEach(key => {
-    //         const { gga } = data[key];
-
-    //         if (gga !== "Error connecting") {
-    //             const coordinates = parseGGA(gga);
-                
-    //             if (coordinates) {
-    //                 updateMarker(key, coordinates);
-    //             }
-    //         }
-    //     });
-    // }
-
-    // function parseGGA(ggaString) {
-    //     // Assuming GGA string contains latitude and longitude in a certain format
-    //     // Replace this with actual parsing logic for your GGA data format
-    //     // Example of a simple parser for "lat,lng" format
-    //     try {
-    //         const parts = ggaString.split(',');
-    //         const lat = parseFloat(parts[0]);
-    //         const lng = parseFloat(parts[1]);
-
-    //         if (!isNaN(lat) && !isNaN(lng)) {
-    //             return { lat, lng };
-    //         }
-    //     } catch (error) {
-    //         console.error('Error parsing GGA string:', error);
-    //     }
-    //     return null;
-    // }
-
-    // function updateMarker(id, { lat, lng }) {
-    //     if (!markers[id]) {
-    //         const marker = new google.maps.Marker({
-    //             position: { lat, lng },
-    //             map: map,
-    //             icon: 'https://binav-avts.id/assets/assets/ship.png' // Custom marker image
-    //         });
-    //         markers[id] = marker;
-    //     } else {
-    //         markers[id].setPosition(new google.maps.LatLng(lat, lng));
-    //     }
-    // }
-
-    
-    
+    }    
 </script>
 {{ end }}

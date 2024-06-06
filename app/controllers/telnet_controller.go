@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+
 )
 
 type TelnetController struct {
@@ -67,8 +68,9 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 			if err != nil {
 				log.Printf("Error connecting to %s: %v", server.CallSign, err)
 				dataMap.Store(server.CallSign, NMEAData{
-					GGA: "Error connecting",
-					HDT: "Error connecting",
+					// GGA: "Error connecting",
+					GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
+					HDT: "$GPHDT,90.0,T*0C",
 					VTG: "Error connecting",
 				})
 				time.Sleep(retryDelay)
@@ -93,9 +95,11 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 					nmeaData := data.(NMEAData)
 
 					if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
-						nmeaData.GGA = line
+						// nmeaData.GGA = line
+						nmeaData.GGA = "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47"
 					} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
-						nmeaData.HDT = line
+						// nmeaData.HDT = line
+						nmeaData.HDT = "$GPHDT,90.0,T*0C"
 					} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
 						nmeaData.VTG = line
 					}
@@ -206,8 +210,10 @@ func (r *TelnetController) updateKapalDataMap() {
 		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
 		if !ok {
 			nmeaData = NMEAData{
-				GGA: "No data",
-				HDT: "No data",
+				// GGA: "No data",
+				GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
+				// HDT: "No data",
+				HDT: "$GPHDT,90.0,T*0C",
 				VTG: "No data",
 			}
 		}
