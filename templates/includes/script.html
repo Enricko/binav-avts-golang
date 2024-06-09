@@ -29,20 +29,22 @@
     const initialZoom = 16; // Initial zoom level
 
 
+
     function initMap() {
         const balikpapan = { lat: -1.2692, lng: 116.8253 }; // Balikpapan, Indonesia
         // const balikpapan = { lat: -1.048336054, lng: 117.3793261225 }; // Balikpapan, Indonesia
         map = new google.maps.Map(document.getElementById('map'), {
             center: balikpapan,
-            zoom: initialZoom
+            zoom: initialZoom,
+            disableDefaultUI: true,
+            zoomControl: true,
+            scaleControl: true,
+        
         });
 
         map.addListener('zoom_changed', function() {
             updateMarkerSizes(map.getZoom());
         });
-      
-
-      
 
         fetchKMZFiles();
         connectWebSocket();
@@ -86,5 +88,15 @@
         
         kmzLayers.push(kmzLayer);
     }    
+
+    document.getElementById("hideButton").addEventListener("click", function() {
+        var container = document.getElementById("myContainer");
+  if (container.style.display === "none") {
+    container.style.display = "block";
+  } else {
+    container.style.display = "none";
+  }
+});
+
 </script>
 {{ end }}
