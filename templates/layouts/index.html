@@ -1,182 +1,76 @@
 {{ template "header" . }}
-<div style="display: flex; height: 100vh">
-  <!-- <nav class="navbar bg-body-tertiary menu-nav">
-        <div class="container-fluid">
-            <div class="dropdown">
-                <button
-                    class="btn"
-                    style="border: 0"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="bi bi-list menu-icon"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li class="dropdown-item">
-                        <a>Vessel</a>
-                    </li>
+<div style="display: flex; height: 100vh;">
+  <div id="map" style="width: 100%; height: 100vh; position: relative;"></div>
 
-                    <li><a class="dropdown-item"
-                            data-bs-toggle="modal"
-                            data-bs-target="#mappingTable">Pipeline</a></li>
-                    <li><a class="dropdown-item" href="#">Client</a></li>
-                </ul>
-            </div>
+  <div class="overlay-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;">
+    <div class="d-flex justify-content-between w-100 align-items-start p-3">
+      <div class="d-flex align-items-start" style="pointer-events: auto;">
+        <div class="btn-group">
+          <div class="dropdown">
+            <button class="btn btn-primary rounded-pill" style="border: 0; margin-right: 1rem; background-color: white;" type="button"
+              data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-list menu-icon" style="color: black;"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#vesselTable">Vessel</a></li>
+              <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mappingTable">Pipeline</a></li>
+              <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#clientTable">Client</a></li>
+            </ul>
+          </div>
         </div>
-    </nav> -->
 
-    <div id="map" style="width: 100vw; height: 100vh" >
-  
-    </div>
-
-  <div
-    class="d-flex justify-content-between w-100 align-items-start p-3"
-    style="z-index: 2; position: absolute; ">
-
-    <div class="d-flex align-items-start">
-      <div class="btn-group">
-        <div class="dropdown">
-          <button
-            class="btn btn-primary rounded-pill"
-            style="border: 0; margin-right: 1rem;  background-color: white"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="bi bi-list menu-icon" style="color: black"></i>
-          </button>
-          <ul class="dropdown-menu">
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#vesselTable">Vessel</a>
-            </li>
-  
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#mappingTable">Pipeline</a>
-            </li>
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#clientTable">Client</a>
-            </li>
-          </ul>
+        <div class="autoComplete_wrapper">
+          <input id="vesselSearch" type="search" dir="ltr" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" />
         </div>
       </div>
-          
-        <div class="autoComplete_wrapper">
-          <input
-            id="vesselSearch"
-            type="search"
-            dir="ltr"
-            spellcheck="false"
-            autocorrect="off"
-            autocomplete="off"
-            autocapitalize="off" />
-        </div>
 
+      <div class="d-flex flex-column align-items-end" style="pointer-events: auto;">
+        <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px;">
+          <i class="fas fa-user" style="color: black;"></i>
+        </button>
+
+        <button id="hideButton" class="btn btn-primary rounded-circle" type="button"
+          style="background-color: white; border: 0; width: 50px; height: 50px;" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fas fa-info" style="color: black;"></i>
+        </button>
+
+        <div class="container pt-2" id="myContainer" style="display: none; background-color: white; pointer-events: auto;">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th scope="col" colspan="2">AWB. Rajawali Natuna</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td scope="row">Telnet Status</td>
+                <td>Off</td>
+              </tr>
+              <tr>
+                <td scope="row">Lat</td>
+                <td>-1.05745000</td>
+              </tr>
+              <tr>
+                <td scope="row">Long</td>
+                <td>117.35100000</td>
+              </tr>
+              <tr>
+                <td scope="row">Heading(True)</td>
+                <td>178.133</td>
+              </tr>
+              <tr>
+                <td scope="row">SOG</td>
+                <td>0.02 KTS</td>
+              </tr>
+              <tr>
+                <td scope="row">SOLN</td>
+                <td>RTK Float</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-
-        <!-- <div class="dropdown">
-          <button class="btn btn-primary" type="button" style="background-color: white;border: 0; border-radius: 50%;" data-bs-toggle="dropdown"
-          aria-expanded="false" >
-            <i class="bi bi-info-circle menu-icon" style="color: black;"></i>
-          </button>
-          <ul class="dropdown-menu">
-            <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th scope="col" colspan="2">AWB. Rajawali Natuna</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td scope="row">Telnet Status</td>
-                  <td>Off</td>
-                </tr>
-                <tr>
-                  <td scope="row">Lat</td>
-                  <td>-1.05745000</td>
-                </tr>
-                <tr>
-                  <td scope="row">Long</td>
-                  <td>117.35100000</td>
-                </tr>
-                <tr>
-                  <td scope="row">Heading(True)</td>
-                  <td>178.133</td>
-                </tr>
-                <tr>
-                  <td scope="row">SOG</td>
-                  <td>0.02 KTS</td>
-                </tr>
-                <tr>
-                  <td scope="row">SOLN</td>
-                  <td>RTK Float</td>
-                </tr>
-              </tbody>
-            </table>
-          </ul>
-        </div> -->
-        
-        <div class="d-flex flex-column align-items-end" >
-          <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white;border: 0; width: 50px;height: 50px;">
-            <i class="fas fa-user" style="color: black;"></i>  </button>
-
-          <button id="hideButton" class="btn btn-primary rounded-circle" type="button" style="background-color: white;border: 0;  width: 50px;height: 50px;" data-bs-toggle="dropdown"
-          aria-expanded="false" >
-            <i class="fas fa-info" style="color: black;"></i>
-          </button>
-
-          <div class="container pt-2" id="myContainer" style="display: none; background-color: white; ">
-            <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th scope="col" colspan="2">AWB. Rajawali Natuna</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td scope="row">Telnet Status</td>
-                  <td>Off</td>
-                </tr>
-                <tr>
-                  <td scope="row">Lat</td>
-                  <td>-1.05745000</td>
-                </tr>
-                <tr>
-                  <td scope="row">Long</td>
-                  <td>117.35100000</td>
-                </tr>
-                <tr>
-                  <td scope="row">Heading(True)</td>
-                  <td>178.133</td>
-                </tr>
-                <tr>
-                  <td scope="row">SOG</td>
-                  <td>0.02 KTS</td>
-                </tr>
-                <tr>
-                  <td scope="row">SOLN</td>
-                  <td>RTK Float</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-        
-        
-        
-
-     
-      
-      
   </div>
-  
 </div>
-{{template "footer" .}}
+{{ template "footer" . }}
