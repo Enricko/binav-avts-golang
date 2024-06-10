@@ -50,10 +50,10 @@
 
     function calculateMarkerSize(zoom) {
         const metersPerPixel = 156543.03392 * Math.cos(0) / Math.pow(2, zoom); // Using 0 as the latitude for simplicity
-        const sizeInMeters = 3; // Desired size in meters (1 km)
+        const sizeInMeters = 5; // Desired size in meters (1 km)
         const sizeInPixels = sizeInMeters / metersPerPixel;
-        console.log(sizeInPixels * 2.4);
-        return new google.maps.Size(sizeInPixels, sizeInPixels * 2.5);
+        console.log(sizeInPixels * .1);
+        return sizeInPixels, sizeInPixels * .1;
     }
 
     // url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',

@@ -86,33 +86,14 @@ function convertDMSToDecimal(degrees, direction) {
 }
 
 // Update marker position or create new marker
-async function updateMarkerPosition(device, latitude, longitude, heading) {
-  // const customMarkerIcon = {
-  //     url: 'https://binav-avts.id/assets/assets/ship.png', // Replace with your custom marker image URL
-  //     scaledSize: calculateMarkerSize(map.getZoom()),
-  //     rotation: heading, // Set the rotation based on the heading
-  // };
-
-  // if (!markers.hasOwnProperty(device)) {
-  //     markers[device] = new google.maps.Marker({
-  //         position: { lat: latitude, lng: longitude },
-  //         map: map,
-  //         title: device,
-  //         icon: customMarkerIcon,
-  //     });
-  // } else {
-  //     console.log('Marker exists:', device, latitude, longitude);
-  //     markers[device].setPosition({ lat: latitude, lng: longitude });
-  //     markers[device].setIcon(customMarkerIcon); // Update marker icon
-  //     // markers[device].setRotation(heading); // Update marker rotation
-  // }
+async function updateMarkerPosition(device, latitude, longitude, heading) { 
   const boatIcon = {
     path: "M14 8.947L22 14v2l-8-2.526v5.36l3 1.666V22l-4.5-1L8 22v-1.5l3-1.667v-5.36L3 16v-2l8-5.053V3.5a1.5 1.5 0 0 1 3 0v5.447z",
     fillColor: "#ffd400",
     fillOpacity: 1,
     strokeColor: "#000",
     strokeOpacity: 0.4,
-    scaledSize: calculateMarkerSize(map.getZoom()),
+    scale: calculateMarkerSize(map.getZoom()),
     rotation: heading,
     anchor: new google.maps.Point(13, 13),
   };
@@ -131,17 +112,7 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
 }
 
 // Update marker sizes based on zoom level
-function updateMarkerSizes(zoom) {
-  // for (const device in markers) {
-  //     if (markers.hasOwnProperty(device)) {
-  //         const marker = markers[device];
-  //         marker.setIcon({
-  //             url: "https://binav-avts.id/assets/assets/ship.png",
-  //             scaledSize: calculateMarkerSize(zoom),
-  //             // rotation: marker.getRotation(), // Keep the current rotation
-  //         });
-  //     }
-  // }
+function updateMarkerSizes(zoom) { 
   for (const device in markers) {
     if (markers.hasOwnProperty(device)) {
       const marker = markers[device];
@@ -151,7 +122,7 @@ function updateMarkerSizes(zoom) {
         fillOpacity: 1,
         strokeColor: "#000",
         strokeOpacity: 0.4,
-        scaledSize: calculateMarkerSize(zoom),
+        scale: calculateMarkerSize(zoom),
         rotation: marker.getIcon().rotation,
         anchor: new google.maps.Point(13, 13),
       });
