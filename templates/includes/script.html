@@ -48,6 +48,44 @@
 
         fetchKMZFiles();
         connectWebSocket();
+        document.getElementById("searchButton").addEventListener("click", function() {
+            console.log("Search button clicked");
+            const searchTerm = document.getElementById("vesselSearch").value.trim();
+            console.log("Search term:", searchTerm);
+            if (markers.hasOwnProperty(searchTerm)) {
+                const marker = markers[searchTerm];
+                smoothPanTo(marker.getPosition());
+                map.setZoom(20);
+            } else {
+                alert("Vessel not found.");
+            }
+        });
+    }
+    
+    function smoothPanTo(latLng) {
+      const panSteps = 30; // Number of steps for the pan animation
+      const panDuration = 1000; // Duration of the pan animation in milliseconds
+      const panInterval = panDuration / panSteps; // Interval between each step
+
+      const startLat = map.getCenter().lat();
+      const startLng = map.getCenter().lng();
+      const endLat = latLng.lat();
+      const endLng = latLng.lng();
+
+      let step = 0;
+
+      function panStep() {
+        const lat = startLat + (endLat - startLat) * (step / panSteps);
+        const lng = startLng + (endLng - startLng) * (step / panSteps);
+        map.setCenter({ lat: lat, lng: lng });
+
+        if (step < panSteps) {
+          step++;
+          setTimeout(panStep, panInterval);
+        }
+      }
+
+      panStep();
     }
 
     function calculateMarkerSize(zoom) {
@@ -91,12 +129,12 @@
 
     document.getElementById("hideButton").addEventListener("click", function() {
         var container = document.getElementById("myContainer");
-  if (container.style.display === "none") {
-    container.style.display = "block";
-  } else {
-    container.style.display = "none";
-  }
-});
+        if (container.style.display === "none") {
+            container.style.display = "block";
+        } else {
+            container.style.display = "none";
+        }
+    });
 
 </script>
 {{ end }}

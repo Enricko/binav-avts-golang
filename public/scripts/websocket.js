@@ -3,6 +3,7 @@ const websocketUrl = `ws://localhost:8080/ws/kapal`;
 let autoCompleteInstance;
 let currentDevices = [];
 let markers = {}; // Initialize markers object to store marker references
+let reconnectInterval = 5000; // 5 seconds
 
 function connectWebSocket() {
   websocket = new WebSocket(websocketUrl);
@@ -88,7 +89,7 @@ function convertDMSToDecimal(degrees, direction) {
 // Update marker position or create new marker
 async function updateMarkerPosition(device, latitude, longitude, heading) { 
   const boatIcon = {
-    path: "M14 8.947L22 14v2l-8-2.526v5.36l3 1.666V22l-4.5-1L8 22v-1.5l3-1.667v-5.36L3 16v-2l8-5.053V3.5a1.5 1.5 0 0 1 3 0v5.447z",
+    path: "M 16 7 l 0 13 L 8 20 L 8 7 L 12 -1 L 16 7",
     fillColor: "#ffd400",
     fillOpacity: 1,
     strokeColor: "#000",
@@ -117,7 +118,7 @@ function updateMarkerSizes(zoom) {
     if (markers.hasOwnProperty(device)) {
       const marker = markers[device];
       marker.setIcon({
-        path: "M14 8.947L22 14v2l-8-2.526v5.36l3 1.666V22l-4.5-1L8 22v-1.5l3-1.667v-5.36L3 16v-2l8-5.053V3.5a1.5 1.5 0 0 1 3 0v5.447z",
+        path: "M 16 7 l 0 13 L 8 20 L 8 7 L 12 -1 L 16 7",
         fillColor: "#ffd400",
         fillOpacity: 1,
         strokeColor: "#000",
@@ -128,4 +129,42 @@ function updateMarkerSizes(zoom) {
       });
     }
   }
+}
+
+document.getElementById("searchButton").addEventListener("click", function() {
+  const searchTerm = document.getElementById("vesselSearch").value.trim();
+  console.log("searchTerm");
+  if (markers.hasOwnProperty(searchTerm)) {
+    const marker = markers[searchTerm];
+    smoothPanTo(marker.getPosition());
+    map.setZoom(12);
+  } else {
+    alert("Vessel not found.");
+  }
+});
+
+function smoothPanTo(latLng) {
+  const panSteps = 30; // Number of steps for the pan animation
+  const panDuration = 1000; // Duration of the pan animation in milliseconds
+  const panInterval = panDuration / panSteps; // Interval between each step
+
+  const startLat = map.getCenter().lat();
+  const startLng = map.getCenter().lng();
+  const endLat = latLng.lat();
+  const endLng = latLng.lng();
+
+  let step = 0;
+
+  function panStep() {
+    const lat = startLat + (endLat - startLat) * (step / panSteps);
+    const lng = startLng + (endLng - startLng) * (step / panSteps);
+    map.setCenter({ lat: lat, lng: lng });
+
+    if (step < panSteps) {
+      step++;
+      setTimeout(panStep, panInterval);
+    }
+  }
+
+  panStep();
 }
