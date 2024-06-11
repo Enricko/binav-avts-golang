@@ -64,3 +64,17 @@ table.dataTable td {
     white-space: normal; /* Allow the text to wrap to the next line */
     overflow-wrap: break-word; /* Ensure text will wrap within the container */
 }
+
+@media (min-width: 992px) {
+  #vesselSearch {
+    width: 30vw; /* 100vw - 30vw for the sidebar */
+  }
+}
+
+/* Adjustments for smaller screens (mobile/tablets) */
+@media (max-width: 991px) {
+  #vesselSearch {
+    width: 45vw; /* 100vw - 20vw for the sidebar */
+  }
+
+}

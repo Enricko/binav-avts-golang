@@ -14,6 +14,7 @@ function connectWebSocket() {
 
   websocket.onmessage = function (event) {
     const data = JSON.parse(event.data);
+    console.log(event.data);
     for (const device in data) {
       if (data.hasOwnProperty(device)) {
         const newDevices = Object.keys(data);
