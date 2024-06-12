@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -68,9 +69,8 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 			if err != nil {
 				log.Printf("Error connecting to %s: %v", server.CallSign, err)
 				dataMap.Store(server.CallSign, NMEAData{
-					// GGA: "Error connecting",
-					GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
-					HDT: "$GPHDT,90.0,T*0C",
+					GGA: "Error connecting",
+					HDT: "Error connecting",
 					VTG: "Error connecting",
 				})
 				time.Sleep(retryDelay)
@@ -95,13 +95,14 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 					nmeaData := data.(NMEAData)
 
 					if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
-						// nmeaData.GGA = line
-						nmeaData.GGA = "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47"
+						nmeaData.GGA = line
+						// storeGGA(line, server.CallSign)
 					} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
-						// nmeaData.HDT = line
-						nmeaData.HDT = "$GPHDT,90.0,T*0C"
+						nmeaData.HDT = line
+						// storeHDT(line, server.CallSign)
 					} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
 						nmeaData.VTG = line
+						// storeVTG(line, server.CallSign)
 					}
 					dataMap.Store(server.CallSign, nmeaData)
 				}
@@ -210,10 +211,10 @@ func (r *TelnetController) updateKapalDataMap() {
 		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
 		if !ok {
 			nmeaData = NMEAData{
-				// GGA: "No data",
-				GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
-				// HDT: "No data",
-				HDT: "$GPHDT,90.0,T*0C",
+				GGA: "No data",
+				// GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
+				HDT: "No data",
+				// HDT: "$GPHDT,90.0,T*0C",
 				VTG: "No data",
 			}
 		}
@@ -258,4 +259,199 @@ func min(a, b time.Duration) time.Duration {
 		return a
 	}
 	return b
+}
+
+func storeGGA(data, callSign string) {
+	coordinateGga, err := parseGGA(data)
+	if err != nil {
+		log.Printf("Error parsing GGA data: %v", err)
+		return
+	}
+	coordinateGga.CallSign = callSign
+
+	err = database.DB.Save(&coordinateGga).Error
+	if err != nil {
+		log.Printf("Error storing GGA data: %v", err)
+	}
+}
+
+func storeHDT(data, callSign string) {
+	coordinateHdt, err := parseHDT(data)
+	if err != nil {
+		log.Printf("Error parsing HDT data: %v", err)
+		return
+	}
+	coordinateHdt.CallSign = callSign
+
+	err = database.DB.Save(&coordinateHdt).Error
+	if err != nil {
+		log.Printf("Error storing HDT data: %v", err)
+	}
+}
+
+func storeVTG(data, callSign string) {
+	coordinateVtg, err := parseVTG(data)
+	if err != nil {
+		log.Printf("Error parsing VTG data: %v", err)
+		return
+	}
+	coordinateVtg.CallSign = callSign
+
+	err = database.DB.Save(&coordinateVtg).Error
+	if err != nil {
+		log.Printf("Error storing VTG data: %v", err)
+	}
+}
+
+// Function to parse GGA sentence
+func parseGGA(sentence string) (models.CoordinateGga, error) {
+	parts := strings.Split(sentence, ",")
+	if len(parts) < 15 {
+		return models.CoordinateGga{}, fmt.Errorf("invalid GGA sentence: %s", sentence)
+	}
+
+	utcPosition, err := strconv.ParseFloat(parts[1], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	latitude, err := strconv.ParseFloat(parts[2], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	longitude, err := strconv.ParseFloat(parts[4], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	numberSv, err := strconv.Atoi(parts[7])
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	hdop, err := strconv.ParseFloat(parts[8], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	orthometricHeight, err := strconv.ParseFloat(parts[9], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	geoidSeparation, err := strconv.ParseFloat(parts[11], 32)
+	if err != nil {
+		return models.CoordinateGga{}, err
+	}
+
+	coordinateGga := models.CoordinateGga{
+		MessageID:           parts[0],
+		UtcPosition:         float32(utcPosition),
+		Latitude:            float32(latitude),
+		DirectionLatitude:   parts[3],
+		Longitude:           float32(longitude),
+		DirectionLongitude:  parts[5],
+		GpsQualityIndicator: models.GpsQuality(parts[6]),
+		NumberSv:            numberSv,
+		Hdop:                float32(hdop),
+		OrthometricHeight:   float32(orthometricHeight),
+		UnitMeasure:         parts[10],
+		GeoidSeparation:     float32(geoidSeparation),
+		GeoidMeasure:        parts[12],
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
+	}
+
+	return coordinateGga, nil
+}
+
+// Function to parse HDT sentence
+func parseHDT(sentence string) (models.CoordinateHdt, error) {
+	parts := strings.Split(sentence, ",")
+	if len(parts) < 3 {
+		return models.CoordinateHdt{}, fmt.Errorf("invalid HDT sentence: %s", sentence)
+	}
+
+	headingDegree, err := strconv.ParseFloat(parts[1], 32)
+	if err != nil {
+		return models.CoordinateHdt{}, err
+	}
+
+	coordinateHdt := models.CoordinateHdt{
+		MessageID:     parts[0],
+		HeadingDegree: float32(headingDegree),
+		Checksum:      parts[2],
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+
+	return coordinateHdt, nil
+}
+
+// Function to parse VTG sentence
+func parseVTG(sentence string) (models.CoordinateVtg, error) {
+	parts := strings.Split(sentence, ",")
+	if len(parts) < 9 {
+		return models.CoordinateVtg{}, fmt.Errorf("invalid VTG sentence: %s", sentence)
+	}
+
+	var trackDegreeTrue, trackDegreeMagnetic, speedInKnots, kph float64
+	var err error
+
+	if parts[1] != "" {
+		trackDegreeTrue, err = strconv.ParseFloat(parts[1], 32)
+		if err != nil {
+			return models.CoordinateVtg{}, err
+		}
+	}
+
+	if parts[3] != "" {
+		trackDegreeMagnetic, err = strconv.ParseFloat(parts[3], 32)
+		if err != nil {
+			return models.CoordinateVtg{}, err
+		}
+	}
+
+	if parts[5] != "" {
+		speedInKnots, err = strconv.ParseFloat(parts[5], 32)
+		if err != nil {
+			return models.CoordinateVtg{}, err
+		}
+	}
+
+	if parts[7] != "" {
+		kph, err = strconv.ParseFloat(parts[7], 32)
+		if err != nil {
+			return models.CoordinateVtg{}, err
+		}
+	}
+
+	coordinateVtg := models.CoordinateVtg{
+		MessageID:           parts[0],
+		TrackDegreeTrue:     float32(trackDegreeTrue),
+		TrueNorth:           parts[2],
+		TrackDegreeMagnetic: float32(trackDegreeMagnetic),
+		MagneticNorth:       parts[4],
+		SpeedInKnots:        float32(speedInKnots),
+		MeasuredKnots:       parts[6],
+		Kph:                 float32(kph),
+		MeasuredKph:         parts[8],
+		Checksum:            parts[9], // Assuming the checksum is not used
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
+	}
+
+	// Check for the existence of a checksum (indicated by an asterisk)
+	if strings.Contains(parts[8], "*") {
+		checksumParts := strings.Split(parts[8], "*")
+		if len(checksumParts) == 2 {
+			coordinateVtg.MeasuredKph = checksumParts[0]
+			coordinateVtg.Checksum = checksumParts[1]
+		} else {
+			coordinateVtg.Checksum = checksumParts[0]
+		}
+	}
+
+	return coordinateVtg, nil
 }

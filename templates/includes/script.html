@@ -48,18 +48,43 @@
 
         fetchKMZFiles();
         connectWebSocket();
+
         document.getElementById("searchButton").addEventListener("click", function() {
-            console.log("Search button clicked");
             const searchTerm = document.getElementById("vesselSearch").value.trim();
             console.log("Search term:", searchTerm);
             if (markers.hasOwnProperty(searchTerm)) {
                 const marker = markers[searchTerm];
                 smoothPanTo(marker.getPosition());
                 map.setZoom(20);
+                getDataKapalMarker(searchTerm);
             } else {
                 alert("Vessel not found.");
             }
         });
+
+        // Add event listener to the map for mouseover
+        // google.maps.event.addListener(map, 'mouseover', function(event) {
+        //     for (const device in markers) {
+        //     if (markers[device].getPosition().lat() === event.latLng.lat() &&
+        //         markers[device].getPosition().lng() === event.latLng.lng()) {
+        //         // Display marker label
+        //         markerLabel = new google.maps.InfoWindow({
+        //         content: device,
+        //         position: event.latLng,
+        //         pixelOffset: new google.maps.Size(0, -25), // Adjust the position of the label
+        //         });
+        //         markerLabel.open(map);
+        //         break;
+        //     }
+        //     }
+        // });
+
+        // // Add event listener to the map for mouseout
+        // google.maps.event.addListener(map, 'mouseout', function() {
+        //     if (markerLabel) {
+        //     markerLabel.close();
+        //     }
+        // });
     }
     
     function smoothPanTo(latLng) {
@@ -127,14 +152,7 @@
         kmzLayers.push(kmzLayer);
     }    
 
-    document.getElementById("hideButton").addEventListener("click", function() {
-        var container = document.getElementById("myContainer");
-        if (container.style.display === "none") {
-            container.style.display = "block";
-        } else {
-            container.style.display = "none";
-        }
-    });
+
 
 </script>
 {{ end }}

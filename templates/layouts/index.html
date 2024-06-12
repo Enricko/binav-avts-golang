@@ -32,81 +32,76 @@
         <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px;">
           <i class="fas fa-user" style="color: black;"></i>
         </button>
-      
-        <button id="hideButton" class="btn btn-primary rounded-circle" type="button" style="background-color: white; border: 0; width: 50px; height: 50px;" data-bs-toggle="dropdown" aria-expanded="false">
+        
+        <button id="hideButton" class="btn btn-primary rounded-circle d-none" type="button" style="background-color: white; border: 0; width: 50px; height: 50px;" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-info" style="color: black;"></i>
         </button>
-      
-        <div class="container pt-2" id="myContainer" style="display: none; background-color: white; pointer-events: auto;">
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td scope="row" colspan="2"><strong>Kapal Data</strong></td>
-              </tr>
-              <tr>
-                <td scope="row">Call Sign</td>
-                <td id="callSign">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Status</td>
-                <td id="status">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Flag</td>
-                <td id="flag">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Class</td>
-                <td id="class">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Builder</td>
-                <td id="builder">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Year Built</td>
-                <td id="yearBuilt">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Size</td>
-                <td id="size">-</td>
-              </tr>
-              <tr>
-                <td scope="row" colspan="2"><strong>NMEA Data</strong></td>
-              </tr>
-              <tr>
-                <td scope="row">Lat</td>
-                <td id="latitude">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Long</td>
-                <td id="longitude">-</td>
-              </tr>
-              <tr>
-                <td scope="row">Heading</td>
-                <td id="heading">-</td>
-              </tr>
-              <tr>
-                <td scope="row">GGA</td>
-                <td id="gga">-</td>
-              </tr>
-              <tr>
-                <td scope="row">HDT</td>
-                <td id="hdt">-</td>
-              </tr>
-              <tr>
-                <td scope="row">VTG</td>
-                <td id="vtg">-</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="container pt-2" id="myContainer" style="display: none; background-color: white; pointer-events: auto;">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- <tr>
+                  <td scope="row" colspan="2"><strong>Kapal Data</strong></td>
+                </tr>
+                <tr>
+                  <td scope="row">Call Sign</td>
+                  <td id="callSign">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Status</td>
+                  <td id="status">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Flag</td>
+                  <td id="flag">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Class</td>
+                  <td id="class">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Builder</td>
+                  <td id="builder">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Year Built</td>
+                  <td id="yearBuilt">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Size</td>
+                  <td id="size">-</td>
+                </tr>
+                <tr> -->
+                  <td scope="row" colspan="2"><strong>NMEA Data</strong></td>
+                </tr>
+                <tr>
+                  <td scope="row">Lat</td>
+                  <td id="latitude">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Long</td> 
+                  <td id="longitude">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">Heading</td>
+                  <td id="heading">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">SOG</td>
+                  <td id="SOG">-</td>
+                </tr>
+                <tr>
+                  <td scope="row">SOLN</td>
+                  <td id="SOLN">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
     </div>
   </div>
 </div>

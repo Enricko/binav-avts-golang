@@ -36,7 +36,7 @@ func Init() {
 		panic("failed to connect database")
 	}
 
-	err := DB.AutoMigrate(&models.User{}, &models.Mapping{}, &models.Kapal{}, &models.IPKapal{}).Error
+	err := DB.AutoMigrate(&models.User{}, &models.Mapping{}, &models.Kapal{}, &models.IPKapal{}, &models.Coordinate{}, &models.CoordinateGga{}, &models.CoordinateHdt{}, &models.CoordinateVtg{}).Error
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -46,6 +46,18 @@ func Init() {
 		log.Fatal("Failed to set up foreign key:", err)
 	}
 	if err := DB.Model(&models.Mapping{}).AddForeignKey("id_user", "users(id_user)", "CASCADE", "CASCADE").Error; err != nil {
+		log.Fatal("Failed to set up foreign key:", err)
+	}
+	if err := DB.Model(&models.Coordinate{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").AddForeignKey("id_coor_gga", "coordinate_ggas(id_coor_gga)", "CASCADE", "CASCADE").AddForeignKey("id_coor_hdt", "coordinate_hdts(id_coor_hdt)", "CASCADE", "CASCADE").AddForeignKey("id_coor_vtg", "coordinate_vtgs(id_coor_vtg)", "CASCADE", "CASCADE").Error; err != nil {
+		log.Fatal("Failed to set up foreign key:", err)
+	}
+	if err := DB.Model(&models.CoordinateGga{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").Error; err != nil {
+		log.Fatal("Failed to set up foreign key:", err)
+	}
+	if err := DB.Model(&models.CoordinateHdt{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").Error; err != nil {
+		log.Fatal("Failed to set up foreign key:", err)
+	}
+	if err := DB.Model(&models.CoordinateVtg{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").Error; err != nil {
 		log.Fatal("Failed to set up foreign key:", err)
 	}
 
