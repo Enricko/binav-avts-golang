@@ -1,0 +1,82 @@
+{{define "profilePage" }}
+
+<div class="modal fade" id="profilePage" tabindex="-1" aria-labelledby="profilePageLabel" aria-hidden="true">
+    <div class="modal-dialog " >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Profile Page</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2">
+            <div class="p-3">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="d-flex ">
+                        <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: #b6b1b1; border: 0; width: 80px; height: 80px;">
+                            <i class="fas fa-user" style="color: black;"></i>
+                          </button>
+                    </div>
+                    <h5>Fadillarizky294@gmail.com</h5>
+                    
+                </div>
+            </div>
+            <button class="btn btn-secondary w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-target="#changePassword" data-bs-toggle="modal">
+                Change Password
+                <i class="fa-solid fa-key"></i>
+
+            </button>
+            <button class="btn btn-danger w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-dismiss="modal"  data-bs-toggle="modal">
+                Log Out
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+            </button>
+            <!-- <button class="btn btn-danger w-100">Log out</button> -->
+            
+                
+                    
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="changePassword" aria-hidden="true" aria-labelledby="changePasswordLabel" tabindex="-1">
+    <div class="modal-dialog ">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalToggleLabel2">Change Password</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-floating-sm mb-3">
+                <label for="formOldPass" class="form-label">Old Password</label>
+                <input
+                  type="text"
+                  class="form-control "
+                  id="floatingInput"
+                  placeholder="Old Password" />
+              </div>
+              <div class="form-floating-sm mb-3">
+                <label for="formNewPass" class="form-label">New Password</label>
+                <input
+                  type="text"
+                  class="form-control "
+                  id="floatingInput"
+                  placeholder="New Password" />
+              </div>
+              <div class="form-floating-sm mb-3">
+                <label for="formConfirmPass" class="form-label">Confirm Password</label>
+                <input
+                  type="text"
+                  class="form-control "
+                  id="floatingInput"
+                  placeholder="Confirm Password" />
+              </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-target="#profilePage" data-bs-toggle="modal">Cancel</button>
+          <button class="btn btn-primary" data-bs-target="#profilePage" data-bs-toggle="modal">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{end}}

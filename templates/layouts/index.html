@@ -3,13 +3,13 @@
   <div id="map" style="width: 100vw; height: 100vh; position: relative;"></div>
 
   <div class="overlay-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;">
-    <div class="d-flex justify-content-between w-100 align-items-start p-3">
-      <div class="d-flex align-items-start" style="pointer-events: auto;">
+    <div class="d-flex justify-content-between w-100 align-items-start p-3 ">
+      <div class="d-flex align-items-center" style="pointer-events: auto; ">
         <div class="btn-group">
           <div class="dropdown">
-            <button class="btn btn-primary rounded-pill" style="border: 0; margin-right: 1rem; background-color: white;" type="button"
+            <button class="btn btn-primary rounded-circle " style="border: 0; margin-right: 0.5rem; background-color: white; width: 50px; height: 50px;" type="button"
               data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-list menu-icon" style="color: black;"></i>
+              <i class="fa-solid fa-bars" style="color: black;"></i>
             </button>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#vesselTable">Vessel</a></li>
@@ -19,17 +19,18 @@
           </div>
         </div>
 
-        <div class="autoComplete_wrapper">
-          <input id="vesselSearch" type="search" dir="ltr" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off"
+        <div class="autoComplete_wrapper ">
+          <input id="vesselSearch" style="border-radius: 30px; height: 50px; width: 500px; padding-left: 20px; padding-right: 20px;" type="search" dir="ltr" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off"
             placeholder="Search for vessel..." />
-            <button id="searchButton" class="btn btn-primary ml-4" style="background-color: white; border: 0;">
-              <i class="fas fa-search" style="color: black;"></i>
-            </button>
         </div>
+
+        <button id="searchButton" class="btn btn-primary ml-4 rounded-circle" style="background-color: white; border: 0; margin-left: 1rem; width: 50px; height: 50px;">
+          <i class="fa-solid fa-magnifying-glass" style="color: black;"></i>
+        </button>
       </div>
 
       <div class="d-flex flex-column align-items-end" style="pointer-events: auto;">
-        <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px;">
+        <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px;" data-bs-toggle="modal" data-bs-target="#profilePage">
           <i class="fas fa-user" style="color: black;"></i>
         </button>
         
