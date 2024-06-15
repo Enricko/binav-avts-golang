@@ -118,7 +118,7 @@
         const sizeInMeters = 5; // Desired size in meters (1 km)
         const sizeInPixels = sizeInMeters / metersPerPixel;
         console.log(sizeInPixels * .1);
-        return sizeInPixels, sizeInPixels * .1;
+        return sizeInPixels, sizeInPixels * .5;
     }
 
     // url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
@@ -128,7 +128,7 @@
             .then(data => {
                 data.forEach(mapping => {
                     if (mapping.status) {
-                        loadKMZLayer(mapping.File);
+                        loadKMZLayer(mapping.file);
                     }
                 });
             })
@@ -136,7 +136,8 @@
     }
 
     function loadKMZLayer(filePath) {
-        const kmzUrl = `${getBaseURL()}public/${filePath}`;
+        // const kmzUrl = `${getBaseURL()}public/${filePath}`;
+        const kmzUrl = `https://golang.binav-avts.id/public/${filePath}`;
         // const kmzUrl = `https://a4d6-140-213-164-88.ngrok-free.app/public/testMWPA.kmz`;
         const kmzLayer = new google.maps.KmlLayer({
             url: kmzUrl,

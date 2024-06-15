@@ -33,7 +33,7 @@ function connectWebSocket() {
         const vtg = data[device].nmea.vtg;
         const parsedGGA = parseGGA(gga);
         const heading = parseHDT(hdt);
-
+        
         updateMarkerPosition(
           device,
           parsedGGA.latitude,
@@ -57,16 +57,61 @@ function connectWebSocket() {
 
 // Parse NMEA GGA sentence
 function parseGGA(gga) {
+  const gpsQualitys = [
+    "Fix not valid",
+    "GPS fix",
+    "Differential GPS fix (DGNSS), SBAS, OmniSTAR VBS, Beacon, RTX in GVBS mode",
+    "Not applicable",
+    "RTK Fixed, xFill",
+    "RTK Float, OmniSTAR XP/HP",
+    "Location RTK, RTX",
+    "INS Dead reckoning",
+  ];
   const fields = gga.split(",");
   const latitudeDMS = parseFloat(fields[2]);
   const latitudeDirection = fields[3];
   const longitudeDMS = parseFloat(fields[4]);
   const longitudeDirection = fields[5];
+  const gpsQuality = gpsQualitys[parseInt(fields[6])];
 
   const latitude = convertDMSToDecimal(latitudeDMS, latitudeDirection);
   const longitude = convertDMSToDecimal(longitudeDMS, longitudeDirection);
 
-  return { latitude, longitude };
+  let LatMinute = `${latitudeDMS},${latitudeDirection}`;
+  let LongMinute = `${longitudeDMS},${longitudeDirection}`;
+
+  let formattedLatLong = convertCoordinates(LatMinute, LongMinute);
+
+  return {
+    latitude,
+    latMinute: formattedLatLong.lat,
+    longitude,
+    longMinute: formattedLatLong.long,
+    gpsQuality,
+  };
+}
+
+function convertCoordinates(latInput, longInput) {
+  // Function to parse and format the latitude or longitude
+  function formatCoordinate(coordinate) {
+    const parts = coordinate.split(",");
+    const value = parseFloat(parts[0]);
+    const hemisphere = parts[1].trim();
+
+    // Extract degrees and minutes
+    const degrees = Math.floor(value / 100);
+    const minutes = (value % 100).toFixed(4);
+
+    // Format the coordinate string
+    return `${degrees}°${minutes}°${hemisphere}`;
+  }
+
+  // Format latitude and longitude
+  const lat = formatCoordinate(latInput);
+  const long = formatCoordinate(longInput);
+
+  // Return an object with lat and long properties
+  return { lat, long };
 }
 
 // Parse NMEA HDT sentence
@@ -76,35 +121,35 @@ function parseHDT(hdt) {
 }
 
 function parseVTG(vtg) {
-  const parts = vtg.split(',');
+  const parts = vtg.split(",");
 
   const courseTrue = parseFloat(parts[1]);
-  const courseMagnetic = parts[3] !== '' ? parseFloat(parts[3]) : null;
+  const courseMagnetic = parts[3] !== "" ? parseFloat(parts[3]) : null;
   const speedKnots = parseFloat(parts[5]);
   const speedKmh = parseFloat(parts[7]);
   const modeIndicator = parts[9];
-  let modeIndicatorText = '';
-  switch(modeIndicator) {
-    case 'A':
-      modeIndicatorText = 'Autonomous mode';
+  let modeIndicatorText = "";
+  switch (modeIndicator) {
+    case "A":
+      modeIndicatorText = "Autonomous mode";
       break;
-    case 'D':
-      modeIndicatorText = 'Differential mode';
+    case "D":
+      modeIndicatorText = "Differential mode";
       break;
-    case 'E':
-      modeIndicatorText = 'Estimated (dead reckoning) mode';
+    case "E":
+      modeIndicatorText = "Estimated (dead reckoning) mode";
       break;
-    case 'M':
-      modeIndicatorText = 'Manual Input mode';
+    case "M":
+      modeIndicatorText = "Manual Input mode";
       break;
-    case 'S':
-      modeIndicatorText = 'Simulator mode';
+    case "S":
+      modeIndicatorText = "Simulator mode";
       break;
-    case 'N':
-      modeIndicatorText = 'Data not valid';
+    case "N":
+      modeIndicatorText = "Data not valid";
       break;
     default:
-      modeIndicatorText = 'Unknown';
+      modeIndicatorText = "Unknown";
   }
 
   return {
@@ -112,7 +157,7 @@ function parseVTG(vtg) {
     courseMagnetic: courseMagnetic,
     speedKnots: speedKnots,
     speedKmh: speedKmh,
-    modeIndicator: modeIndicator
+    modeIndicator: modeIndicator,
   };
 }
 
@@ -135,7 +180,7 @@ function convertDMSToDecimal(degrees, direction) {
 // Update marker position or create new marker
 async function updateMarkerPosition(device, latitude, longitude, heading) {
   const boatIcon = {
-    path: "M 16 7 l 0 13 L 8 20 L 8 7 L 12 -1 L 16 7",
+    path: "M 14 30 L 2 30 L 2 -10 L 14 -10 L 14 30 V -6 M 12 -9 C 12 -9 11 -9 11 -8 C 11 -7 12 -7 12 -7 C 12 -7 13 -7 13 -8 C 13 -8 13 -9 12 -9 M 3 29 L 13 29 L 13 14 L 3 14 L 3 29",
     fillColor: "#ffd400",
     fillOpacity: 1,
     strokeColor: "#000",
@@ -153,16 +198,17 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
       icon: boatIcon,
     });
 
-    markers[device].addListener("dblclick", function() {
+
+    markers[device].addListener("dblclick", function () {
       getDataKapalMarker(device);
     });
 
     // Add hover event listener
-    markers[device].addListener("mouseover", function() {
+    markers[device].addListener("mouseover", function () {
       updateInfoWindow(device, latitude, longitude, markers[device]);
     });
 
-    markers[device].addListener("mouseout", function() {
+    markers[device].addListener("mouseout", function () {
       markerLabel.close();
     });
   } else {
@@ -170,15 +216,21 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
     markers[device].setIcon(boatIcon);
 
     // Ensure the info window content is updated
-    google.maps.event.clearListeners(markers[device], 'mouseover'); // Clear the previous 'mouseover' listener
-    markers[device].addListener("mouseover", function() {
+    google.maps.event.clearListeners(markers[device], "mouseover"); // Clear the previous 'mouseover' listener
+    markers[device].addListener("mouseover", function () {
       updateInfoWindow(device, latitude, longitude, markers[device]);
     });
 
-    markers[device].addListener("mouseout", function() {
+    markers[device].addListener("mouseout", function () {
       markerLabel.close();
     });
   }
+
+  console.log(
+    "Updating marker position for device: ",
+    markers[device].getPosition().lat(),
+    { lat: latitude, lng: longitude }
+  );
 }
 
 function updateInfoWindow(device, latitude, longitude, marker) {
@@ -190,18 +242,18 @@ function updateInfoWindow(device, latitude, longitude, marker) {
         <p>Latitude: ${latitude}<br>Longitude: ${longitude}</p>
       </div>
     </div>`;
-  
+
   markerLabel.setContent(contentString);
   markerLabel.open(map, marker);
 }
 
 // Update marker sizes based on zoom level
-function updateMarkerSizes(zoom) { 
+function updateMarkerSizes(zoom) {
   for (const device in markers) {
     if (markers.hasOwnProperty(device)) {
       const marker = markers[device];
       marker.setIcon({
-        path: "M 16 7 l 0 13 L 8 20 L 8 7 L 12 -1 L 16 7",
+        path: "M 14 30 L 2 30 L 2 -10 L 14 -10 L 14 30 V -6 M 12 -9 C 12 -9 11 -9 11 -8 C 11 -7 12 -7 12 -7 C 12 -7 13 -7 13 -8 C 13 -8 13 -9 12 -9 M 3 29 L 13 29 L 13 14 L 3 14 L 3 29",
         fillColor: "#ffd400",
         fillOpacity: 1,
         strokeColor: "#000",
@@ -248,39 +300,38 @@ function getDataKapalMarker(device) {
 
 function dataKapalMarker(device) {
   let data = dataDevices[device];
-  console.log("dataKapalMarker", data);
   let ggaData = parseGGA(data.nmea.gga);
   let hdtData = parseHDT(data.nmea.hdt);
   let vtgData = parseVTG(data.nmea.vtg);
   document.getElementById("vesselName").textContent = device;
-  document.getElementById("latitude").textContent = ggaData.latitude.toFixed(8);
-  document.getElementById("longitude").textContent = ggaData.longitude.toFixed(8);
+  document.getElementById("latitude").textContent = ggaData.latMinute;
+  document.getElementById("longitude").textContent = ggaData.longMinute;
   document.getElementById("heading").textContent = hdtData;
   document.getElementById("SOG").textContent = vtgData.speedKnots + " KTS";
-  document.getElementById("SOLN").textContent = vtgData.modeIndicator;
+  document.getElementById("SOLN").textContent = ggaData.gpsQuality;
 }
 
-function switchWindow(onoff){
+function switchWindow(onoff) {
   // var windowButton = document.getElementById("detail-window");
   var hideButton = document.getElementById("hideButton");
   if (onoff) {
-      // windowButton.classList.remove("d-none");
-      hideButton.classList.remove("d-none");
+    // windowButton.classList.remove("d-none");
+    hideButton.classList.remove("d-none");
   } else {
-      // windowButton.classList.add = "d-none";
-      hideButton.classList.add = "d-none";
+    // windowButton.classList.add = "d-none";
+    hideButton.classList.add = "d-none";
   }
 }
 var timeoutID;
-document.getElementById("hideButton").addEventListener("click", function() {
+document.getElementById("hideButton").addEventListener("click", function () {
   var container = document.getElementById("myContainer");
   if (container.style.display === "none") {
-      container.style.display = "block";
-      timeoutID = setInterval(function() {
-        dataKapalMarker(currentSelectedMarker);
-      }, 500);
+    container.style.display = "block";
+    timeoutID = setInterval(function () {
+      dataKapalMarker(currentSelectedMarker);
+    }, 500);
   } else {
-      container.style.display = "none";
-      clearInterval(timeoutID);
+    container.style.display = "none";
+    clearInterval(timeoutID);
   }
 });
