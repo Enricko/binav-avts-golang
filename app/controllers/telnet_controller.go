@@ -15,7 +15,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-
 )
 
 type TelnetController struct {
@@ -81,14 +80,17 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 			retryDelay = 5 * time.Second // Reset retry delay on successful connection
 			reader := bufio.NewReader(conn)
 
-			// Start a goroutine to read from the connection
+			connClosed := make(chan struct{})
 			go func() {
-				defer conn.Close()
+				defer func() {
+					conn.Close()
+					close(connClosed)
+				}()
 				for {
 					line, err := reader.ReadString('\n')
 					if err != nil {
 						log.Printf("Error reading from %s: %v", server.CallSign, err)
-						break
+						return
 					}
 					line = strings.TrimSpace(line)
 					data, _ := dataMap.LoadOrStore(server.CallSign, NMEAData{})
@@ -96,25 +98,22 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 
 					if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
 						nmeaData.GGA = line
-						// storeGGA(line, server.CallSign)
 					} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
 						nmeaData.HDT = line
-						// storeHDT(line, server.CallSign)
 					} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
 						nmeaData.VTG = line
-						// storeVTG(line, server.CallSign)
 					}
+					fmt.Println(line)
 					dataMap.Store(server.CallSign, nmeaData)
 				}
 			}()
 
-			<-stopChan // Wait for stop signal
+			<-connClosed
 			log.Printf("Disconnected from %s. Reconnecting...", server.CallSign)
-			return
+			connMap.Delete(server.IdIpKapal)
 		}
 	}
 }
-
 func (r *TelnetController) StartTelnetConnections() {
 	var wg sync.WaitGroup
 
@@ -151,37 +150,30 @@ func (r *TelnetController) StartTelnetConnections() {
 				continue
 			}
 
-			// Map current servers by ID for quick lookup
 			currentServerMap := make(map[uint]models.IPKapal)
 			for _, server := range servers {
 				currentServerMap[server.IdIpKapal] = server
 			}
 
-			// Map updated servers by ID for quick lookup
 			updatedServerMap := make(map[uint]models.IPKapal)
 			for _, server := range updatedServers {
 				updatedServerMap[server.IdIpKapal] = server
 			}
 
-			// Check for new or updated servers
 			for id, updatedServer := range updatedServerMap {
 				if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
-					// Stop the old connection if it exists
 					if stopChan, ok := r.ConnMap.Load(id); ok {
 						close(stopChan.(chan struct{}))
 						r.ConnMap.Delete(id)
 					}
-					// Start a new connection
 					wg.Add(1)
 					stopChan := make(chan struct{})
 					go handleTelnetConnection(updatedServer, r.DataMap, r.ConnMap, &wg, stopChan)
 				}
 			}
 
-			// Check for deleted servers
 			for id := range currentServerMap {
 				if _, exists := updatedServerMap[id]; !exists {
-					// Stop the connection
 					if stopChan, ok := r.ConnMap.Load(id); ok {
 						close(stopChan.(chan struct{}))
 						r.ConnMap.Delete(id)
@@ -190,7 +182,6 @@ func (r *TelnetController) StartTelnetConnections() {
 				}
 			}
 
-			// Update the current server list
 			servers = updatedServers
 		}
 	}()

@@ -61,5 +61,5 @@ func Init() {
 		log.Fatal("Failed to set up foreign key:", err)
 	}
 
-	DB.LogMode(true)
+	// DB.LogMode(true)
 }
