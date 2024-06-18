@@ -103,7 +103,7 @@ function convertCoordinates(latInput, longInput) {
     const minutes = (value % 100).toFixed(4);
 
     // Format the coordinate string
-    return `${degrees}°${minutes}°${hemisphere}`;
+    return `${degrees}\u00B0${minutes}\u00B0${hemisphere}`;
   }
 
   // Format latitude and longitude
@@ -189,6 +189,7 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
     rotation: (heading + dataDevices[device].kapal.heading_direction) % 360,
     anchor: new google.maps.Point(13, 13),
   };
+  const ggaKapal = parseGGA(dataDevices[device].nmea.gga);
 
   if (!markers.hasOwnProperty(device)) {
     markers[device] = new google.maps.Marker({
@@ -205,7 +206,7 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
 
     // Add hover event listener
     markers[device].addListener("mouseover", function () {
-      updateInfoWindow(device, latitude, longitude, markers[device]);
+      updateInfoWindow(device, ggaKapal.latMinute, ggaKapal.longMinute, markers[device]);
     });
 
     markers[device].addListener("mouseout", function () {
@@ -218,19 +219,13 @@ async function updateMarkerPosition(device, latitude, longitude, heading) {
     // Ensure the info window content is updated
     google.maps.event.clearListeners(markers[device], "mouseover"); // Clear the previous 'mouseover' listener
     markers[device].addListener("mouseover", function () {
-      updateInfoWindow(device, latitude, longitude, markers[device]);
+      updateInfoWindow(device, ggaKapal.latMinute, ggaKapal.longMinute, markers[device]);
     });
 
     markers[device].addListener("mouseout", function () {
       markerLabel.close();
     });
   }
-
-  console.log(
-    "Updating marker position for device: ",
-    markers[device].getPosition().lat(),
-    { lat: latitude, lng: longitude }
-  );
 }
 
 function updateInfoWindow(device, latitude, longitude, marker) {
@@ -304,9 +299,13 @@ function dataKapalMarker(device) {
   let hdtData = parseHDT(data.nmea.hdt);
   let vtgData = parseVTG(data.nmea.vtg);
   document.getElementById("vesselName").textContent = device;
+  document.getElementById("status_telnet").textContent = data.nmea.status;
+  document.getElementById("status_telnet").style.color = data.nmea.status ? "green" : "red";
   document.getElementById("latitude").textContent = ggaData.latMinute;
   document.getElementById("longitude").textContent = ggaData.longMinute;
-  document.getElementById("heading").textContent = hdtData;
+  document.getElementById("true_heading").textContent = `${(hdtData + data.kapal.heading_direction) % 360}\u00B0`;
+  document.getElementById("heading_hdt").textContent = hdtData+"\u00B0";
+  document.getElementById("calibration").textContent = data.kapal.heading_direction + "\u00B0";
   document.getElementById("SOG").textContent = vtgData.speedKnots + " KTS";
   document.getElementById("SOLN").textContent = ggaData.gpsQuality;
 }

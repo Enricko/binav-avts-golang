@@ -42,9 +42,10 @@ var upgrader = websocket.Upgrader{
 }
 
 type NMEAData struct {
-	GGA string `json:"gga,omitempty"`
-	HDT string `json:"hdt,omitempty"`
-	VTG string `json:"vtg,omitempty"`
+	GGA    string `json:"gga,omitempty"`
+	HDT    string `json:"hdt,omitempty"`
+	VTG    string `json:"vtg,omitempty"`
+	Status string `json:"status"` // Added status field
 }
 
 type KapalData struct {
@@ -62,15 +63,22 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 		select {
 		case <-stopChan:
 			log.Printf("Stopping connection to %s", server.CallSign)
+			dataMap.Store(server.CallSign, NMEAData{
+				GGA:    "Connection stopped",
+				HDT:    "Connection stopped",
+				VTG:    "Connection stopped",
+				Status: "Disconnected",
+			})
 			return
 		default:
 			conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
 			if err != nil {
 				log.Printf("Error connecting to %s: %v", server.CallSign, err)
 				dataMap.Store(server.CallSign, NMEAData{
-					GGA: "Error connecting",
-					HDT: "Error connecting",
-					VTG: "Error connecting",
+					GGA:    "Error connecting",
+					HDT:    "Error connecting",
+					VTG:    "Error connecting",
+					Status: "Disconnected",
 				})
 				time.Sleep(retryDelay)
 				retryDelay = min(2*retryDelay, 5*time.Minute) // Exponential backoff with a max delay of 5 minutes
@@ -86,6 +94,9 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 					conn.Close()
 					close(connClosed)
 				}()
+				dataMap.Store(server.CallSign, NMEAData{
+					Status: "Connected",
+				})
 				for {
 					line, err := reader.ReadString('\n')
 					if err != nil {
@@ -103,6 +114,7 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 					} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
 						nmeaData.VTG = line
 					}
+					nmeaData.Status = "Connected"
 					fmt.Println(line)
 					dataMap.Store(server.CallSign, nmeaData)
 				}
@@ -114,6 +126,7 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 		}
 	}
 }
+
 func (r *TelnetController) StartTelnetConnections() {
 	var wg sync.WaitGroup
 
@@ -206,7 +219,8 @@ func (r *TelnetController) updateKapalDataMap() {
 				// GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
 				HDT: "No data",
 				// HDT: "$GPHDT,90.0,T*0C",
-				VTG: "No data",
+				VTG:    "No data",
+				Status: "Disconnected",
 			}
 		}
 
@@ -233,7 +247,12 @@ func (r *TelnetController) KapalTelnetWebsocketHandler(c *gin.Context) {
 		case <-ticker.C:
 			data := make(map[string]KapalData)
 			r.KapalDataMap.Range(func(key, value interface{}) bool {
-				data[key.(string)] = value.(KapalData)
+				kapalData := value.(KapalData)
+				nmeaData, ok := r.DataMap.Load(kapalData.Kapal.CallSign)
+				if ok {
+					kapalData.NMEA = nmeaData.(NMEAData)
+				}
+				data[key.(string)] = kapalData
 				return true
 			})
 
