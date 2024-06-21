@@ -64,9 +64,9 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 		case <-stopChan:
 			log.Printf("Stopping connection to %s", server.CallSign)
 			dataMap.Store(server.CallSign, NMEAData{
-				GGA:    "Connection stopped",
-				HDT:    "Connection stopped",
-				VTG:    "Connection stopped",
+				GGA:    "No Data",
+				HDT:    "No Data",
+				VTG:    "No Data",
 				Status: "Disconnected",
 			})
 			return
@@ -75,9 +75,9 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 			if err != nil {
 				log.Printf("Error connecting to %s: %v", server.CallSign, err)
 				dataMap.Store(server.CallSign, NMEAData{
-					GGA:    "Error connecting",
-					HDT:    "Error connecting",
-					VTG:    "Error connecting",
+					GGA:    "No Data",
+					HDT:    "No Data",
+					VTG:    "No Data",
 					Status: "Disconnected",
 				})
 				time.Sleep(retryDelay)
@@ -215,11 +215,11 @@ func (r *TelnetController) updateKapalDataMap() {
 		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
 		if !ok {
 			nmeaData = NMEAData{
-				GGA: "No data",
+				GGA: "No Data",
 				// GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
-				HDT: "No data",
+				HDT: "No Data",
 				// HDT: "$GPHDT,90.0,T*0C",
-				VTG:    "No data",
+				VTG:    "No Data",
 				Status: "Disconnected",
 			}
 		}

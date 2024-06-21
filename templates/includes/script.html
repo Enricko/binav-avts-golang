@@ -1,7 +1,8 @@
 {{ define "script" }}
 <script
-    src="/public/sbadmin/js/bootstrap.bundle.min.js"
-    crossorigin="anonymous"></script>
+  src="/public/sbadmin/js/bootstrap.bundle.min.js"
+  crossorigin="anonymous"
+></script>
 <script src="/public/sbadmin/js/jquery-3.7.1.min.js"></script>
 <script src="/public/libs/datatable/datatables.min.js"></script>
 <script src="/public/libs/swalfire/sweetalert2.all.min.js"></script>
@@ -25,76 +26,66 @@
     return baseURL;
   }
 
- 
   let map;
+  let vesselOverlay;
   const kmzLayers = [];
 
   const initialZoom = 16; // Initial zoom level
 
-  const chicago = { lat: 41.85, lng: -87.65 };
-
   let isRulerOn = false;
 
-function createRulerButton(map) {
-  const controlButton = document.createElement("button");
+  function createRulerButton(map) {
+    const controlButton = document.createElement("button");
 
-  controlButton.classList.add("btn", "btn-primary", "rounded-circle","ml-4"); 
-  controlButton.style.backgroundColor = "white";
-  controlButton.style.border = "0";
-  controlButton.style.width = "50px";
-  controlButton.style.height = "50px";
-  controlButton.style.marginRight = "0.5rem";
-  controlButton.style.backgroundColor = "white";
-  controlButton.innerHTML = '<i class="fas fa-solid fa-ruler" style="color: black;"></i>';
-  controlButton.type = "button";
-  controlButton.title = "Ruler Button";
-  controlButton.addEventListener("click", () => {
-    isRulerOn = !isRulerOn;
-    initMap();
-  });
-  return controlButton;
-}
+    controlButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
+    controlButton.style.backgroundColor = "white";
+    controlButton.style.border = "0";
+    controlButton.style.width = "50px";
+    controlButton.style.height = "50px";
+    controlButton.style.marginRight = "0.5rem";
+    controlButton.style.backgroundColor = "white";
+    controlButton.innerHTML =
+      '<i class="fas fa-solid fa-ruler" style="color: black;"></i>';
+    controlButton.type = "button";
+    controlButton.title = "Ruler Button";
+    controlButton.addEventListener("click", () => {
+      isRulerOn = !isRulerOn;
+      initMap();
+    });
+    return controlButton;
+  }
 
   function initMap() {
-    const balikpapan = { lat: -1.2692, lng: 116.8253 }; // Balikpapan, Indonesia
-    // const balikpapan = { lat: -1.048336054, lng: 117.3793261225 }; // Balikpapan, Indonesia
     map = new google.maps.Map(document.getElementById("map"), {
-      center: balikpapan,
       zoom: initialZoom,
+      center: { lat: -1.0574568371666666, lng: 117.35121627983332 }, // Replace with the initial coordinates
+
       disableDefaultUI: true,
       zoomControl: true,
       scaleControl: true,
     });
 
-
     /// CREATE RULER BUTTON
     const centerControlDiv = document.createElement("div");
-  // Create the control.
-  const centerControl = createRulerButton(map);
-  // Append the control to the DIV.
-  centerControlDiv.appendChild(centerControl);
-  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerControlDiv);
+    // Create the control.
+    const centerControl = createRulerButton(map);
+    // Append the control to the DIV.
+    centerControlDiv.appendChild(centerControl);
+    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
+      centerControlDiv
+    );
 
-    
-   /// POLYLINE
+    /// POLYLINE
     poly = new google.maps.Polyline({
-    strokeColor: "#000000",
-    strokeOpacity: 1.0,
-    strokeWeight: 3,
-  });
-  poly.setMap(map);
-  // Add a listener for the click event
-  if (isRulerOn) {
-    map.addListener("click", addLatLng);
-  }
-  
-
-
-   
-
-    map.addListener("zoom_changed", function () {
-      updateMarkerSizes(map.getZoom());
+      strokeColor: "#000000",
+      strokeOpacity: 1.0,
+      strokeWeight: 3,
     });
+    poly.setMap(map);
+    // Add a listener for the click event
+    if (isRulerOn) {
+      map.addListener("click", addLatLng);
+    }
 
     fetchKMZFiles();
     connectWebSocket();
@@ -106,30 +97,28 @@ function createRulerButton(map) {
         console.log("Search term:", searchTerm);
         if (markers.hasOwnProperty(searchTerm)) {
           const marker = markers[searchTerm];
-          smoothPanTo(marker.getPosition());
+          smoothPanTo(marker.position);
           map.setZoom(20);
           getDataKapalMarker(searchTerm);
         } else {
           alert("Vessel not found.");
         }
       });
-
-    
   }
+  // TODO : KALAU GK GUNA HAPUS AJA
+  // function addLatLng(event) {
+  //   const path = poly.getPath();
 
-  function addLatLng(event) {
-  const path = poly.getPath();
-
-  // Because path is an MVCArray, we can simply append a new coordinate
-  // and it will automatically appear.
-  path.push(event.latLng);
-  // Add a new marker at the new plotted point on the polyline.
-  new google.maps.Marker({
-    position: event.latLng,
-    title: "#" + path.getLength(),
-    map: map,
-  });
-}
+  //   // Because path is an MVCArray, we can simply append a new coordinate
+  //   // and it will automatically appear.
+  //   path.push(event.latLng);
+  //   // Add a new marker at the new plotted point on the polyline.
+  //   new google.maps.Marker({
+  //     position: event.latLng,
+  //     title: "#" + path.getLength(),
+  //     map: map,
+  //   });
+  // }
 
   function smoothPanTo(latLng) {
     const panSteps = 30; // Number of steps for the pan animation
@@ -138,8 +127,8 @@ function createRulerButton(map) {
 
     const startLat = map.getCenter().lat();
     const startLng = map.getCenter().lng();
-    const endLat = latLng.lat();
-    const endLng = latLng.lng();
+    const endLat = latLng.lat;
+    const endLng = latLng.lng;
 
     let step = 0;
 
@@ -157,14 +146,6 @@ function createRulerButton(map) {
     panStep();
   }
 
-  function calculateMarkerSize(zoom) {
-    const metersPerPixel = (156543.03392 * Math.cos(0)) / Math.pow(2, zoom); // Using 0 as the latitude for simplicity
-    const sizeInMeters = 5; // Desired size in meters (1 km)
-    const sizeInPixels = sizeInMeters / metersPerPixel;
-    console.log(sizeInPixels * 0.1);
-    return sizeInPixels, sizeInPixels * 0.5;
-  }
-
   // url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
   function fetchKMZFiles() {
     fetch("/mappings")
@@ -180,6 +161,7 @@ function createRulerButton(map) {
   }
 
   function loadKMZLayer(filePath) {
+    console.log("Loading KMZ layer:", filePath);
     // const kmzUrl = `${getBaseURL()}public/${filePath}`;
     const kmzUrl = `https://golang.binav-avts.id/public/${filePath}`;
     // const kmzUrl = `https://a4d6-140-213-164-88.ngrok-free.app/public/testMWPA.kmz`;
@@ -196,7 +178,5 @@ function createRulerButton(map) {
 
     kmzLayers.push(kmzLayer);
   }
-
-  
 </script>
 {{ end }}
