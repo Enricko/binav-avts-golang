@@ -59,70 +59,104 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 	connMap.Store(server.IdIpKapal, stopChan)
 	retryDelay := 5 * time.Second
 
+	// Channel to control when to stop telnet connection
+	stopTelnet := make(chan struct{})
+	defer close(stopTelnet)
+	data, _ := dataMap.LoadOrStore(server.CallSign, NMEAData{})
+	nmeaData := data.(NMEAData)
+
+	// Start a goroutine to handle telnet connection
+	go func() {
+		defer func() {
+			connMap.Delete(server.IdIpKapal)
+			log.Printf("Stopped telnet connection for %s", server.CallSign)
+		}()
+
+		for {
+			select {
+			case <-stopTelnet:
+				return
+			default:
+				conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
+				if err != nil {
+					log.Printf("Error connecting to %s: %v", server.CallSign, err)
+					nmeaData.Status = "Disconnected"
+					dataMap.Store(server.CallSign, nmeaData)
+
+					time.Sleep(retryDelay)
+					retryDelay = min(2*retryDelay, 5*time.Minute) // Exponential backoff with a max delay of 5 minutes
+					continue
+				}
+
+				retryDelay = 5 * time.Second // Reset retry delay on successful connection
+				reader := bufio.NewReader(conn)
+
+				connClosed := make(chan struct{})
+				go func() {
+					defer func() {
+						conn.Close()
+						close(connClosed)
+					}()
+
+					nmeaData.Status = "Disconnected"
+					dataMap.Store(server.CallSign, nmeaData)
+					for {
+						select {
+						case <-stopTelnet:
+							return
+						default:
+							line, err := reader.ReadString('\n')
+							line = strings.TrimSpace(line)
+
+							if err != nil {
+								log.Printf("Error reading from %s: %v", server.CallSign, err)
+								nmeaData.Status = "Disconnected"
+								return
+							}
+
+							if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
+								nmeaData.GGA = line
+							} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
+								nmeaData.HDT = line
+							} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
+								nmeaData.VTG = line
+							}
+							nmeaData.Status = "Connected"
+							// fmt.Println(line)
+							dataMap.Store(server.CallSign, nmeaData)
+							// fmt.Println(server.IP, server.Port, line)
+						}
+					}
+				}()
+
+				<-connClosed
+				log.Printf("Disconnected from %s. Reconnecting...", server.CallSign)
+			}
+		}
+	}()
+
+	// Handle SQL operations with the sqlTicker
+	sqlTicker := time.NewTicker(5 * time.Second)
+	defer sqlTicker.Stop()
+
 	for {
 		select {
 		case <-stopChan:
-			log.Printf("Stopping connection to %s", server.CallSign)
-			dataMap.Store(server.CallSign, NMEAData{
-				GGA:    "No Data",
-				HDT:    "No Data",
-				VTG:    "No Data",
-				Status: "Disconnected",
-			})
+			// Stop telnet connection and exit
+			close(stopTelnet)
 			return
-		default:
-			conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
-			if err != nil {
-				log.Printf("Error connecting to %s: %v", server.CallSign, err)
-				dataMap.Store(server.CallSign, NMEAData{
-					GGA:    "No Data",
-					HDT:    "No Data",
-					VTG:    "No Data",
-					Status: "Disconnected",
-				})
-				time.Sleep(retryDelay)
-				retryDelay = min(2*retryDelay, 5*time.Minute) // Exponential backoff with a max delay of 5 minutes
-				continue
+		case <-sqlTicker.C:
+			fmt.Println(nmeaData)
+			// Execute SQL operations every 30 seconds
+			var ipKapal models.IPKapal
+			if err := database.DB.Where("call_sign = ?", server.CallSign).First(&ipKapal).Error; err != nil {
+				log.Printf("Error reading from %s: %v", server.CallSign, err)
+				return
 			}
-
-			retryDelay = 5 * time.Second // Reset retry delay on successful connection
-			reader := bufio.NewReader(conn)
-
-			connClosed := make(chan struct{})
-			go func() {
-				defer func() {
-					conn.Close()
-					close(connClosed)
-				}()
-				dataMap.Store(server.CallSign, NMEAData{
-					Status: "Connected",
-				})
-				for {
-					line, err := reader.ReadString('\n')
-					if err != nil {
-						log.Printf("Error reading from %s: %v", server.CallSign, err)
-						return
-					}
-					line = strings.TrimSpace(line)
-					data, _ := dataMap.LoadOrStore(server.CallSign, NMEAData{})
-					nmeaData := data.(NMEAData)
-
-					if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
-						nmeaData.GGA = line
-					} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
-						nmeaData.HDT = line
-					} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
-						nmeaData.VTG = line
-					}
-					nmeaData.Status = "Connected"
-					fmt.Println(line)
-					dataMap.Store(server.CallSign, nmeaData)
-				}
-			}()
-
-			<-connClosed
-			log.Printf("Disconnected from %s. Reconnecting...", server.CallSign)
-			connMap.Delete(server.IdIpKapal)
+			if ipKapal.IP != server.IP || ipKapal.Port != server.Port {
+				log.Printf("Error reading from %s: %v", server.CallSign)
+				return
+			}
 		}
 	}
 }
@@ -215,11 +249,11 @@ func (r *TelnetController) updateKapalDataMap() {
 		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
 		if !ok {
 			nmeaData = NMEAData{
-				GGA: "No Data",
+				// GGA: "No Data",
 				// GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
-				HDT: "No Data",
+				// HDT: "No Data",
 				// HDT: "$GPHDT,90.0,T*0C",
-				VTG:    "No Data",
+				// VTG:    "No Data",
 				Status: "Disconnected",
 			}
 		}

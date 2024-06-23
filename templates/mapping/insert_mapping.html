@@ -7,31 +7,34 @@
         <button type="button" class="btn-close" data-bs-target="#mappingTable" data-bs-toggle="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body ">
-        <input
-          class="form-control mb-3 " id="selectClient" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off"
-          autocapitalize="off">
-        <div class="form-floating-sm mb-3">
+        <form action="/mapping/data/submit" method="post" enctype="multipart/form-data">
+          
+          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
           <input
-            type="text"
-            class="form-control "
-            id="floatingInput"
-            placeholder="Name" />
-        </div>
+            class="form-control mb-3 " id="selectClient" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off"
+            autocapitalize="off" name="id_user">
+          <div class="form-floating-sm mb-3">
+            <input
+              type="text"
+              class="form-control "
+              id="floatingInput"
+              placeholder="Name" name="name"/>
+          </div>
 
-        <div class="mb-3">
-          <label for="formFile" class="form-label">Upload File</label>
-          <input class="form-control" type="file" id="formFile" />
-        </div>
-        <label for="formFile" class="form-label">Instalation</label>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
-          <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-danger" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
-        <button class="btn btn-primary" data-bs-target="#mappingTable" data-bs-toggle="modal">Submit</button>
+          <div class="mb-3">
+            <label for="formFile" class="form-label">Upload File</label>
+            <input class="form-control" type="file" id="formFile" name="file"/>
+          </div>
+          <label for="formFile" class="form-label">Instalation</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" name="status" checked>
+            <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+        </form>
       </div>
 
     </div>

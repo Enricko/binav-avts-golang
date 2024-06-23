@@ -21,8 +21,9 @@ function connectWebSocket() {
       if (data.hasOwnProperty(device)) {
         const newDevices = Object.keys(data);
         if (
-          data[device].kapal.status == true &&
-          data[device].nmea.gga != "No Data"
+          data[device].kapal.status == true 
+          // &&
+          // data[device].nmea.gga != "No Data"
         ) {
           // Check if there is a change in device data
           if (
@@ -71,10 +72,10 @@ function parseGGA(gga) {
   const gpsQualitys = [
     "Fix not valid",
     "GPS fix",
-    "Differential GPS fix (DGNSS), SBAS, OmniSTAR VBS, Beacon, RTX in GVBS mode",
+    "OmniSTAR VBS",
     "Not applicable",
     "RTK Fixed, xFill",
-    "RTK Float, OmniSTAR XP/HP",
+    "OmniSTAR XP/HP",
     "Location RTK, RTX",
     "INS Dead reckoning",
   ];
@@ -342,7 +343,7 @@ function dataKapalMarker(device) {
   let vtgData = parseVTG(data.nmea.vtg);
   document.getElementById("vesselName").textContent = device;
   document.getElementById("status_telnet").textContent = data.nmea.status;
-  document.getElementById("status_telnet").style.color = data.nmea.status
+  document.getElementById("status_telnet").style.color = data.nmea.status == "Connected"
     ? "green"
     : "red";
   document.getElementById("latitude").textContent = ggaData.latMinute;

@@ -14,6 +14,7 @@ func SetupRouter(r *gin.Engine) {
 	mappingController := controllers.NewMappingController()
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)
+	r.POST("/mapping/data/submit", mappingController.InsertMapping)
 	r.GET("/kmz/:id", mappingController.GetKMZFile)
 
 	userController := controllers.NewUserController()
