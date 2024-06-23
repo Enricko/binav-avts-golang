@@ -197,6 +197,71 @@ function createRulerButton(map) {
     kmzLayers.push(kmzLayer);
   }
 
-  
+  function changePage(evt, pageName) {
+  // Declare all variables
+  var i, tabcontent;
+
+  // Get all elements with class="tabcontent" and hide them
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+
+
+  // Show the current tab, and add an "active" class to the button that opened the tab
+  document.getElementById(pageName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+  function otpField() {
+    const inputs = document.getElementById("inputs");
+        
+        inputs.addEventListener("input", function (e) {
+          const target = e.target;
+          const val = target.value;
+        
+          if (isNaN(val)) {
+            target.value = "";
+            return;
+          }
+        
+          if (val != "") {
+            const next = target.nextElementSibling;
+            if (next) {
+              next.focus();
+            }
+          }
+        });
+        
+        inputs.addEventListener("keyup", function (e) {
+          const target = e.target;
+          const key = e.key.toLowerCase();
+        
+          if (key == "backspace" || key == "delete") {
+            target.value = "";
+            const prev = target.previousElementSibling;
+            if (prev) {
+              prev.focus();
+            }
+            return;
+          }
+        });
+  }
+
+// function sendOtpRequest() {
+//   fetch('/user/sendOtp', {
+//     method: 'POST',
+//     // body: JSON.stringify({ email: email }),
+//   })
+//   .then(response => response.json())
+//   .then(data => {
+//     "asdas" = "asda"
+//     // Handle response from server (e.g., success message, error message)
+//   })
+//   .catch(error => {
+//     console.error('Error sending OTP request:', error);
+//   });
+// }
+
 </script>
 {{ end }}
