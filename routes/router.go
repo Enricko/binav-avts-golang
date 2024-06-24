@@ -28,6 +28,9 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/user/getData/:id", userController.GetUser)
 	r.PUT("/user/update/:id", userController.UpdateData)
 
+	vesselController := controllers.NewVesselController()
+	r.GET("/vessel/data", vesselController.GetVessel)
+
 	otpController := controllers.NewOtpController()
 
 	r.POST("/user/sendOtp", otpController.InsertOtp)
