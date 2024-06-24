@@ -10,6 +10,7 @@ func SetupRouter(r *gin.Engine) {
 
 	mainController := controllers.NewController()
 	r.GET("/", mainController.Index)
+	r.GET("/login", mainController.Login)
 
 	mappingController := controllers.NewMappingController()
 	r.GET("/mappings", mappingController.GetMappings)
@@ -27,5 +28,12 @@ func SetupRouter(r *gin.Engine) {
 	r.DELETE("/user/delete/:id", userController.DeleteData)
 	r.GET("/user/getData/:id", userController.GetUser)
 	r.PUT("/user/update/:id", userController.UpdateData)
+
+	vesselController := controllers.NewVesselController()
+	r.GET("/vessel/data", vesselController.GetVessel)
+
+	otpController := controllers.NewOtpController()
+
+	r.POST("/user/sendOtp", otpController.InsertOtp)
 
 }

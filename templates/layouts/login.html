@@ -1,0 +1,259 @@
+{{ template "header" . }}
+<div style="display: flex; flex-direction: column; height: 100vh">
+  <nav class="navbar" style="background-color: #0e286c">
+    <div class="container-fluid p-2">
+      <span style="color: aliceblue; font-size: medium; padding-left: 10px"
+        >AVTS - Automated Vessel Tracking System</span
+      >
+    </div>
+  </nav>
+
+  <section class="d-flex h-100 w-100" style="overflow: auto">
+    <div id="carouselExample" class="carousel slide w-50 position-relative">
+      <div class="carousel-inner h-100 position-relative">
+        <div class="carousel-item active">
+          <img
+            src="/public/assets/intro1.jpg"
+            class="d-block"
+            alt="..."
+            style="object-position: center; object-fit: contain"
+          />
+        </div>
+        <div class="carousel-item">
+          <img
+            src="/public/assets/intro2.jpg"
+            class="d-block"
+            alt="..."
+            style="object-position: center; object-fit: contain"
+          />
+        </div>
+        <div class="carousel-item">
+          <img
+            src="/public/assets/intro3.jpg"
+            class="d-block"
+            alt="..."
+            style="object-position: center; object-fit: contain"
+          />
+        </div>
+      </div>
+      <button
+        class="carousel-control-prev"
+        type="button"
+        data-bs-target="#carouselExample"
+        data-bs-slide="prev"
+      >
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button
+        class="carousel-control-next"
+        type="button"
+        data-bs-target="#carouselExample"
+        data-bs-slide="next"
+      >
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+
+    <div class="w-100 p-4" style="background-color: white">
+      <div id="Login" class="tabcontent ">
+        <img
+          src="/public/assets/logo_transparent.png"
+          alt=""
+          style="height: 40px"
+        />
+        <br />
+        <br />
+        <h5 style="font-weight: 700">Hai Welcome to Binav AVTS</h5>
+        <h5 style="font-weight: 700">Log in to your Account</h5>
+        <br />
+        <form id="login-form">
+          <div class="mb-3">
+            <label for="exampleInputEmail1" class="form-label"
+              >Email address</label
+            >
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              aria-describedby="emailHelp"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="exampleInputPassword1" class="form-label"
+              >Password</label
+            >
+            <input type="password" class="form-control" id="password" />
+          </div>
+          <div class="d-flex flex-row-reverse">
+            <button  type="button" class="btn btn-link mb-3 tablinks" onclick="changePage(event, 'ForgotPassword')">
+              Forgot Password?
+            </button>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" id="btn-login">
+            Login
+          </button>
+        </form>
+      </div>
+
+      <div id="ForgotPassword" class="tabcontent " style="display: none;">
+        <h4>Enter your email and we'll send you an OTP code to reset your password</h4>
+        <br>
+        <form action="">
+          <div class="mb-3">
+            <label for="exampleInputEmail1" class="form-label"
+              >Email address</label
+            >
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              aria-describedby="emailHelp"
+            />
+          </div>
+          
+        </form>
+        <button type=" button" class="btn btn-primary w-100 mb-3 tablinks" onclick="changePage(event, 'OtpField')">
+          Send OTP Code
+        </button>
+        
+      </div>
+
+      <div id="OtpField" class="tabcontent " style="display: none;">
+        <h4>Enter your email and we'll send you an OTP code to reset your password</h4>
+        <br>
+        <form action="">
+          <div class="otp-field mb-4">
+            <input type="number" />
+            <input type="number" disabled />
+            <input type="number" disabled />
+            <input type="number" disabled />
+            <input type="number" disabled />
+            <input type="number" disabled />
+          </div>
+          <button type="submit" class="btn btn-primary w-100 tablinks" id="btn-login" onclick="">
+            Send 
+          </button>
+        </form>
+        
+      </div>
+    </div>
+
+    <!-- <section id="loginPage" class="carousel slide w-50 ">
+      <div class="carousel-inner">
+        <div
+          class="carousel-item active w-100 p-4"
+          style="background-color: white"
+        >
+          <img
+            src="assets/logo_transparent.png"
+            alt=""
+            style="height: 40px"
+          />
+          <br />
+          <br />
+          <h5 style="font-weight: 700">Hai Welcome to Binav AVTS</h5>
+          <h5 style="font-weight: 700">Log in to your Account</h5>
+          <br />
+          <form id="login-form">
+            <div class="mb-3">
+              <label for="exampleInputEmail1" class="form-label"
+                >Email address</label
+              >
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                aria-describedby="emailHelp"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="exampleInputPassword1" class="form-label"
+                >Password</label
+              >
+              <input type="password" class="form-control" id="password" />
+            </div>
+            <div class="d-flex flex-row-reverse">
+              <button
+                type="button"
+                data-bs-target="#loginPage"
+                data-bs-slide="next"
+                class="btn btn-link mb-3"
+              >
+                Forgot Password?
+              </button>
+            </div>
+            <button
+              type="submit"
+              class="btn btn-primary w-100"
+              id="btn-login"
+            >
+              Login
+            </button>
+
+            <i class="fa-solid fa-bars"></i>
+          </form>
+        </div>
+        <div
+          class="carousel-item w-100 p-4"
+          style="background-color: white"
+        >
+          <img
+            src="assets/logo_transparent.png"
+            alt=""
+            style="height: 40px"
+          />
+          <br />
+          <br />
+          <h5 style="font-weight: 700">Hai Welcome to Binav AVTS</h5>
+          <h5 style="font-weight: 700">Log in to your Account</h5>
+          <br />
+          <form id="login-form">
+            <div class="mb-3">
+              <label for="exampleInputEmail1" class="form-label"
+                >Email address</label
+              >
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                aria-describedby="emailHelp"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="exampleInputPassword1" class="form-label"
+                >Password</label
+              >
+              <input type="password" class="form-control" id="password" />
+            </div>
+            <div class="d-flex flex-row-reverse">
+              <button
+                type="button"
+                data-bs-target="#loginPage"
+                data-bs-slide="next"
+                class="btn btn-link mb-3"
+              >
+                Forgot Password?
+              </button>
+            </div>
+            <button
+              type="submit"
+              class="btn btn-primary w-100"
+              id="btn-login"
+            >
+              Login
+            </button>
+
+            <i class="fa-solid fa-bars"></i>
+          </form>
+        </div>
+      </div>
+    </section> -->
+  </section>
+</div>
+
+{{ template "footer" . }}
