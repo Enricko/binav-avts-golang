@@ -5,8 +5,7 @@
   tabindex="-2"
   role="dialog"
   aria-labelledby="insertClientLabel"
-  aria-hidden="true"
->
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -16,57 +15,52 @@
           class="btn-close"
           data-bs-target="#clientTable"
           data-bs-toggle="modal"
-          aria-label="Close"
-        ></button>
+          aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form id="formInsertClient">
+          
+          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
           <div class="form-floating-sm mb-3">
             <input
               type="text"
               class="form-control"
               id="floatingInput"
-              placeholder="Name"
-            />
+              placeholder="Name" name="name" />
           </div>
           <div class="form-floating-sm mb-3">
             <input
               type="email"
               class="form-control"
               id="floatingInput"
-              placeholder="Email"
-            />
+              placeholder="Email" name="email" />
           </div>
           <div class="form-floating-sm mb-3">
             <input
               type="password"
               class="form-control"
               id="floatingInput"
-              placeholder="Password"
-            />
+              placeholder="Password" name="password" />
           </div>
           <div class="form-floating-sm mb-3">
             <input
               type="password"
               class="form-control"
               id="floatingInput"
-              placeholder="Password Confirmation"
-            />
+              placeholder="Password Confirmation" name="password_confirmation" />
           </div>
         </form>
       </div>
       <div class="modal-footer">
         <button
-        id="submitClientButton"
+          id="submitClientButton"
           class="btn btn-primary"
-          data-bs-target="#clientTable"
-        >
+          data-bs-target="#clientTable">
           Submit
         </button>
         <button
           class="btn btn-danger"
-          data-bs-dismiss="modal"
-        >
+          data-bs-dismiss="modal">
           Cancel
         </button>
       </div>

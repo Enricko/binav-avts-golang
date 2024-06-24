@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"crypto/rand"
 	"fmt"
 	"golang-app/app/models"
 	"golang-app/database"
+	"math/big"
 	"net/http"
 	"reflect"
 	"sort"
@@ -12,9 +14,39 @@ import (
 
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 )
+
+func hashPassword(password string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+
+// Function to verify a password
+func verifyPassword(password, hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+func generateRandomString(length int) (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charsetLength := big.NewInt(int64(len(charset)))
+	var result strings.Builder
+
+	for i := 0; i < length; i++ {
+		randomIndex, err := rand.Int(rand.Reader, charsetLength)
+		if err != nil {
+			return "", err
+		}
+		result.WriteByte(charset[randomIndex.Int64()])
+	}
+
+	return result.String(), nil
+}
 
 type UserController struct {
 	// Dependent services
@@ -136,28 +168,67 @@ func (r *UserController) GetAllUser(c *gin.Context) {
 }
 
 func (r *UserController) InsertData(c *gin.Context) {
-	var data models.User
-	if err := c.ShouldBindJSON(&data); err != nil {
+	var requestData map[string]interface{}
+	if err := c.BindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON"})
+		return
+	}
+
+	name, nameExists := requestData["name"].(string)
+	email, emailExists := requestData["email"].(string)
+	password, passwordExists := requestData["password"].(string)
+	passwordConfirmation, passwordConfirmationExists := requestData["password_confirmation"].(string)
+
+	// Validate required fields
+	if !nameExists || !emailExists || !passwordExists || !passwordConfirmationExists {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Missing required fields"})
+		return
+	}
+	if password != passwordConfirmation {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Password and Password Confirmation must be the same"})
+		return
+	}
+
+	// Hash the password
+	hashedPassword, err := hashPassword(password)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	err := database.DB.Create(&data).Error
+	// Generate id_user (assuming it needs to be unique and not null)
+	idUser, err := generateRandomString(25)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Manually create map for the user data
+	userData := models.User{
+		IdUser:  idUser,
+		Name:     name,
+		Email:    email,
+		Password: hashedPassword,
+		// Add other fields as needed
+	}
+
+	fmt.Println(userData)
+
+	// Attempt to insert user data into the database
+	err = database.DB.Create(&userData).Error
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
 			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
 			return
-
-		} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
-			c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
-			return
 		}
 
+		// Handle other unique constraint errors or internal server errors
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Data Inserted"})
+
 }
 
 func (r *UserController) UpdateData(c *gin.Context) {

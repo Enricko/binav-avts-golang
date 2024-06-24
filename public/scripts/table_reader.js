@@ -164,8 +164,11 @@ $('#vesselTable').on('shown.bs.modal', function () {
                 { data: 'builder', className: 'text-center' },
                 { data: 'year_built', className: 'text-center' },
                 { data: 'heading_direction', className: 'text-center' },
-                { data: 'size', className: 'text-center' },
-                { data: 'xml_file', className: 'text-center' },
+                { data: 'width_m', className: 'text-center' },
+                { data: 'height_m', className: 'text-center' },
+                { data: 'top_range', className: 'text-center' },
+                { data: 'left_range', className: 'text-center' },
+                { data: 'image_map', className: 'text-center' },
                 { data: 'image', className: 'text-center' },
                 { 
                     data: 'aksi',
@@ -206,7 +209,8 @@ $('#vesselTable').on('hidden.bs.modal', function () {
 
 // FUNCTION CREATE 
 document.getElementById('submitClientButton').addEventListener('click', function(event) {
-    var formData = FormData(document.getElementById("formInsertClient"));
+    var formData = new FormData(document.getElementById("formInsertClient"));
+    console.log(formData);
     event.preventDefault();
     // var formData = new FormData(event.target);
     var json = JSON.stringify(Object.fromEntries(formData));
