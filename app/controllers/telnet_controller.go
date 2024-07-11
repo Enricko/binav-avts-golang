@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"golang-app/app/models"
 	"golang-app/database"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
+
 )
 
 type TelnetController struct {
@@ -45,7 +48,7 @@ type NMEAData struct {
 	GGA    string `json:"gga,omitempty"`
 	HDT    string `json:"hdt,omitempty"`
 	VTG    string `json:"vtg,omitempty"`
-	Status string `json:"status"` // Added status field
+	Status string `json:"status"`
 }
 
 type KapalData struct {
@@ -53,22 +56,124 @@ type KapalData struct {
 	NMEA  NMEAData     `json:"nmea"`
 }
 
-func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *sync.Map, wg *sync.WaitGroup, stopChan chan struct{}) {
+func (r *TelnetController) StartTelnetConnections() {
+	var wg sync.WaitGroup
+	var servers []models.IPKapal
+
+	err := database.DB.Find(&servers).Error
+	if err != nil {
+		log.Println("Error fetching Telnet servers:", err)
+		return
+	}
+
+	for _, server := range servers {
+		wg.Add(1)
+				var coordinate models.Coordinate
+
+				if err := database.DB.Preload("CoordinateGga").Preload("CoordinateVtg").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&coordinate).Error; err != nil {
+					log.Printf("Error reading from %s: %v", server.CallSign, err)
+					return
+				}
+
+		log.Printf("CoordinateGga: %+v",*coordinate.IdCoorGGA, *coordinate.CoordinateGga)
+		log.Printf("CoordinateHdt: %+v",*coordinate.IdCoorHDT, coordinate.CoordinateHdt)
+		log.Printf("CoordinateVtg: %+v",*coordinate.IdCoorVTG, coordinate.CoordinateVtg)
+				// nmea := NMEAData{
+				// 	Status: "Disconnected",
+				// }
+				// if coordinate.IdCoorGGA != nil {
+				// 	gga := unparseGGA(*coordinate.CoordinateGga)
+				// 	nmea.GGA = gga
+				// }
+				// if coordinate.IdCoorHDT != nil {
+				// 	hdt := unparseHDT(*coordinate.CoordinateHdt)
+				// 	nmea.HDT = hdt
+				// }
+				// if coordinate.IdCoorVTG != nil {
+				// 	vtg := unparseVTG(*coordinate.CoordinateVtg)
+				// 	nmea.VTG = vtg
+				// }
+				// r.KapalDataMap.Store(coordinate.CallSign, KapalData{
+				// 	NMEA: nmea,
+				// })
+
+		// stopChan := make(chan struct{})
+		// go r.handleTelnetConnection(server, &wg, stopChan)
+	}
+
+	go func() {
+		for {
+			r.updateKapalDataMap()
+			time.Sleep(r.UpdateInterval)
+		}
+	}()
+
+	// go func() {
+	// 	for {
+	// 		time.Sleep(30 * time.Second)
+	// 		var updatedServers []models.IPKapal
+	// 		err := database.DB.Find(&updatedServers).Error
+	// 		if err != nil {
+	// 			log.Println("Error fetching updated Telnet servers:", err)
+	// 			continue
+	// 		}
+
+	// 		currentServerMap := make(map[uint]models.IPKapal)
+	// 		for _, server := range servers {
+	// 			currentServerMap[server.IdIpKapal] = server
+	// 		}
+
+	// 		updatedServerMap := make(map[uint]models.IPKapal)
+	// 		for _, server := range updatedServers {
+	// 			updatedServerMap[server.IdIpKapal] = server
+	// 		}
+
+	// 		for id, updatedServer := range updatedServerMap {
+	// 			if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
+	// 				if stopChan, ok := r.ConnMap.Load(id); ok {
+	// 					close(stopChan.(chan struct{}))
+	// 					r.ConnMap.Delete(id)
+	// 				}
+	// 				wg.Add(1)
+	// 				stopChan := make(chan struct{})
+	// 				go r.handleTelnetConnection(updatedServer, &wg, stopChan)
+	// 			}
+	// 		}
+
+	// 		for id := range currentServerMap {
+	// 			if _, exists := updatedServerMap[id]; !exists {
+	// 				if stopChan, ok := r.ConnMap.Load(id); ok {
+	// 					close(stopChan.(chan struct{}))
+	// 					r.ConnMap.Delete(id)
+	// 				}
+	// 				r.DataMap.Delete(currentServerMap[id].CallSign)
+	// 			}
+	// 		}
+
+	// 		servers = updatedServers
+	// 	}
+	// }()
+
+	wg.Wait()
+}
+
+func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *sync.WaitGroup, stopChan chan struct{}) {
 	defer wg.Done()
 
-	connMap.Store(server.IdIpKapal, stopChan)
+	r.ConnMap.Store(server.IdIpKapal, stopChan)
 	retryDelay := 5 * time.Second
-
-	// Channel to control when to stop telnet connection
 	stopTelnet := make(chan struct{})
 	defer close(stopTelnet)
-	data, _ := dataMap.LoadOrStore(server.CallSign, NMEAData{})
+
+	data, _ := r.DataMap.LoadOrStore(server.CallSign, NMEAData{})
 	nmeaData := data.(NMEAData)
 
-	// Start a goroutine to handle telnet connection
+	var lastActivity time.Time
+	lastCoordinateInsertTime := time.Now()
+
 	go func() {
 		defer func() {
-			connMap.Delete(server.IdIpKapal)
+			r.ConnMap.Delete(server.IdIpKapal)
 			log.Printf("Stopped telnet connection for %s", server.CallSign)
 		}()
 
@@ -81,30 +186,33 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 				if err != nil {
 					log.Printf("Error connecting to %s: %v", server.CallSign, err)
 					nmeaData.Status = "Disconnected"
-					dataMap.Store(server.CallSign, nmeaData)
+					r.DataMap.Store(server.CallSign, nmeaData)
 
 					time.Sleep(retryDelay)
-					retryDelay = min(2*retryDelay, 5*time.Minute) // Exponential backoff with a max delay of 5 minutes
+					retryDelay = min(2*retryDelay, 5*time.Minute)
 					continue
 				}
 
-				retryDelay = 5 * time.Second // Reset retry delay on successful connection
+				retryDelay = 5 * time.Second
 				reader := bufio.NewReader(conn)
-
 				connClosed := make(chan struct{})
+				lastActivity = time.Now()
+
 				go func() {
 					defer func() {
 						conn.Close()
 						close(connClosed)
 					}()
 
-					nmeaData.Status = "Disconnected"
-					dataMap.Store(server.CallSign, nmeaData)
+					nmeaData.Status = "Connected"
+					r.DataMap.Store(server.CallSign, nmeaData)
+
 					for {
 						select {
 						case <-stopTelnet:
 							return
 						default:
+							conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 							line, err := reader.ReadString('\n')
 							line = strings.TrimSpace(line)
 
@@ -114,6 +222,8 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 								return
 							}
 
+							lastActivity = time.Now()
+
 							if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
 								nmeaData.GGA = line
 							} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
@@ -121,10 +231,14 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 							} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
 								nmeaData.VTG = line
 							}
-							nmeaData.Status = "Connected"
-							// fmt.Println(line)
-							dataMap.Store(server.CallSign, nmeaData)
-							// fmt.Println(server.IP, server.Port, line)
+							r.DataMap.Store(server.CallSign, nmeaData)
+
+							if time.Since(lastCoordinateInsertTime) >= 15*time.Second {
+								lastCoordinateInsertTime = time.Now()
+								if err := r.createOrUpdateCoordinate(server.CallSign, &lastCoordinateInsertTime, nmeaData); err != nil {
+									log.Printf("Error creating or updating coordinate: %v", err)
+								}
+							}
 						}
 					}
 				}()
@@ -135,106 +249,21 @@ func handleTelnetConnection(server models.IPKapal, dataMap *sync.Map, connMap *s
 		}
 	}()
 
-	// Handle SQL operations with the sqlTicker
 	sqlTicker := time.NewTicker(5 * time.Second)
 	defer sqlTicker.Stop()
 
 	for {
 		select {
 		case <-stopChan:
-			// Stop telnet connection and exit
 			close(stopTelnet)
 			return
 		case <-sqlTicker.C:
-			fmt.Println(nmeaData)
-			// Execute SQL operations every 30 seconds
-			var ipKapal models.IPKapal
-			if err := database.DB.Where("call_sign = ?", server.CallSign).First(&ipKapal).Error; err != nil {
-				log.Printf("Error reading from %s: %v", server.CallSign, err)
-				return
-			}
-			if ipKapal.IP != server.IP || ipKapal.Port != server.Port {
-				log.Printf("Error reading from %s: %v", server.CallSign)
-				return
+			if time.Since(lastActivity) > 10*time.Second {
+				nmeaData.Status = "Disconnected"
+				r.DataMap.Store(server.CallSign, nmeaData)
 			}
 		}
 	}
-}
-
-func (r *TelnetController) StartTelnetConnections() {
-	var wg sync.WaitGroup
-
-	// Fetch initial Telnet servers from the database
-	var servers []models.IPKapal
-	err := database.DB.Find(&servers).Error
-	if err != nil {
-		log.Println("Error fetching Telnet servers:", err)
-		return
-	}
-
-	for _, server := range servers {
-		wg.Add(1)
-		stopChan := make(chan struct{})
-		go handleTelnetConnection(server, r.DataMap, r.ConnMap, &wg, stopChan)
-	}
-
-	// Start a goroutine to update KapalDataMap every 5 seconds
-	go func() {
-		for {
-			r.updateKapalDataMap()
-			time.Sleep(r.UpdateInterval)
-		}
-	}()
-
-	// Goroutine to monitor database changes
-	go func() {
-		for {
-			time.Sleep(30 * time.Second) // Adjust the interval as needed
-			var updatedServers []models.IPKapal
-			err := database.DB.Find(&updatedServers).Error
-			if err != nil {
-				log.Println("Error fetching updated Telnet servers:", err)
-				continue
-			}
-
-			currentServerMap := make(map[uint]models.IPKapal)
-			for _, server := range servers {
-				currentServerMap[server.IdIpKapal] = server
-			}
-
-			updatedServerMap := make(map[uint]models.IPKapal)
-			for _, server := range updatedServers {
-				updatedServerMap[server.IdIpKapal] = server
-			}
-
-			for id, updatedServer := range updatedServerMap {
-				if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
-					if stopChan, ok := r.ConnMap.Load(id); ok {
-						close(stopChan.(chan struct{}))
-						r.ConnMap.Delete(id)
-					}
-					wg.Add(1)
-					stopChan := make(chan struct{})
-					go handleTelnetConnection(updatedServer, r.DataMap, r.ConnMap, &wg, stopChan)
-				}
-			}
-
-			for id := range currentServerMap {
-				if _, exists := updatedServerMap[id]; !exists {
-					if stopChan, ok := r.ConnMap.Load(id); ok {
-						close(stopChan.(chan struct{}))
-						r.ConnMap.Delete(id)
-					}
-					r.DataMap.Delete(currentServerMap[id].CallSign)
-				}
-			}
-
-			servers = updatedServers
-		}
-	}()
-
-	// Wait for all goroutines to finish
-	wg.Wait()
 }
 
 func (r *TelnetController) updateKapalDataMap() {
@@ -248,14 +277,7 @@ func (r *TelnetController) updateKapalDataMap() {
 	for _, kapal := range activeKapal {
 		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
 		if !ok {
-			nmeaData = NMEAData{
-				// GGA: "No Data",
-				// GGA: "$GPGGA,120000.00,0116.367,S,11649.483,E,1,08,0.9,10.0,M,-34.0,M,,*47",
-				// HDT: "No Data",
-				// HDT: "$GPHDT,90.0,T*0C",
-				// VTG:    "No Data",
-				Status: "Disconnected",
-			}
+			nmeaData = NMEAData{Status: "Disconnected"}
 		}
 
 		r.KapalDataMap.Store(kapal.CallSign, KapalData{
@@ -263,6 +285,124 @@ func (r *TelnetController) updateKapalDataMap() {
 			NMEA:  nmeaData.(NMEAData),
 		})
 	}
+}
+
+func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordinateInsertTime *time.Time, nmeaData NMEAData) error {
+	var lastCoordinate models.Coordinate
+	result := database.DB.Where("call_sign = ?", callSign).Order("created_at desc").First(&lastCoordinate)
+
+	kapal, ok := r.KapalDataMap.Load(callSign)
+	if !ok {
+		return fmt.Errorf("kapal not found in dataMap")
+	}
+
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		fmt.Errorf("error fetching last coordinate: %w", result.Error)
+	}
+	if result.RowsAffected <= 0 {
+		if err := database.DB.Create(&models.Coordinate{
+			CallSign: callSign,
+			SeriesID: 1,
+		}).Error; err != nil {
+			return fmt.Errorf("error creating new coordinate: %w", err)
+		}
+	} else if time.Since(lastCoordinate.CreatedAt) >= 5*time.Minute {
+		if err := database.DB.Create(&models.Coordinate{
+			CallSign: callSign,
+			SeriesID: lastCoordinate.SeriesID + 1,
+		}).Error; err != nil {
+			return fmt.Errorf("error creating new coordinate: %w", err)
+		}
+	}
+
+	if lastCoordinate.IdCoorGGA == nil && nmeaData.Status == "Connected" && nmeaData.GGA != "" {
+		gga, err := parseGGA(nmeaData.GGA)
+		if err != nil {
+			return fmt.Errorf("error parsing GGA: %w", err)
+		}
+
+		coorGGA := models.CoordinateGga{
+			CallSign:            callSign,
+			MessageID:           gga.MessageID,
+			UtcPosition:         gga.UtcPosition,
+			Latitude:            gga.Latitude,
+			DirectionLatitude:   gga.DirectionLatitude,
+			Longitude:           gga.Longitude,
+			DirectionLongitude:  gga.DirectionLongitude,
+			GpsQualityIndicator: gga.GpsQualityIndicator,
+			NumberSv:            gga.NumberSv,
+			Hdop:                gga.Hdop,
+			OrthometricHeight:   gga.OrthometricHeight,
+			UnitMeasure:         gga.UnitMeasure,
+			GeoidSeparation:     gga.GeoidSeparation,
+			GeoidMeasure:        gga.GeoidMeasure,
+		}
+
+		if err := database.DB.Create(&coorGGA).Error; err != nil {
+			return fmt.Errorf("error creating new GGA: %w", err)
+		}
+
+		idCoorGGA := coorGGA.IdCoorGGA
+		lastCoordinate.IdCoorGGA = &idCoorGGA
+
+		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
+			return fmt.Errorf("failed to update coordinate: %w", err)
+		}
+	}
+	if lastCoordinate.IdCoorHDT == nil && nmeaData.Status == "Connected" && nmeaData.HDT != "" {
+		hdt, err := parseHDT(nmeaData.HDT)
+		if err != nil {
+			return fmt.Errorf("error parsing HDT: %w", err)
+		}
+		coorHDT := models.CoordinateHdt{
+			CallSign:      callSign,
+			MessageID:     hdt.MessageID,
+			HeadingDegree: hdt.HeadingDegree + float32(kapal.(KapalData).Kapal.Calibration),
+			Checksum:      hdt.Checksum,
+		}
+
+		if err := database.DB.Create(&coorHDT).Error; err != nil {
+			return fmt.Errorf("error creating new GGA: %w", err)
+		}
+		idCoorHDT := coorHDT.IdCoorHDT
+		lastCoordinate.IdCoorHDT = &idCoorHDT
+
+		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
+			return fmt.Errorf("failed to update coordinate: %w", err)
+		}
+	}
+
+	if lastCoordinate.IdCoorVTG == nil && nmeaData.Status == "Connected" && nmeaData.VTG != "" {
+		vtg, err := parseVTG(nmeaData.VTG)
+		if err != nil {
+			return fmt.Errorf("error parsing VTG: %w", err)
+		}
+		coorVTG := models.CoordinateVtg{
+			CallSign:            callSign,
+			MessageID:           vtg.MessageID,
+			TrackDegreeTrue:     vtg.TrackDegreeTrue,
+			TrueNorth:           vtg.TrueNorth,
+			TrackDegreeMagnetic: vtg.TrackDegreeMagnetic,
+			MagneticNorth:       vtg.MagneticNorth,
+			SpeedInKnots:        vtg.SpeedInKnots,
+			MeasuredKnots:       vtg.MeasuredKnots,
+			Kph:                 vtg.Kph,
+			MeasuredKph:         vtg.MeasuredKph,
+			ModeIndicator:       vtg.ModeIndicator,
+			Checksum:            vtg.Checksum,
+		}
+		if err := database.DB.Create(&coorVTG).Error; err != nil {
+			return fmt.Errorf("error creating new VTG: %w", err)
+		}
+		idCoorVTG := coorVTG.IdCoorVTG
+		lastCoordinate.IdCoorVTG = &idCoorVTG
+		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
+			return fmt.Errorf("failed to update coordinate: %w", err)
+		}
+	}
+
+	r.DataMap.Store(callSign, nmeaData)
+	return nil
 }
 
 func (r *TelnetController) KapalTelnetWebsocketHandler(c *gin.Context) {
@@ -305,197 +445,214 @@ func min(a, b time.Duration) time.Duration {
 	return b
 }
 
-func storeGGA(data, callSign string) {
-	coordinateGga, err := parseGGA(data)
-	if err != nil {
-		log.Printf("Error parsing GGA data: %v", err)
-		return
-	}
-	coordinateGga.CallSign = callSign
-
-	err = database.DB.Save(&coordinateGga).Error
-	if err != nil {
-		log.Printf("Error storing GGA data: %v", err)
-	}
-}
-
-func storeHDT(data, callSign string) {
-	coordinateHdt, err := parseHDT(data)
-	if err != nil {
-		log.Printf("Error parsing HDT data: %v", err)
-		return
-	}
-	coordinateHdt.CallSign = callSign
-
-	err = database.DB.Save(&coordinateHdt).Error
-	if err != nil {
-		log.Printf("Error storing HDT data: %v", err)
-	}
-}
-
-func storeVTG(data, callSign string) {
-	coordinateVtg, err := parseVTG(data)
-	if err != nil {
-		log.Printf("Error parsing VTG data: %v", err)
-		return
-	}
-	coordinateVtg.CallSign = callSign
-
-	err = database.DB.Save(&coordinateVtg).Error
-	if err != nil {
-		log.Printf("Error storing VTG data: %v", err)
-	}
-}
-
-// Function to parse GGA sentence
-func parseGGA(sentence string) (models.CoordinateGga, error) {
-	parts := strings.Split(sentence, ",")
-	if len(parts) < 15 {
-		return models.CoordinateGga{}, fmt.Errorf("invalid GGA sentence: %s", sentence)
+// Example: $GPGGA,123456.78,4916.45,N,12311.12,W,1,08,0.9,545.4,M,46.9,M,,*47
+func parseGGA(line string) (models.CoordinateGga, error) {
+	fields := strings.Split(line, ",")
+	if len(fields) < 15 {
+		return models.CoordinateGga{}, errors.New("invalid GGA sentence")
 	}
 
-	utcPosition, err := strconv.ParseFloat(parts[1], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
+	utcPosition, _ := strconv.ParseFloat(fields[1], 32)
+	latitude, _ := strconv.ParseFloat(fields[2], 32)
+	longitude, _ := strconv.ParseFloat(fields[4], 32)
+	numberSv, _ := strconv.Atoi(fields[7])
+	hdop, _ := strconv.ParseFloat(fields[8], 32)
+	orthometricHeight, _ := strconv.ParseFloat(fields[9], 32)
+	geoidSeparation, _ := strconv.ParseFloat(fields[11], 32)
 
-	latitude, err := strconv.ParseFloat(parts[2], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	longitude, err := strconv.ParseFloat(parts[4], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	numberSv, err := strconv.Atoi(parts[7])
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	hdop, err := strconv.ParseFloat(parts[8], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	orthometricHeight, err := strconv.ParseFloat(parts[9], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	geoidSeparation, err := strconv.ParseFloat(parts[11], 32)
-	if err != nil {
-		return models.CoordinateGga{}, err
-	}
-
-	coordinateGga := models.CoordinateGga{
-		MessageID:           parts[0],
+	return models.CoordinateGga{
+		MessageID:           fields[0],
 		UtcPosition:         float32(utcPosition),
 		Latitude:            float32(latitude),
-		DirectionLatitude:   parts[3],
+		DirectionLatitude:   fields[3],
 		Longitude:           float32(longitude),
-		DirectionLongitude:  parts[5],
-		GpsQualityIndicator: models.GpsQuality(parts[6]),
+		DirectionLongitude:  fields[5],
+		GpsQualityIndicator: models.GpsQuality(fields[6]),
 		NumberSv:            numberSv,
 		Hdop:                float32(hdop),
 		OrthometricHeight:   float32(orthometricHeight),
-		UnitMeasure:         parts[10],
+		UnitMeasure:         fields[10],
 		GeoidSeparation:     float32(geoidSeparation),
-		GeoidMeasure:        parts[12],
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
-	}
-
-	return coordinateGga, nil
+		GeoidMeasure:        fields[12],
+	}, nil
 }
 
-// Function to parse HDT sentence
-func parseHDT(sentence string) (models.CoordinateHdt, error) {
-	parts := strings.Split(sentence, ",")
-	if len(parts) < 3 {
-		return models.CoordinateHdt{}, fmt.Errorf("invalid HDT sentence: %s", sentence)
+// Example: $GPHDT,274.07,T*03
+func parseHDT(line string) (models.CoordinateHdt, error) {
+	fields := strings.Split(line, ",")
+	if len(fields) < 3 {
+		return models.CoordinateHdt{}, errors.New("invalid HDT sentence")
 	}
 
-	headingDegree, err := strconv.ParseFloat(parts[1], 32)
-	if err != nil {
-		return models.CoordinateHdt{}, err
-	}
+	headingDegree, _ := strconv.ParseFloat(fields[1], 32)
 
-	coordinateHdt := models.CoordinateHdt{
-		MessageID:     parts[0],
+	return models.CoordinateHdt{
+		MessageID:     fields[0],
 		HeadingDegree: float32(headingDegree),
-		Checksum:      parts[2],
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}
-
-	return coordinateHdt, nil
+		Checksum:      fields[2],
+	}, nil
 }
 
-// Function to parse VTG sentence
-func parseVTG(sentence string) (models.CoordinateVtg, error) {
-	parts := strings.Split(sentence, ",")
-	if len(parts) < 9 {
-		return models.CoordinateVtg{}, fmt.Errorf("invalid VTG sentence: %s", sentence)
+// Example: $GPVTG,054.7,T,034.4,M,005.5,N,010.2,K*48
+func parseVTG(line string) (models.CoordinateVtg, error) {
+	fields := strings.Split(line, ",")
+	if len(fields) < 10 {
+		return models.CoordinateVtg{}, errors.New("invalid VTG sentence")
 	}
 
-	var trackDegreeTrue, trackDegreeMagnetic, speedInKnots, kph float64
-	var err error
+	trackDegreeTrue, _ := strconv.ParseFloat(fields[1], 32)
+	trackDegreeMagnetic, _ := strconv.ParseFloat(fields[3], 32)
+	speedInKnots, _ := strconv.ParseFloat(fields[5], 32)
+	kph, _ := strconv.ParseFloat(fields[7], 32)
 
-	if parts[1] != "" {
-		trackDegreeTrue, err = strconv.ParseFloat(parts[1], 32)
-		if err != nil {
-			return models.CoordinateVtg{}, err
-		}
-	}
-
-	if parts[3] != "" {
-		trackDegreeMagnetic, err = strconv.ParseFloat(parts[3], 32)
-		if err != nil {
-			return models.CoordinateVtg{}, err
-		}
-	}
-
-	if parts[5] != "" {
-		speedInKnots, err = strconv.ParseFloat(parts[5], 32)
-		if err != nil {
-			return models.CoordinateVtg{}, err
-		}
-	}
-
-	if parts[7] != "" {
-		kph, err = strconv.ParseFloat(parts[7], 32)
-		if err != nil {
-			return models.CoordinateVtg{}, err
-		}
-	}
-
-	coordinateVtg := models.CoordinateVtg{
-		MessageID:           parts[0],
+	return models.CoordinateVtg{
+		MessageID:           fields[0],
 		TrackDegreeTrue:     float32(trackDegreeTrue),
-		TrueNorth:           parts[2],
+		TrueNorth:           fields[2],
 		TrackDegreeMagnetic: float32(trackDegreeMagnetic),
-		MagneticNorth:       parts[4],
+		MagneticNorth:       fields[4],
 		SpeedInKnots:        float32(speedInKnots),
-		MeasuredKnots:       parts[6],
+		MeasuredKnots:       fields[6],
 		Kph:                 float32(kph),
-		MeasuredKph:         parts[8],
-		Checksum:            parts[9], // Assuming the checksum is not used
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
-	}
+		MeasuredKph:         fields[8],
+		Checksum:            fields[9],
+		ModeIndicator:       determineModeIndicator(string(fields[9][0])), // Assuming mode indicator is at index 10
+	}, nil
+}
 
-	// Check for the existence of a checksum (indicated by an asterisk)
-	if strings.Contains(parts[8], "*") {
-		checksumParts := strings.Split(parts[8], "*")
-		if len(checksumParts) == 2 {
-			coordinateVtg.MeasuredKph = checksumParts[0]
-			coordinateVtg.Checksum = checksumParts[1]
-		} else {
-			coordinateVtg.Checksum = checksumParts[0]
-		}
+func determineModeIndicator(value string) models.ModeIndicator {
+	switch value {
+	case "A":
+		return models.AutonomousMode
+	case "D":
+		return models.DifferentialMode
+	case "E":
+		return models.EstimatedMode
+	case "M":
+		return models.ManualInputMode
+	case "S":
+		return models.SimulatorMode
+	default:
+		return models.DataNotValidMode
 	}
+}
 
-	return coordinateVtg, nil
+func unparseGGA(gga models.CoordinateGga) string {
+	gpsQuality := gpsQualityToInt(gga.GpsQualityIndicator)
+
+	return fmt.Sprintf("%s,%.2f,%.5f,%s,%.5f,%s,%d,%02d,%.1f,%.1f,%s,%.1f,%s,,*%s",
+		gga.MessageID,
+		gga.UtcPosition,
+		gga.Latitude,
+		gga.DirectionLatitude,
+		gga.Longitude,
+		gga.DirectionLongitude,
+		gpsQuality,
+		gga.NumberSv,
+		gga.Hdop,
+		gga.OrthometricHeight,
+		gga.UnitMeasure,
+		gga.GeoidSeparation,
+		gga.GeoidMeasure,
+		calculateChecksum(fmt.Sprintf("%s,%.2f,%.5f,%s,%.5f,%s,%d,%02d,%.1f,%.1f,%s,%.1f,%s,,",
+			gga.MessageID,
+			gga.UtcPosition,
+			gga.Latitude,
+			gga.DirectionLatitude,
+			gga.Longitude,
+			gga.DirectionLongitude,
+			gpsQuality,
+			gga.NumberSv,
+			gga.Hdop,
+			gga.OrthometricHeight,
+			gga.UnitMeasure,
+			gga.GeoidSeparation,
+			gga.GeoidMeasure)),
+	)
+}
+
+func gpsQualityToInt(quality models.GpsQuality) int {
+	switch quality {
+	case models.FixNotValid:
+		return 0
+	case models.GpsFix:
+		return 1
+	case models.DifferentialGpsFix:
+		return 2
+	case models.NotApplicable:
+		return 3
+	case models.RtkFixed:
+		return 4
+	case models.RtkFloat:
+		return 5
+	case models.InsDeadReckoning:
+		return 6
+	default:
+		return -1
+	}
+}
+
+func unparseHDT(hdt models.CoordinateHdt) string {
+	return fmt.Sprintf("%s,%.2f,T*%s",
+		hdt.MessageID,
+		hdt.HeadingDegree,
+		calculateChecksum(fmt.Sprintf("%s,%.2f,T",
+			hdt.MessageID,
+			hdt.HeadingDegree)),
+	)
+}
+
+func unparseVTG(vtg models.CoordinateVtg) string {
+	modeIndicator := modeIndicatorToChar(vtg.ModeIndicator)
+
+	return fmt.Sprintf("%s,%.1f,%s,%.1f,%s,%.1f,%s,%.1f,%s,%s*%s",
+		vtg.MessageID,
+		vtg.TrackDegreeTrue,
+		"T", // True track made good
+		vtg.TrackDegreeMagnetic,
+		"M", // Magnetic track made good
+		vtg.SpeedInKnots,
+		"N", // Speed in knots
+		vtg.Kph,
+		"K", // Speed in kilometers per hour
+		modeIndicator,
+		calculateChecksum(fmt.Sprintf("%s,%.1f,%s,%.1f,%s,%.1f,%s,%.1f,%s,%s",
+			vtg.MessageID,
+			vtg.TrackDegreeTrue,
+			"T",
+			vtg.TrackDegreeMagnetic,
+			"M",
+			vtg.SpeedInKnots,
+			"N",
+			vtg.Kph,
+			"K",
+			modeIndicator)),
+	)
+}
+
+func modeIndicatorToChar(mode models.ModeIndicator) string {
+	switch mode {
+	case models.AutonomousMode:
+		return "A"
+	case models.DifferentialMode:
+		return "D"
+	case models.EstimatedMode:
+		return "E"
+	case models.ManualInputMode:
+		return "M"
+	case models.SimulatorMode:
+		return "S"
+	case models.DataNotValidMode:
+		return "N"
+	default:
+		return ""
+	}
+}
+
+func calculateChecksum(sentence string) string {
+	checksum := 0
+	for i := 1; i < len(sentence); i++ {
+		checksum ^= int(sentence[i])
+	}
+	return fmt.Sprintf("%02X", checksum)
 }

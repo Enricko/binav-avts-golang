@@ -29,7 +29,7 @@ type CoordinateVtg struct {
     MeasuredKnots       string        `gorm:"varchar(1);not null" json:"measured_knots" binding:"required"`
     Kph                 float32       `gorm:"not null" json:"kph" binding:"required"`
     MeasuredKph         string        `gorm:"varchar(1);not null" json:"measured_kph" binding:"required"`
-    // ModeIndicator       ModeIndicator `gorm:"type:enum('Autonomous mode','Differential mode','Estimated (dead reckoning) mode','Manual Input mode','Simulator mode','Data not valid');" json:"mode_indicator"`
+    ModeIndicator       ModeIndicator `gorm:"type:enum('Autonomous mode','Differential mode','Estimated (dead reckoning) mode','Manual Input mode','Simulator mode','Data not valid');" json:"mode_indicator"`
 
 	Checksum      string    `gorm:"not null" json:"checksum" binding:"required"`
 	CreatedAt     time.Time `json:"created_at"`
