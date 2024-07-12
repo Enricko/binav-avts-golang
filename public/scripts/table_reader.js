@@ -210,7 +210,6 @@ $('#vesselTable').on('hidden.bs.modal', function () {
 // FUNCTION CREATE 
 document.getElementById('submitClientButton').addEventListener('click', function(event) {
     var formData = new FormData(document.getElementById("formInsertClient"));
-    console.log(formData);
     event.preventDefault();
     // var formData = new FormData(event.target);
     var json = JSON.stringify(Object.fromEntries(formData));

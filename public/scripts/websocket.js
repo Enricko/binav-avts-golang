@@ -94,7 +94,6 @@ function parseGGA(gga) {
 
   let formattedLatLong = convertCoordinates(LatMinute, LongMinute);
 
-  console.log(latitude, longitude);
 
   return {
     latitude,
@@ -439,7 +438,6 @@ class VesselOverlay extends google.maps.OverlayView {
     this.div.addEventListener("dblclick", this.onDblClick.bind(this));
 
     // Debugging output
-    console.log("VesselOverlay added to map:", this.div);
   }
 
   onDblClick(event) {
