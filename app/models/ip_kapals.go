@@ -21,7 +21,7 @@ type IPKapal struct {
 	Port      uint16    `json:"port;not null;" binding:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Kapal     *Kapal    `gorm:"foreignKey:CallSign;references:CallSign"`
+	Kapal     *Kapal    `gorm:"foreignKey:CallSign;association_foreignkey:CallSign"`
 	// Kapal     Kapal     `gorm:"references:CallSign;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
 }

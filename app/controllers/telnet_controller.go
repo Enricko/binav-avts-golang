@@ -68,37 +68,37 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	for _, server := range servers {
 		wg.Add(1)
-				var coordinate models.Coordinate
+		var coordinate models.Coordinate
 
-				if err := database.DB.Preload("CoordinateGga").Preload("CoordinateVtg").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&coordinate).Error; err != nil {
-					log.Printf("Error reading from %s: %v", server.CallSign, err)
-					return
-				}
+		if err := database.DB.Preload("Kapal").Preload("CoordinateGga").Preload("CoordinateHdt").Preload("CoordinateVtg").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&coordinate).Error; err != nil {
+			log.Printf("Error reading from %s: %v", server.CallSign, err)
+			return
+		}
+		fmt.Println(coordinate.Kapal)
+		nmea := NMEAData{
+			Status: "Disconnected",
+		}
+		if coordinate.IdCoorGGA != nil {
+			gga := unparseGGA(*coordinate.CoordinateGga)
+			nmea.GGA = gga
+		}
+		if coordinate.IdCoorHDT != nil {
+			hdt := unparseHDT(*coordinate.CoordinateHdt)
+			nmea.HDT = hdt
+		}
+		if coordinate.IdCoorVTG != nil {
+			vtg := unparseVTG(*coordinate.CoordinateVtg)
+			nmea.VTG = vtg
+		}
+		r.KapalDataMap.Store(coordinate.CallSign, KapalData{
+			Kapal: *coordinate.Kapal,
+			NMEA: nmea,
+		})
+		
+		r.DataMap.Store(server.CallSign, nmea)
 
-		log.Printf("CoordinateGga: %+v",*coordinate.IdCoorGGA, *coordinate.CoordinateGga)
-		log.Printf("CoordinateHdt: %+v",*coordinate.IdCoorHDT, coordinate.CoordinateHdt)
-		log.Printf("CoordinateVtg: %+v",*coordinate.IdCoorVTG, coordinate.CoordinateVtg)
-				// nmea := NMEAData{
-				// 	Status: "Disconnected",
-				// }
-				// if coordinate.IdCoorGGA != nil {
-				// 	gga := unparseGGA(*coordinate.CoordinateGga)
-				// 	nmea.GGA = gga
-				// }
-				// if coordinate.IdCoorHDT != nil {
-				// 	hdt := unparseHDT(*coordinate.CoordinateHdt)
-				// 	nmea.HDT = hdt
-				// }
-				// if coordinate.IdCoorVTG != nil {
-				// 	vtg := unparseVTG(*coordinate.CoordinateVtg)
-				// 	nmea.VTG = vtg
-				// }
-				// r.KapalDataMap.Store(coordinate.CallSign, KapalData{
-				// 	NMEA: nmea,
-				// })
-
-		// stopChan := make(chan struct{})
-		// go r.handleTelnetConnection(server, &wg, stopChan)
+		stopChan := make(chan struct{})
+		go r.handleTelnetConnection(server, &wg, stopChan)
 	}
 
 	go func() {
@@ -108,51 +108,51 @@ func (r *TelnetController) StartTelnetConnections() {
 		}
 	}()
 
-	// go func() {
-	// 	for {
-	// 		time.Sleep(30 * time.Second)
-	// 		var updatedServers []models.IPKapal
-	// 		err := database.DB.Find(&updatedServers).Error
-	// 		if err != nil {
-	// 			log.Println("Error fetching updated Telnet servers:", err)
-	// 			continue
-	// 		}
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			var updatedServers []models.IPKapal
+			err := database.DB.Find(&updatedServers).Error
+			if err != nil {
+				log.Println("Error fetching updated Telnet servers:", err)
+				continue
+			}
 
-	// 		currentServerMap := make(map[uint]models.IPKapal)
-	// 		for _, server := range servers {
-	// 			currentServerMap[server.IdIpKapal] = server
-	// 		}
+			currentServerMap := make(map[uint]models.IPKapal)
+			for _, server := range servers {
+				currentServerMap[server.IdIpKapal] = server
+			}
 
-	// 		updatedServerMap := make(map[uint]models.IPKapal)
-	// 		for _, server := range updatedServers {
-	// 			updatedServerMap[server.IdIpKapal] = server
-	// 		}
+			updatedServerMap := make(map[uint]models.IPKapal)
+			for _, server := range updatedServers {
+				updatedServerMap[server.IdIpKapal] = server
+			}
 
-	// 		for id, updatedServer := range updatedServerMap {
-	// 			if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
-	// 				if stopChan, ok := r.ConnMap.Load(id); ok {
-	// 					close(stopChan.(chan struct{}))
-	// 					r.ConnMap.Delete(id)
-	// 				}
-	// 				wg.Add(1)
-	// 				stopChan := make(chan struct{})
-	// 				go r.handleTelnetConnection(updatedServer, &wg, stopChan)
-	// 			}
-	// 		}
+			for id, updatedServer := range updatedServerMap {
+				if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
+					if stopChan, ok := r.ConnMap.Load(id); ok {
+						close(stopChan.(chan struct{}))
+						r.ConnMap.Delete(id)
+					}
+					wg.Add(1)
+					stopChan := make(chan struct{})
+					go r.handleTelnetConnection(updatedServer, &wg, stopChan)
+				}
+			}
 
-	// 		for id := range currentServerMap {
-	// 			if _, exists := updatedServerMap[id]; !exists {
-	// 				if stopChan, ok := r.ConnMap.Load(id); ok {
-	// 					close(stopChan.(chan struct{}))
-	// 					r.ConnMap.Delete(id)
-	// 				}
-	// 				r.DataMap.Delete(currentServerMap[id].CallSign)
-	// 			}
-	// 		}
+			for id := range currentServerMap {
+				if _, exists := updatedServerMap[id]; !exists {
+					if stopChan, ok := r.ConnMap.Load(id); ok {
+						close(stopChan.(chan struct{}))
+						r.ConnMap.Delete(id)
+					}
+					r.DataMap.Delete(currentServerMap[id].CallSign)
+				}
+			}
 
-	// 		servers = updatedServers
-	// 	}
-	// }()
+			servers = updatedServers
+		}
+	}()
 
 	wg.Wait()
 }

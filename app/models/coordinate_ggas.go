@@ -36,5 +36,5 @@ type CoordinateGga struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Kapal *Kapal `gorm:"foreignKey:CallSign;references:CallSign"`
+	Kapal *Kapal `gorm:"foreignKey:CallSign;association_foreignkey:CallSign"`
 }

@@ -14,8 +14,8 @@ type Coordinate struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Kapal         *Kapal         `gorm:"foreignKey:CallSign;references:CallSign"`
-	CoordinateHdt *CoordinateHdt `gorm:"foreignKey:IdCoorHDT;references:IdCoorHDT"`
-	CoordinateGga *CoordinateGga `gorm:"foreignKey:IdCoorGGA;references:IdCoorGGA"`
-	CoordinateVtg *CoordinateVtg `gorm:"foreignKey:IdCoorVTG;references:IdCoorVTG"`
+	Kapal         *Kapal         `gorm:"foreignKey:CallSign;association_foreignkey:CallSign"`
+	CoordinateHdt *CoordinateHdt `gorm:"foreignKey:IdCoorHDT;association_foreignkey:IdCoorHDT"`
+	CoordinateGga *CoordinateGga `gorm:"foreignKey:IdCoorGGA;association_foreignkey:IdCoorGGA"`
+	CoordinateVtg *CoordinateVtg `gorm:"foreignKey:IdCoorVTG;association_foreignkey:IdCoorVTG"`
 }
