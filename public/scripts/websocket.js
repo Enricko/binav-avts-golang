@@ -2,72 +2,66 @@ const websocketUrl = `ws://localhost:8080/ws/kapal`;
 
 let autoCompleteInstance;
 let currentDevices = [];
-let markers = {}; // Initialize markers object to store marker references
+let markers = {};
 let dataDevices = {};
-let reconnectInterval = 5000; // 5 seconds
-let markerLabel = new google.maps.InfoWindow(); // Define a single global markerLabel
+let reconnectInterval = 5000;
+let markerLabel = new google.maps.InfoWindow();
 let currentSelectedMarker;
 
 function connectWebSocket() {
   websocket = new WebSocket(websocketUrl);
 
-  websocket.onopen = function () {
-    console.log("WebSocket connection established.");
-  };
+  websocket.onopen = () => console.log("WebSocket connection established.");
 
-  websocket.onmessage = function (event) {
-    const data = JSON.parse(event.data);
-    for (const device in data) {
-      if (data.hasOwnProperty(device)) {
-        const newDevices = Object.keys(data);
-        if (
-          data[device].kapal.status == true
-          // &&
-          // data[device].nmea.gga != "No Data"
-        ) {
-          // Check if there is a change in device data
-          if (
-            newDevices.sort().toString() !== currentDevices.sort().toString()
-          ) {
-            currentDevices = newDevices;
-            updateAutoComplete(currentDevices);
-          }
+  websocket.onmessage = (event) => handleWebSocketMessage(event);
 
-          dataDevices[device] = data[device];
-          const gga = data[device].nmea.gga;
-          const hdt = data[device].nmea.hdt;
-          const vtg = data[device].nmea.vtg;
-          const parsedGGA = parseGGA(gga);
-          const heading = parseHDT(hdt);
-
-          updateMarkerPosition(
-            device,
-            parsedGGA.latitude,
-            parsedGGA.longitude,
-            heading,
-            data[device].kapal.width_m,
-            data[device].kapal.height_m,
-            data[device].kapal.top_range,
-            data[device].kapal.left_range,
-            data[device].kapal.image_map
-          );
-        }
-      }
-    }
-  };
-
-  websocket.onclose = function (event) {
+  websocket.onclose = () => {
     console.log("WebSocket connection closed. Reconnecting...");
     setTimeout(connectWebSocket, reconnectInterval);
   };
 
-  websocket.onerror = function (error) {
+  websocket.onerror = (error) => {
     console.log("WebSocket error: ", error);
     websocket.close();
   };
 }
 
-// Parse NMEA GGA sentence
+function handleWebSocketMessage(event) {
+  const data = JSON.parse(event.data);
+  for (const device in data) {
+    if (data.hasOwnProperty(device)) {
+      const newDevices = Object.keys(data);
+      if (data[device].kapal.status === true) {
+        if (newDevices.sort().toString() !== currentDevices.sort().toString()) {
+          currentDevices = newDevices;
+          updateAutoComplete(currentDevices);
+        }
+
+        dataDevices[device] = data[device];
+        const gga = data[device].nmea.gga;
+        const hdt = data[device].nmea.hdt;
+        const parsedGGA = parseGGA(gga);
+        let heading = 0;
+        if(data[device].nmea.hasOwnProperty("hdt")) {
+          heading = parseHDT(hdt);
+        }
+
+        updateMarkerPosition(
+          device,
+          parsedGGA.latitude,
+          parsedGGA.longitude,
+          heading,
+          data[device].kapal.width_m,
+          data[device].kapal.height_m,
+          data[device].kapal.top_range,
+          data[device].kapal.left_range,
+          data[device].kapal.image_map
+        );
+      }
+    }
+  }
+}
+
 function parseGGA(gga) {
   const gpsQualitys = [
     "Fix not valid",
@@ -91,7 +85,6 @@ function parseGGA(gga) {
 
   let LatMinute = `${latitudeDMS},${latitudeDirection}`;
   let LongMinute = `${longitudeDMS},${longitudeDirection}`;
-
   let formattedLatLong = convertCoordinates(LatMinute, LongMinute);
 
   return {
@@ -103,30 +96,6 @@ function parseGGA(gga) {
   };
 }
 
-function convertCoordinates(latInput, longInput) {
-  // Function to parse and format the latitude or longitude
-  function formatCoordinate(coordinate) {
-    const parts = coordinate.split(",");
-    const value = parseFloat(parts[0]);
-    const hemisphere = parts[1].trim();
-
-    // Extract degrees and minutes
-    const degrees = Math.floor(value / 100);
-    const minutes = (value % 100).toFixed(4);
-
-    // Format the coordinate string
-    return `${degrees}\u00B0${minutes}\u00B0${hemisphere}`;
-  }
-
-  // Format latitude and longitude
-  const lat = formatCoordinate(latInput);
-  const long = formatCoordinate(longInput);
-
-  // Return an object with lat and long properties
-  return { lat, long };
-}
-
-// Parse NMEA HDT sentence
 function parseHDT(hdt) {
   const fields = hdt.split(",");
   return parseFloat(fields[1]);
@@ -134,62 +103,60 @@ function parseHDT(hdt) {
 
 function parseVTG(vtg) {
   const parts = vtg.split(",");
-
   const courseTrue = parseFloat(parts[1]);
   const courseMagnetic = parts[3] !== "" ? parseFloat(parts[3]) : null;
   const speedKnots = parseFloat(parts[5]);
   const speedKmh = parseFloat(parts[7]);
   const modeIndicator = parts[9];
-  let modeIndicatorText = "";
-  switch (modeIndicator) {
-    case "A":
-      modeIndicatorText = "Autonomous mode";
-      break;
-    case "D":
-      modeIndicatorText = "Differential mode";
-      break;
-    case "E":
-      modeIndicatorText = "Estimated (dead reckoning) mode";
-      break;
-    case "M":
-      modeIndicatorText = "Manual Input mode";
-      break;
-    case "S":
-      modeIndicatorText = "Simulator mode";
-      break;
-    case "N":
-      modeIndicatorText = "Data not valid";
-      break;
-    default:
-      modeIndicatorText = "Unknown";
-  }
+  const modeIndicatorText = getModeIndicatorText(modeIndicator);
 
   return {
-    courseTrue: courseTrue,
-    courseMagnetic: courseMagnetic,
-    speedKnots: speedKnots,
-    speedKmh: speedKmh,
-    modeIndicator: modeIndicator,
+    courseTrue,
+    courseMagnetic,
+    speedKnots,
+    speedKmh,
+    modeIndicator,
+    modeIndicatorText,
   };
 }
 
+function getModeIndicatorText(modeIndicator) {
+  const modeTexts = {
+    "A": "Autonomous mode",
+    "D": "Differential mode",
+    "E": "Estimated (dead reckoning) mode",
+    "M": "Manual Input mode",
+    "S": "Simulator mode",
+    "N": "Data not valid",
+  };
+  return modeTexts[modeIndicator] || "Unknown";
+}
+
 function convertDMSToDecimal(degrees, direction) {
-  // Extract degrees and minutes
   const d = Math.floor(degrees / 100);
   const m = degrees % 100;
-
-  // Convert to decimal degrees
   let decimalDegrees = d + m / 60;
-
-  // Adjust for negative direction
   if (direction === "S" || direction === "W") {
     decimalDegrees = -decimalDegrees;
   }
-
   return decimalDegrees;
 }
 
-// Update marker position or create new marker
+function convertCoordinates(latInput, longInput) {
+  function formatCoordinate(coordinate) {
+    const parts = coordinate.split(",");
+    const value = parseFloat(parts[0]);
+    const hemisphere = parts[1].trim();
+    const degrees = Math.floor(value / 100);
+    const minutes = (value % 100).toFixed(4);
+    return `${degrees}\u00B0${minutes}\u00B0${hemisphere}`;
+  }
+
+  const lat = formatCoordinate(latInput);
+  const long = formatCoordinate(longInput);
+  return { lat, long };
+}
+
 async function updateMarkerPosition(
   device,
   latitude,
@@ -202,8 +169,9 @@ async function updateMarkerPosition(
   imageMap
 ) {
   const ggaKapal = parseGGA(dataDevices[device].nmea.gga);
+  const contentString = createInfoWindowContent(device, ggaKapal.latMinute, ggaKapal.longMinute);
+
   if (markers.hasOwnProperty(device)) {
-    // Update existing overlay
     markers[device].update(
       device,
       { lat: latitude, lng: longitude },
@@ -211,21 +179,11 @@ async function updateMarkerPosition(
       left,
       width,
       height,
-      (heading +
-        dataDevices[device].kapal.calibration +
-        dataDevices[device].kapal.heading_direction) %
-        360,
+      (heading + dataDevices[device].kapal.calibration + dataDevices[device].kapal.heading_direction) % 360,
       imageMap,
-      `<div id="content">
-      <div id="siteNotice"></div>
-      <h1 id="firstHeading" class="firstHeading">${device}</h1>
-      <div id="bodyContent">
-        <h6>Latitude: ${ggaKapal.latMinute}<br>Longitude: ${ggaKapal.longMinute}</h6>
-      </div>
-    </div>`
+      contentString
     );
   } else {
-    // Create new overlay
     markers[device] = new VesselOverlay(
       map,
       device,
@@ -234,69 +192,15 @@ async function updateMarkerPosition(
       left,
       width,
       height,
-      (heading +
-        dataDevices[device].kapal.calibration +
-        dataDevices[device].kapal.heading_direction) %
-        360,
+      (heading + dataDevices[device].kapal.calibration + dataDevices[device].kapal.heading_direction) % 360,
       imageMap,
-      `<div id="content">
-      <div id="siteNotice"></div>
-      <h1 id="firstHeading" class="firstHeading">${device}</h1>
-      <div id="bodyContent">
-        <p>Latitude: ${ggaKapal.latMinute}<br>Longitude: ${ggaKapal.longMinute}</p>
-      </div>
-    </div>`
+      contentString
     );
   }
-  // const boatIcon = {
-  //   path: "M 14 30 L 2 30 L 2 -10 L 14 -10 L 14 30 V -6 M 12 -9 C 12 -9 11 -9 11 -8 C 11 -7 12 -7 12 -7 C 12 -7 13 -7 13 -8 C 13 -8 13 -9 12 -9 M 3 29 L 13 29 L 13 14 L 3 14 L 3 29",
-  //   fillColor: "#ffd400",
-  //   fillOpacity: 1,
-  //   strokeColor: "#000",
-  //   strokeOpacity: 0.4,
-  //   scale: calculateMarkerSize(map.getZoom()),
-  //   rotation: (heading + dataDevices[device].kapal.heading_direction) % 360,
-  //   anchor: new google.maps.Point(13, 13),
-  // };
-
-  // if (!markers.hasOwnProperty(device)) {
-  //   markers[device] = new google.maps.Marker({
-  //     position: { lat: latitude, lng: longitude },
-  //     map: map,
-  //     title: device,
-  //     icon: boatIcon,
-  //   });
-
-  //   markers[device].addListener("dblclick", function () {
-  //     getDataKapalMarker(device);
-  //   });
-
-  //   // Add hover event listener
-  //   markers[device].addListener("mouseover", function () {
-  //     updateInfoWindow(device, ggaKapal.latMinute, ggaKapal.longMinute, markers[device]);
-  //   });
-
-  //   markers[device].addListener("mouseout", function () {
-  //     markerLabel.close();
-  //   });
-  // } else {
-  //   markers[device].setPosition({ lat: latitude, lng: longitude });
-  //   markers[device].setIcon(boatIcon);
-
-  //   // Ensure the info window content is updated
-  //   google.maps.event.clearListeners(markers[device], "mouseover"); // Clear the previous 'mouseover' listener
-  //   markers[device].addListener("mouseover", function () {
-  //     updateInfoWindow(device, ggaKapal.latMinute, ggaKapal.longMinute, markers[device]);
-  //   });
-
-  //   markers[device].addListener("mouseout", function () {
-  //     markerLabel.close();
-  //   });
-  // }
 }
 
-function updateInfoWindow(device, latitude, longitude, marker) {
-  const contentString = `
+function createInfoWindowContent(device, latitude, longitude) {
+  return `
     <div id="content">
       <div id="siteNotice"></div>
       <h1 id="firstHeading" class="firstHeading">${device}</h1>
@@ -304,28 +208,7 @@ function updateInfoWindow(device, latitude, longitude, marker) {
         <p>Latitude: ${latitude}<br>Longitude: ${longitude}</p>
       </div>
     </div>`;
-
-  return contentString;
 }
-
-// Update marker sizes based on zoom level
-// function updateMarkerSizes(zoom) {
-//   for (const device in markers) {
-//     if (markers.hasOwnProperty(device)) {
-//       const marker = markers[device];
-//       marker.setIcon({
-//         path: "M 14 30 L 2 30 L 2 -10 L 14 -10 L 14 30 V -6 M 12 -9 C 12 -9 11 -9 11 -8 C 11 -7 12 -7 12 -7 C 12 -7 13 -7 13 -8 C 13 -8 13 -9 12 -9 M 3 29 L 13 29 L 13 14 L 3 14 L 3 29",
-//         fillColor: "#ffd400",
-//         fillOpacity: 1,
-//         strokeColor: "#000",
-//         strokeOpacity: 0.4,
-//         scale: calculateMarkerSize(zoom),
-//         rotation: marker.getIcon().rotation,
-//         anchor: new google.maps.Point(13, 13),
-//       });
-//     }
-//   }
-// }
 
 function getDataKapalMarker(device) {
   switchWindow(true);
@@ -334,39 +217,44 @@ function getDataKapalMarker(device) {
 }
 
 function dataKapalMarker(device) {
-  let data = dataDevices[device];
-  let ggaData = parseGGA(data.nmea.gga);
-  let hdtData = parseHDT(data.nmea.hdt);
-  let vtgData = parseVTG(data.nmea.vtg);
+  const data = dataDevices[device];
+  const ggaData = parseGGA(data.nmea.gga);
+  if(data.nmea.hasOwnProperty("hdt")){
+    const hdtData = parseHDT(data.nmea.hdt);
+    document.getElementById("heading_hdt").textContent = `${hdtData + dataDevices[device].kapal.calibration}\u00B0`;
+  }else{
+    document.getElementById("heading_hdt").textContent = `N/A`;
+  }
+  if(data.nmea.hasOwnProperty("vtg")){
+    const vtgData = parseVTG(data.nmea.vtg);
+    document.getElementById("SOG").textContent = `${vtgData.speedKnots} KTS`;
+  }else{
+    document.getElementById("SOG").textContent = `N/A KTS`;
+  }
+
   document.getElementById("vesselName").textContent = device;
   document.getElementById("status_telnet").textContent = data.nmea.status;
-  document.getElementById("status_telnet").style.color =
-    data.nmea.status == "Connected" ? "green" : "red";
+  document.getElementById("status_telnet").style.color = data.nmea.status == "Connected" ? "green" : "red";
   document.getElementById("latitude").textContent = ggaData.latMinute;
   document.getElementById("longitude").textContent = ggaData.longMinute;
-  document.getElementById("heading_hdt").textContent =
-    hdtData + dataDevices[device].kapal.calibration + "\u00B0";
-  document.getElementById("SOG").textContent = vtgData.speedKnots + " KTS";
   document.getElementById("SOLN").textContent = ggaData.gpsQuality;
 }
 
 function switchWindow(onoff) {
-  // var windowButton = document.getElementById("detail-window");
-  var hideButton = document.getElementById("hideButton");
+  const hideButton = document.getElementById("hideButton");
   if (onoff) {
-    // windowButton.classList.remove("d-none");
     hideButton.classList.remove("d-none");
   } else {
-    // windowButton.classList.add = "d-none";
-    hideButton.classList.add = "d-none";
+    hideButton.classList.add("d-none");
   }
 }
-var timeoutID;
+
+let timeoutID;
 document.getElementById("hideButton").addEventListener("click", function () {
-  var container = document.getElementById("myContainer");
+  const container = document.getElementById("myContainer");
   if (container.style.display === "none") {
     container.style.display = "block";
-    timeoutID = setInterval(function () {
+    timeoutID = setInterval(() => {
       dataKapalMarker(currentSelectedMarker);
     }, 500);
   } else {
@@ -374,6 +262,7 @@ document.getElementById("hideButton").addEventListener("click", function () {
     clearInterval(timeoutID);
   }
 });
+
 
 class VesselOverlay extends google.maps.OverlayView {
   constructor(
