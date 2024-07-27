@@ -243,6 +243,8 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 
 				<-connClosed
 				log.Printf("Disconnected from %s. Reconnecting...", server.CallSign)
+
+				time.Sleep(retryDelay)
 			}
 		}
 	}()
