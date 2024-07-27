@@ -38,7 +38,8 @@ $('#mappingTable').on('shown.bs.modal', function () {
                     width: '10%',
                     render: function(data, type, row, meta){
                         return `
-                        <div class="row">
+                        <div class="container">
+                        <div class="row justify-content-md-center">
                         <div class="col-auto mb-1">
                         <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
                         </div>
@@ -46,7 +47,9 @@ $('#mappingTable').on('shown.bs.modal', function () {
                         <div class="col-auto mb-1">
                         <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
                         </div>
-                        </div>`;
+                        </div>
+                        </div>
+                        `;
                     }
                 },
             ],
@@ -106,7 +109,8 @@ $('#mappingTable').on('hidden.bs.modal', function () {
                     width: '10%',
                     render: function(data, type, row, meta){
                         return `
-                        <div class="row">
+                        <div class="container">
+                        <div class="row justify-content-md-center">
                         <div class="col-auto mb-1">
                         <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
                         </div>
@@ -114,7 +118,9 @@ $('#mappingTable').on('hidden.bs.modal', function () {
                         <div class="col-auto mb-1">
                         <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
                         </div>
-                        </div>`;
+                        </div>
+                        </div>
+                        `;
                     }
                 },
             ],
@@ -173,10 +179,11 @@ $('#vesselTable').on('shown.bs.modal', function () {
                 { 
                     data: 'aksi',
                     className: 'text-center',
-                    width: '20%',
+                    width: '10%',
                     render: function(data, type, row, meta){
                         return `
-                        <div class="row">
+                        <div class="container">
+                        <div class="row justify-content-md-center">
                         <div class="col-auto mb-1">
                         <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
                         </div>
@@ -184,7 +191,9 @@ $('#vesselTable').on('shown.bs.modal', function () {
                         <div class="col-auto mb-1">
                         <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
                         </div>
-                        </div>`;
+                        </div>
+                        </div>
+                        `;
                     }
                 },
             ],
