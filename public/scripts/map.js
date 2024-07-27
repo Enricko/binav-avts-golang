@@ -226,8 +226,20 @@ function fetchKMZFiles() {
     .catch((error) => console.error("Error fetching mappings:", error));
 }
 
+function getBaseURL() {
+  // Get the full URL
+  const fullURL = window.location.href;
+  // Get the protocol and hostname
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  // Combine them to get the base URL
+  const baseURL = `${protocol}//${host}/`;
+  return baseURL;
+}
+
 function loadKMZLayer(filePath) {
-  const kmzUrl = `https://golang.binav-avts.id/public/${filePath}`;
+  // const kmzUrl = `${getBaseURK()}public/${filePath}`;
+  const kmzUrl = `http://8.222.190.213/public/${filePath}`;
   const kmzLayer = new google.maps.KmlLayer({
     url: kmzUrl,
     map,

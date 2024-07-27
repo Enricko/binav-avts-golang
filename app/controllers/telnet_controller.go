@@ -17,7 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
-
 )
 
 type TelnetController struct {
@@ -72,30 +71,29 @@ func (r *TelnetController) StartTelnetConnections() {
 
 		if err := database.DB.Preload("Kapal").Preload("CoordinateGga").Preload("CoordinateHdt").Preload("CoordinateVtg").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&coordinate).Error; err != nil {
 			log.Printf("Error reading from %s: %v", server.CallSign, err)
-			return
+		} else {
+			nmea := NMEAData{
+				Status: "Disconnected",
+			}
+			if coordinate.IdCoorGGA != nil {
+				gga := unparseGGA(*coordinate.CoordinateGga)
+				nmea.GGA = gga
+			}
+			if coordinate.IdCoorHDT != nil {
+				hdt := unparseHDT(*coordinate.CoordinateHdt)
+				nmea.HDT = hdt
+			}
+			if coordinate.IdCoorVTG != nil {
+				vtg := unparseVTG(*coordinate.CoordinateVtg)
+				nmea.VTG = vtg
+			}
+			r.KapalDataMap.Store(coordinate.CallSign, KapalData{
+				Kapal: *coordinate.Kapal,
+				NMEA:  nmea,
+			})
+
+			r.DataMap.Store(server.CallSign, nmea)
 		}
-		fmt.Println(coordinate.Kapal)
-		nmea := NMEAData{
-			Status: "Disconnected",
-		}
-		if coordinate.IdCoorGGA != nil {
-			gga := unparseGGA(*coordinate.CoordinateGga)
-			nmea.GGA = gga
-		}
-		if coordinate.IdCoorHDT != nil {
-			hdt := unparseHDT(*coordinate.CoordinateHdt)
-			nmea.HDT = hdt
-		}
-		if coordinate.IdCoorVTG != nil {
-			vtg := unparseVTG(*coordinate.CoordinateVtg)
-			nmea.VTG = vtg
-		}
-		r.KapalDataMap.Store(coordinate.CallSign, KapalData{
-			Kapal: *coordinate.Kapal,
-			NMEA: nmea,
-		})
-		
-		r.DataMap.Store(server.CallSign, nmea)
 
 		stopChan := make(chan struct{})
 		go r.handleTelnetConnection(server, &wg, stopChan)
@@ -306,7 +304,7 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 		}).Error; err != nil {
 			return fmt.Errorf("error creating new coordinate: %w", err)
 		}
-	} else if time.Since(lastCoordinate.CreatedAt) >= 5*time.Minute {
+	} else if time.Since(lastCoordinate.CreatedAt) >= (time.Duration(kapal.(KapalData).Kapal.HistoryPerMinute))*time.Minute {
 		if err := database.DB.Create(&models.Coordinate{
 			CallSign: callSign,
 			SeriesID: lastCoordinate.SeriesID + 1,
@@ -655,4 +653,13 @@ func calculateChecksum(sentence string) string {
 		checksum ^= int(sentence[i])
 	}
 	return fmt.Sprintf("%02X", checksum)
+}
+
+func (r *TelnetController) GetKapalDataByCallSign(callSign string) (*KapalData, error) {
+	data, ok := r.KapalDataMap.Load(callSign)
+	if !ok {
+		return nil, fmt.Errorf("data not found for call sign: %s", callSign)
+	}
+	kapalData := data.(KapalData)
+	return &kapalData, nil
 }

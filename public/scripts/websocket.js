@@ -21,7 +21,7 @@ function connectWebSocket() {
       if (data.hasOwnProperty(device)) {
         const newDevices = Object.keys(data);
         if (
-          data[device].kapal.status == true 
+          data[device].kapal.status == true
           // &&
           // data[device].nmea.gga != "No Data"
         ) {
@@ -93,7 +93,6 @@ function parseGGA(gga) {
   let LongMinute = `${longitudeDMS},${longitudeDirection}`;
 
   let formattedLatLong = convertCoordinates(LatMinute, LongMinute);
-
 
   return {
     latitude,
@@ -328,7 +327,6 @@ function updateInfoWindow(device, latitude, longitude, marker) {
 //   }
 // }
 
-
 function getDataKapalMarker(device) {
   switchWindow(true);
   dataKapalMarker(device);
@@ -342,13 +340,12 @@ function dataKapalMarker(device) {
   let vtgData = parseVTG(data.nmea.vtg);
   document.getElementById("vesselName").textContent = device;
   document.getElementById("status_telnet").textContent = data.nmea.status;
-  document.getElementById("status_telnet").style.color = data.nmea.status == "Connected"
-    ? "green"
-    : "red";
+  document.getElementById("status_telnet").style.color =
+    data.nmea.status == "Connected" ? "green" : "red";
   document.getElementById("latitude").textContent = ggaData.latMinute;
   document.getElementById("longitude").textContent = ggaData.longMinute;
-  document.getElementById("heading_hdt").textContent = hdtData +
-  dataDevices[device].kapal.calibration + "\u00B0";
+  document.getElementById("heading_hdt").textContent =
+    hdtData + dataDevices[device].kapal.calibration + "\u00B0";
   document.getElementById("SOG").textContent = vtgData.speedKnots + " KTS";
   document.getElementById("SOLN").textContent = ggaData.gpsQuality;
 }
@@ -416,7 +413,6 @@ class VesselOverlay extends google.maps.OverlayView {
     this.div.style.cursor = "default"; // Ensure the cursor is initially set to default
 
     const img = document.createElement("img");
-    img.src = `/public/assets/images/${this.imageMap}`;
     img.style.width = "100%";
     img.style.height = "100%";
     img.style.pointerEvents = "auto"; // Ensure the image is interactive
@@ -437,7 +433,18 @@ class VesselOverlay extends google.maps.OverlayView {
     this.div.addEventListener("mouseout", this.onMouseOut.bind(this));
     this.div.addEventListener("dblclick", this.onDblClick.bind(this));
 
-    // Debugging output
+    // Determine the color based on device status
+    const status = dataDevices[this.device].nmea.status;
+    const color = status === "Connected" ? [40, 167, 69] : [220, 53, 69]; // Green if Connected, Red if Disconnected
+
+    // Use the utility function to change the image color and add shadow
+    changeImageColor(`/public/assets/images/${this.imageMap}`, color, (dataUrl) => {
+        if (dataUrl) {
+            img.src = dataUrl;
+        } else {
+            img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
+        }
+    });
   }
 
   onDblClick(event) {
@@ -523,7 +530,19 @@ class VesselOverlay extends google.maps.OverlayView {
 
     if (this.div) {
       const img = this.div.firstChild;
-      img.src = `/public/assets/images/${this.imageMap}`;
+
+        // Determine the color based on device status
+        const status = dataDevices[this.device].nmea.status;
+        const color = status === "Connected" ? [40, 167, 69] : [220, 53, 69]; // Green if Connected, Red if Disconnected
+
+        // Use the utility function to change the image color and add shadow
+        changeImageColor(`/public/assets/images/${this.imageMap}`, color, (dataUrl) => {
+            if (dataUrl) {
+                img.src = dataUrl;
+            } else {
+                img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
+            }
+        });
 
       const transformOriginX =
         (this.offsetFromCenter.x / this.vesselWidthMeters) * 100;
@@ -630,4 +649,60 @@ class VesselOverlay extends google.maps.OverlayView {
     // Center the map's camera on the vessel
     this.map.setCenter(this.position);
   }
+}
+
+function changeImageColor(imageUrl, color, callback) {
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.src = imageUrl;
+
+  img.onload = function () {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw the image to get the original shape
+      ctx.drawImage(img, 0, 0);
+
+      // Save the current context state
+      ctx.save();
+
+      // Set shadow properties
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)"; // Shadow color
+      ctx.shadowBlur = 10; // Shadow blur
+      ctx.shadowOffsetX = 0; // Shadow offset X
+      ctx.shadowOffsetY = 0; // Shadow offset Y
+
+      // Draw the image again to apply the shadow
+      ctx.drawImage(img, 0, 0);
+
+      // Restore the context to remove shadow effect for further drawing
+      ctx.restore();
+
+      // Get the image data to change colors
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      const [r, g, b] = color;
+
+      for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] !== 0) {
+              // Check if the pixel is not transparent
+              data[i] = r; // Red
+              data[i + 1] = g; // Green
+              data[i + 2] = b; // Blue
+              // data[i + 3] = data[i + 3]; // Alpha (unchanged)
+          }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      callback(canvas.toDataURL());
+  };
+
+  img.onerror = function () {
+      console.error("Failed to load image:", imageUrl);
+      callback(null);
+  };
 }

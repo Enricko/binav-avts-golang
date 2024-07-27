@@ -17,6 +17,9 @@ type Kapal struct {
 	LeftRange        int64     `gorm:"not null;" json:"left_range" binding:"required"`
 	ImageMap         string    `gorm:"type:TEXT;not null;" json:"image_map" binding:"required"`
 	Image            string    `gorm:"type:TEXT;not null;" json:"image" binding:"required"`
+	HistoryPerMinute int64     `gorm:"not null;" json:"history_per_minute" binding:"required"`
+	MinimumKnotPerLiterGasoline int64 `gorm:"not null;" json:"minimum_knot_per_liter_gasoline" binding:"required"`
+	MaximumKnotPerLiterGasoline int64 `gorm:"not null;" json:"maximum_knot_per_liter_gasoline" binding:"required"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
