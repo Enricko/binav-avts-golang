@@ -13,28 +13,6 @@
 <script src="/public/scripts/auto_complete.js"></script>
 <script src="/public/scripts/websocket.js"></script>
 <script src="/public/scripts/map.js"></script>
+<script src="/public/scripts/index.js"></script>
 
-<script>
-  function getBaseURL() {
-    // Get the full URL
-    const fullURL = window.location.href;
-    // Get the protocol and hostname
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    // Combine them to get the base URL
-    const baseURL = `${protocol}//${host}/`;
-    return baseURL;
-  }
-  function getBaseURLHost() {
-    // Get the full URL
-    const fullURL = window.location.href;
-    // Get the protocol and hostname
-    const host = window.location.host;
-    // Combine them to get the base URL
-    const baseURL = `${host}`;
-    return baseURL;
-  }
-
-  
-</script>
 {{ end }}

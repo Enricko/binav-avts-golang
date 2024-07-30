@@ -43,10 +43,26 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type GpsQuality string
+
+const (
+	FixNotValid        GpsQuality = "Fix not valid"
+	GpsFix             GpsQuality = "GPS fix"
+	DifferentialGpsFix GpsQuality = "Differential GPS fix (DGNSS)"
+	NotApplicable      GpsQuality = "Not applicable"
+	RtkFixed           GpsQuality = "RTK Fixed"
+	RtkFloat           GpsQuality = "RTK Float"
+	InsDeadReckoning   GpsQuality = "INS Dead reckoning"
+)
+
 type NMEAData struct {
-	GGA    string `json:"gga,omitempty"`
-	HDT    string `json:"hdt,omitempty"`
-	VTG    string `json:"vtg,omitempty"`
+	Latitude            string     `gorm:"varchar(255)" json:"latitude" binding:"required"`
+	Longitude           string     `gorm:"varchar(255)" json:"longitude" binding:"required"`
+	HeadingDegree       float64    `gorm:"varchar(255)" json:"heading_degree" binding:"required"`
+	SpeedInKnots        float64    `gorm:"" json:"speed_in_knots" binding:"required"`
+	GpsQualityIndicator GpsQuality `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix (DGNSS)','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
+	WaterDepth          float64    `gorm:"" json:"water_depth" binding:"required"`
+
 	Status string `json:"status"`
 }
 
@@ -67,28 +83,23 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	for _, server := range servers {
 		wg.Add(1)
-		var coordinate models.Coordinate
+		var vesselRecord models.VesselRecord
 
-		if err := database.DB.Preload("Kapal").Preload("CoordinateGga").Preload("CoordinateHdt").Preload("CoordinateVtg").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&coordinate).Error; err != nil {
+		if err := database.DB.Preload("Kapal").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&vesselRecord).Error; err != nil {
 			log.Printf("Error reading from %s: %v", server.CallSign, err)
 		} else {
 			nmea := NMEAData{
-				Status: "Disconnected",
+				Latitude:            vesselRecord.Latitude,
+				Longitude:           vesselRecord.Longitude,
+				HeadingDegree:       vesselRecord.HeadingDegree,
+				SpeedInKnots:        vesselRecord.SpeedInKnots,
+				GpsQualityIndicator: GpsQuality(vesselRecord.GpsQualityIndicator),
+				WaterDepth:          vesselRecord.WaterDepth,
+				Status:              "Disconnected",
 			}
-			if coordinate.IdCoorGGA != nil {
-				gga := unparseGGA(*coordinate.CoordinateGga)
-				nmea.GGA = gga
-			}
-			if coordinate.IdCoorHDT != nil {
-				hdt := unparseHDT(*coordinate.CoordinateHdt)
-				nmea.HDT = hdt
-			}
-			if coordinate.IdCoorVTG != nil {
-				vtg := unparseVTG(*coordinate.CoordinateVtg)
-				nmea.VTG = vtg
-			}
-			r.KapalDataMap.Store(coordinate.CallSign, KapalData{
-				Kapal: *coordinate.Kapal,
+
+			r.KapalDataMap.Store(vesselRecord.CallSign, KapalData{
+				Kapal: *vesselRecord.Kapal,
 				NMEA:  nmea,
 			})
 
@@ -202,7 +213,6 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 						close(connClosed)
 					}()
 
-					nmeaData.Status = "Connected"
 					r.DataMap.Store(server.CallSign, nmeaData)
 
 					for {
@@ -210,6 +220,8 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 						case <-stopTelnet:
 							return
 						default:
+							nmeaData.Status = "Connected"
+
 							conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 							line, err := reader.ReadString('\n')
 							line = strings.TrimSpace(line)
@@ -217,21 +229,42 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 							if err != nil {
 								log.Printf("Error reading from %s: %v", server.CallSign, err)
 								nmeaData.Status = "Disconnected"
+								r.DataMap.Store(server.CallSign, nmeaData)
 								return
 							}
 
 							lastActivity = time.Now()
 
 							if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
-								nmeaData.GGA = line
+								gga, err := parseGGASentence(line)
+								if err != nil {
+									log.Printf("Error parsing GGA: %v", err)
+								}
+								if gga != nil {
+									nmeaData.Latitude = gga.LatMinute
+									nmeaData.Longitude = gga.LongMinute
+									nmeaData.GpsQualityIndicator = GpsQuality(gga.GPSQuality)
+								}
 							} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
-								nmeaData.HDT = line
+								hdt, err := parseHDTSentence(line)
+								if err != nil {
+									log.Printf("Error parsing GGA: %v", err)
+								}
+								if hdt != nil {
+									nmeaData.HeadingDegree = hdt.Heading
+								}
 							} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
-								nmeaData.VTG = line
+								vtg, err := parseVTGSentence(line)
+								if err != nil {
+									log.Printf("Error parsing GGA: %v", err)
+								}
+								if vtg != nil {
+									nmeaData.SpeedInKnots = vtg.SpeedKnots
+								}
 							}
 							r.DataMap.Store(server.CallSign, nmeaData)
 
-							if time.Since(lastCoordinateInsertTime) >= 15*time.Second {
+							if time.Since(lastCoordinateInsertTime) >= 1*time.Second {
 								lastCoordinateInsertTime = time.Now()
 								if err := r.createOrUpdateCoordinate(server.CallSign, &lastCoordinateInsertTime, nmeaData); err != nil {
 									log.Printf("Error creating or updating coordinate: %v", err)
@@ -288,8 +321,8 @@ func (r *TelnetController) updateKapalDataMap() {
 }
 
 func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordinateInsertTime *time.Time, nmeaData NMEAData) error {
-	var lastCoordinate models.Coordinate
-	result := database.DB.Where("call_sign = ?", callSign).Order("created_at desc").First(&lastCoordinate)
+	var lastRecord models.VesselRecord
+	result := database.DB.Where("call_sign = ?", callSign).Order("created_at desc").First(&lastRecord)
 
 	kapal, ok := r.KapalDataMap.Load(callSign)
 	if !ok {
@@ -300,104 +333,44 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 		fmt.Errorf("error fetching last coordinate: %w", result.Error)
 	}
 	if result.RowsAffected <= 0 {
-		if err := database.DB.Create(&models.Coordinate{
-			CallSign: callSign,
-			SeriesID: 1,
-		}).Error; err != nil {
-			return fmt.Errorf("error creating new coordinate: %w", err)
-		}
-	} else if time.Since(lastCoordinate.CreatedAt) >= (time.Duration(kapal.(KapalData).Kapal.HistoryPerMinute))*time.Minute {
-		if err := database.DB.Create(&models.Coordinate{
-			CallSign: callSign,
-			SeriesID: lastCoordinate.SeriesID + 1,
-		}).Error; err != nil {
-			return fmt.Errorf("error creating new coordinate: %w", err)
-		}
-	}
 
-	if lastCoordinate.IdCoorGGA == nil && nmeaData.Status == "Connected" && nmeaData.GGA != "" {
-		gga, err := parseGGA(nmeaData.GGA)
+		if nmeaData.Status == "Connected" && nmeaData.Longitude != "" && nmeaData.Latitude != "" {
+			gpsQuality, err := models.StringToGpsQuality(string(nmeaData.GpsQualityIndicator))
+			if err != nil {
+				return err
+			}
+			if err := database.DB.Create(&models.VesselRecord{
+				CallSign:            callSign,
+				SeriesID:            1,
+				Latitude:            nmeaData.Latitude,
+				Longitude:           nmeaData.Longitude,
+				HeadingDegree:       nmeaData.HeadingDegree,
+				SpeedInKnots:        nmeaData.SpeedInKnots,
+				WaterDepth:          nmeaData.WaterDepth,
+				GpsQualityIndicator: models.GpsQuality(gpsQuality),
+			}).Error; err != nil {
+				return fmt.Errorf("error creating new coordinate: %w", err)
+			}
+		}
+	} else if time.Since(lastRecord.CreatedAt) >= (time.Duration(kapal.(KapalData).Kapal.HistoryPerSecond))*time.Second {
+		gpsQuality, err := models.StringToGpsQuality(string(nmeaData.GpsQualityIndicator))
 		if err != nil {
-			return fmt.Errorf("error parsing GGA: %w", err)
+			return err
 		}
 
-		coorGGA := models.CoordinateGga{
-			CallSign:            callSign,
-			MessageID:           gga.MessageID,
-			UtcPosition:         gga.UtcPosition,
-			Latitude:            gga.Latitude,
-			DirectionLatitude:   gga.DirectionLatitude,
-			Longitude:           gga.Longitude,
-			DirectionLongitude:  gga.DirectionLongitude,
-			GpsQualityIndicator: gga.GpsQualityIndicator,
-			NumberSv:            gga.NumberSv,
-			Hdop:                gga.Hdop,
-			OrthometricHeight:   gga.OrthometricHeight,
-			UnitMeasure:         gga.UnitMeasure,
-			GeoidSeparation:     gga.GeoidSeparation,
-			GeoidMeasure:        gga.GeoidMeasure,
-		}
-
-		if err := database.DB.Create(&coorGGA).Error; err != nil {
-			return fmt.Errorf("error creating new GGA: %w", err)
-		}
-
-		idCoorGGA := coorGGA.IdCoorGGA
-		lastCoordinate.IdCoorGGA = &idCoorGGA
-
-		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
-			return fmt.Errorf("failed to update coordinate: %w", err)
-		}
-	}
-	if lastCoordinate.IdCoorHDT == nil && nmeaData.Status == "Connected" && nmeaData.HDT != "" {
-		hdt, err := parseHDT(nmeaData.HDT)
-		if err != nil {
-			return fmt.Errorf("error parsing HDT: %w", err)
-		}
-		coorHDT := models.CoordinateHdt{
-			CallSign:      callSign,
-			MessageID:     hdt.MessageID,
-			HeadingDegree: hdt.HeadingDegree + float32(kapal.(KapalData).Kapal.Calibration),
-			Checksum:      hdt.Checksum,
-		}
-
-		if err := database.DB.Create(&coorHDT).Error; err != nil {
-			return fmt.Errorf("error creating new GGA: %w", err)
-		}
-		idCoorHDT := coorHDT.IdCoorHDT
-		lastCoordinate.IdCoorHDT = &idCoorHDT
-
-		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
-			return fmt.Errorf("failed to update coordinate: %w", err)
-		}
-	}
-
-	if lastCoordinate.IdCoorVTG == nil && nmeaData.Status == "Connected" && nmeaData.VTG != "" {
-		vtg, err := parseVTG(nmeaData.VTG)
-		if err != nil {
-			return fmt.Errorf("error parsing VTG: %w", err)
-		}
-		coorVTG := models.CoordinateVtg{
-			CallSign:            callSign,
-			MessageID:           vtg.MessageID,
-			TrackDegreeTrue:     vtg.TrackDegreeTrue,
-			TrueNorth:           vtg.TrueNorth,
-			TrackDegreeMagnetic: vtg.TrackDegreeMagnetic,
-			MagneticNorth:       vtg.MagneticNorth,
-			SpeedInKnots:        vtg.SpeedInKnots,
-			MeasuredKnots:       vtg.MeasuredKnots,
-			Kph:                 vtg.Kph,
-			MeasuredKph:         vtg.MeasuredKph,
-			ModeIndicator:       vtg.ModeIndicator,
-			Checksum:            vtg.Checksum,
-		}
-		if err := database.DB.Create(&coorVTG).Error; err != nil {
-			return fmt.Errorf("error creating new VTG: %w", err)
-		}
-		idCoorVTG := coorVTG.IdCoorVTG
-		lastCoordinate.IdCoorVTG = &idCoorVTG
-		if err := database.DB.Save(&lastCoordinate).Error; err != nil {
-			return fmt.Errorf("failed to update coordinate: %w", err)
+		if nmeaData.Status == "Connected" && nmeaData.Longitude != "" && nmeaData.Latitude != "" {
+			if err := database.DB.Create(&models.VesselRecord{
+				CallSign:            callSign,
+				SeriesID:            lastRecord.SeriesID + 1,
+				Latitude:            nmeaData.Latitude,
+				Longitude:           nmeaData.Longitude,
+				HeadingDegree:       nmeaData.HeadingDegree,
+				SpeedInKnots:        nmeaData.SpeedInKnots,
+				WaterDepth:          nmeaData.WaterDepth,
+				GpsQualityIndicator: models.GpsQuality(gpsQuality),
+			}).Error; err != nil {
+				return fmt.Errorf("error creating new coordinate: %w", err)
+			}
 		}
 	}
 
@@ -445,210 +418,6 @@ func min(a, b time.Duration) time.Duration {
 	return b
 }
 
-// Example: $GPGGA,123456.78,4916.45,N,12311.12,W,1,08,0.9,545.4,M,46.9,M,,*47
-func parseGGA(line string) (models.CoordinateGga, error) {
-	fields := strings.Split(line, ",")
-	if len(fields) < 15 {
-		return models.CoordinateGga{}, errors.New("invalid GGA sentence")
-	}
-
-	utcPosition, _ := strconv.ParseFloat(fields[1], 32)
-	latitude, _ := strconv.ParseFloat(fields[2], 32)
-	longitude, _ := strconv.ParseFloat(fields[4], 32)
-	numberSv, _ := strconv.Atoi(fields[7])
-	hdop, _ := strconv.ParseFloat(fields[8], 32)
-	orthometricHeight, _ := strconv.ParseFloat(fields[9], 32)
-	geoidSeparation, _ := strconv.ParseFloat(fields[11], 32)
-
-	return models.CoordinateGga{
-		MessageID:           fields[0],
-		UtcPosition:         float32(utcPosition),
-		Latitude:            float32(latitude),
-		DirectionLatitude:   fields[3],
-		Longitude:           float32(longitude),
-		DirectionLongitude:  fields[5],
-		GpsQualityIndicator: models.GpsQuality(fields[6]),
-		NumberSv:            numberSv,
-		Hdop:                float32(hdop),
-		OrthometricHeight:   float32(orthometricHeight),
-		UnitMeasure:         fields[10],
-		GeoidSeparation:     float32(geoidSeparation),
-		GeoidMeasure:        fields[12],
-	}, nil
-}
-
-// Example: $GPHDT,274.07,T*03
-func parseHDT(line string) (models.CoordinateHdt, error) {
-	fields := strings.Split(line, ",")
-	if len(fields) < 3 {
-		return models.CoordinateHdt{}, errors.New("invalid HDT sentence")
-	}
-
-	headingDegree, _ := strconv.ParseFloat(fields[1], 32)
-
-	return models.CoordinateHdt{
-		MessageID:     fields[0],
-		HeadingDegree: float32(headingDegree),
-		Checksum:      fields[2],
-	}, nil
-}
-
-// Example: $GPVTG,054.7,T,034.4,M,005.5,N,010.2,K*48
-func parseVTG(line string) (models.CoordinateVtg, error) {
-	fields := strings.Split(line, ",")
-	if len(fields) < 10 {
-		return models.CoordinateVtg{}, errors.New("invalid VTG sentence")
-	}
-
-	trackDegreeTrue, _ := strconv.ParseFloat(fields[1], 32)
-	trackDegreeMagnetic, _ := strconv.ParseFloat(fields[3], 32)
-	speedInKnots, _ := strconv.ParseFloat(fields[5], 32)
-	kph, _ := strconv.ParseFloat(fields[7], 32)
-
-	return models.CoordinateVtg{
-		MessageID:           fields[0],
-		TrackDegreeTrue:     float32(trackDegreeTrue),
-		TrueNorth:           fields[2],
-		TrackDegreeMagnetic: float32(trackDegreeMagnetic),
-		MagneticNorth:       fields[4],
-		SpeedInKnots:        float32(speedInKnots),
-		MeasuredKnots:       fields[6],
-		Kph:                 float32(kph),
-		MeasuredKph:         fields[8],
-		Checksum:            fields[9],
-		ModeIndicator:       determineModeIndicator(string(fields[9][0])), // Assuming mode indicator is at index 10
-	}, nil
-}
-
-func determineModeIndicator(value string) models.ModeIndicator {
-	switch value {
-	case "A":
-		return models.AutonomousMode
-	case "D":
-		return models.DifferentialMode
-	case "E":
-		return models.EstimatedMode
-	case "M":
-		return models.ManualInputMode
-	case "S":
-		return models.SimulatorMode
-	default:
-		return models.DataNotValidMode
-	}
-}
-
-func unparseGGA(gga models.CoordinateGga) string {
-	gpsQuality := gpsQualityToInt(gga.GpsQualityIndicator)
-
-	return fmt.Sprintf("%s,%.2f,%.5f,%s,%.5f,%s,%d,%02d,%.1f,%.1f,%s,%.1f,%s,,*%s",
-		gga.MessageID,
-		gga.UtcPosition,
-		gga.Latitude,
-		gga.DirectionLatitude,
-		gga.Longitude,
-		gga.DirectionLongitude,
-		gpsQuality,
-		gga.NumberSv,
-		gga.Hdop,
-		gga.OrthometricHeight,
-		gga.UnitMeasure,
-		gga.GeoidSeparation,
-		gga.GeoidMeasure,
-		calculateChecksum(fmt.Sprintf("%s,%.2f,%.5f,%s,%.5f,%s,%d,%02d,%.1f,%.1f,%s,%.1f,%s,,",
-			gga.MessageID,
-			gga.UtcPosition,
-			gga.Latitude,
-			gga.DirectionLatitude,
-			gga.Longitude,
-			gga.DirectionLongitude,
-			gpsQuality,
-			gga.NumberSv,
-			gga.Hdop,
-			gga.OrthometricHeight,
-			gga.UnitMeasure,
-			gga.GeoidSeparation,
-			gga.GeoidMeasure)),
-	)
-}
-
-func gpsQualityToInt(quality models.GpsQuality) int {
-	switch quality {
-	case models.FixNotValid:
-		return 0
-	case models.GpsFix:
-		return 1
-	case models.DifferentialGpsFix:
-		return 2
-	case models.NotApplicable:
-		return 3
-	case models.RtkFixed:
-		return 4
-	case models.RtkFloat:
-		return 5
-	case models.InsDeadReckoning:
-		return 6
-	default:
-		return -1
-	}
-}
-
-func unparseHDT(hdt models.CoordinateHdt) string {
-	return fmt.Sprintf("%s,%.2f,T*%s",
-		hdt.MessageID,
-		hdt.HeadingDegree,
-		calculateChecksum(fmt.Sprintf("%s,%.2f,T",
-			hdt.MessageID,
-			hdt.HeadingDegree)),
-	)
-}
-
-func unparseVTG(vtg models.CoordinateVtg) string {
-	modeIndicator := modeIndicatorToChar(vtg.ModeIndicator)
-
-	return fmt.Sprintf("%s,%.1f,%s,%.1f,%s,%.1f,%s,%.1f,%s,%s*%s",
-		vtg.MessageID,
-		vtg.TrackDegreeTrue,
-		"T", // True track made good
-		vtg.TrackDegreeMagnetic,
-		"M", // Magnetic track made good
-		vtg.SpeedInKnots,
-		"N", // Speed in knots
-		vtg.Kph,
-		"K", // Speed in kilometers per hour
-		modeIndicator,
-		calculateChecksum(fmt.Sprintf("%s,%.1f,%s,%.1f,%s,%.1f,%s,%.1f,%s,%s",
-			vtg.MessageID,
-			vtg.TrackDegreeTrue,
-			"T",
-			vtg.TrackDegreeMagnetic,
-			"M",
-			vtg.SpeedInKnots,
-			"N",
-			vtg.Kph,
-			"K",
-			modeIndicator)),
-	)
-}
-
-func modeIndicatorToChar(mode models.ModeIndicator) string {
-	switch mode {
-	case models.AutonomousMode:
-		return "A"
-	case models.DifferentialMode:
-		return "D"
-	case models.EstimatedMode:
-		return "E"
-	case models.ManualInputMode:
-		return "M"
-	case models.SimulatorMode:
-		return "S"
-	case models.DataNotValidMode:
-		return "N"
-	default:
-		return ""
-	}
-}
-
 func calculateChecksum(sentence string) string {
 	checksum := 0
 	for i := 1; i < len(sentence); i++ {
@@ -664,4 +433,184 @@ func (r *TelnetController) GetKapalDataByCallSign(callSign string) (*KapalData, 
 	}
 	kapalData := data.(KapalData)
 	return &kapalData, nil
+}
+
+// Constants for GPS quality descriptions
+var gpsQualityDescriptions = []string{
+	"Fix not valid",
+	"GPS fix",
+	"Differential GPS fix",
+	"Not applicable",
+	"RTK Fixed",
+	"RTK Float",
+	"INS Dead reckoning",
+}
+
+// GGASentence represents a parsed GGA sentence
+type GGASentence struct {
+	Latitude   float64
+	LatMinute  string
+	Longitude  float64
+	LongMinute string
+	GPSQuality string
+}
+
+// HDTSentence represents a parsed HDT sentence
+type HDTSentence struct {
+	Heading float64
+}
+
+// VTGSentence represents a parsed VTG sentence
+type VTGSentence struct {
+	CourseTrue        float64
+	CourseMagnetic    *float64
+	SpeedKnots        float64
+	SpeedKmh          float64
+	ModeIndicator     string
+	ModeIndicatorText string
+}
+
+// Convert DMS to decimal degrees
+func convertDMSToDecimal(dms float64, direction string) (float64, error) {
+	degrees := float64(int(dms / 100))
+	minutes := dms - (degrees * 100)
+	decimal := degrees + (minutes / 60)
+
+	if direction == "S" || direction == "W" {
+		decimal *= -1
+	}
+
+	return decimal, nil
+}
+
+// Parse GGA sentence
+func parseGGASentence(gga string) (*GGASentence, error) {
+	fields := strings.Split(gga, ",")
+	if len(fields) < 15 {
+		return nil, fmt.Errorf("invalid GGA sentence")
+	}
+
+	latitudeDMS, err := strconv.ParseFloat(fields[2], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	longitudeDMS, err := strconv.ParseFloat(fields[4], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	latitude, err := convertDMSToDecimal(latitudeDMS, fields[3])
+	if err != nil {
+		return nil, err
+	}
+
+	longitude, err := convertDMSToDecimal(longitudeDMS, fields[5])
+	if err != nil {
+		return nil, err
+	}
+
+	gpsQuality := gpsQualityDescriptions[atoi(fields[6])]
+
+	return &GGASentence{
+		Latitude:   latitude,
+		LatMinute:  formatCoordinate(latitudeDMS, fields[3]),
+		Longitude:  longitude,
+		LongMinute: formatCoordinate(longitudeDMS, fields[5]),
+		GPSQuality: gpsQuality,
+	}, nil
+}
+
+func formatCoordinate(dms float64, direction string) string {
+	degrees := int(dms / 100)
+	minutes := dms - float64(degrees*100)
+	if minutes < 0 {
+		minutes = -minutes
+	}
+	return fmt.Sprintf("%d°%.4f°%s", degrees, minutes, direction)
+}
+
+// Parse HDT sentence
+func parseHDTSentence(hdt string) (*HDTSentence, error) {
+	fields := strings.Split(hdt, ",")
+	if len(fields) < 3 {
+		return nil, fmt.Errorf("invalid HDT sentence")
+	}
+
+	heading, err := strconv.ParseFloat(fields[1], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &HDTSentence{
+		Heading: heading,
+	}, nil
+}
+
+// Parse VTG sentence
+func parseVTGSentence(vtg string) (*VTGSentence, error) {
+	fields := strings.Split(vtg, ",")
+	if len(fields) < 10 {
+		return nil, fmt.Errorf("invalid VTG sentence")
+	}
+
+	courseTrue, err := strconv.ParseFloat(fields[1], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	var courseMagnetic *float64
+	if fields[3] != "" {
+		courseMagneticValue, err := strconv.ParseFloat(fields[3], 64)
+		if err != nil {
+			return nil, err
+		}
+		courseMagnetic = &courseMagneticValue
+	}
+
+	speedKnots, err := strconv.ParseFloat(fields[5], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	speedKmh, err := strconv.ParseFloat(fields[7], 64)
+	if err != nil {
+		return nil, err
+	}
+
+	modeIndicator := fields[9]
+	modeIndicatorText := getModeIndicatorText(modeIndicator)
+
+	return &VTGSentence{
+		CourseTrue:        courseTrue,
+		CourseMagnetic:    courseMagnetic,
+		SpeedKnots:        speedKnots,
+		SpeedKmh:          speedKmh,
+		ModeIndicator:     modeIndicator,
+		ModeIndicatorText: modeIndicatorText,
+	}, nil
+}
+
+func getModeIndicatorText(modeIndicator string) string {
+	switch modeIndicator {
+	case "A":
+		return "Autonomous"
+	case "D":
+		return "Differential"
+	case "E":
+		return "Estimated"
+	case "M":
+		return "Manual Input"
+	case "S":
+		return "Simulator"
+	case "N":
+		return "Data Not Valid"
+	default:
+		return "Unknown"
+	}
+}
+
+func atoi(s string) int {
+	value, _ := strconv.Atoi(s)
+	return value
 }

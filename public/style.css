@@ -78,3 +78,18 @@ table.dataTable td {
   }
 
 }
+
+.dataTables_wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#vessel-table {
+  width: 100%;
+  min-width: 1200px; /* Adjust this based on your total column width */
+}

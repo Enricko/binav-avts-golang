@@ -1,5 +1,3 @@
-const websocketUrl = `ws://localhost:8080/ws/kapal`;
-
 let autoCompleteInstance;
 let currentDevices = [];
 let markers = {};
@@ -38,25 +36,23 @@ function handleWebSocketMessage(event) {
         }
 
         dataDevices[device] = data[device];
-        const gga = data[device].nmea.gga;
-        const hdt = data[device].nmea.hdt;
-        const parsedGGA = parseGGA(gga);
-        let heading = 0;
-        if(data[device].nmea.hasOwnProperty("hdt")) {
-          heading = parseHDT(hdt);
-        }
 
-        updateMarkerPosition(
-          device,
-          parsedGGA.latitude,
-          parsedGGA.longitude,
-          heading,
-          data[device].kapal.width_m,
-          data[device].kapal.height_m,
-          data[device].kapal.top_range,
-          data[device].kapal.left_range,
-          data[device].kapal.image_map
-        );
+        if (
+          data[device].nmea.latitude != "" &&
+          data[device].nmea.longitude != ""
+        ) {
+          updateMarkerPosition(
+            device,
+            convertDMSToDecimal(data[device].nmea.latitude),
+            convertDMSToDecimal(data[device].nmea.longitude),
+            data[device].nmea.heading_degree,
+            data[device].kapal.width_m,
+            data[device].kapal.height_m,
+            data[device].kapal.top_range,
+            data[device].kapal.left_range,
+            data[device].kapal.image_map
+          );
+        }
       }
     }
   }
@@ -66,11 +62,10 @@ function parseGGA(gga) {
   const gpsQualitys = [
     "Fix not valid",
     "GPS fix",
-    "OmniSTAR VBS",
+    "Differential GPS fix",
     "Not applicable",
-    "RTK Fixed, xFill",
-    "OmniSTAR XP/HP",
-    "Location RTK, RTX",
+    "RTK Fixed",
+    "RTK Float",
     "INS Dead reckoning",
   ];
   const fields = gga.split(",");
@@ -122,23 +117,36 @@ function parseVTG(vtg) {
 
 function getModeIndicatorText(modeIndicator) {
   const modeTexts = {
-    "A": "Autonomous mode",
-    "D": "Differential mode",
-    "E": "Estimated (dead reckoning) mode",
-    "M": "Manual Input mode",
-    "S": "Simulator mode",
-    "N": "Data not valid",
+    A: "Autonomous mode",
+    D: "Differential mode",
+    E: "Estimated (dead reckoning) mode",
+    M: "Manual Input mode",
+    S: "Simulator mode",
+    N: "Data not valid",
   };
   return modeTexts[modeIndicator] || "Unknown";
 }
+function convertDMSToDecimal(degreeMinute) {
+  // Extract the degree and minute components
+  const degreePattern = /^(\d+)°(\d+\.\d+)°([NS|EW])$/;
+  const match = degreePattern.exec(degreeMinute.trim());
 
-function convertDMSToDecimal(degrees, direction) {
-  const d = Math.floor(degrees / 100);
-  const m = degrees % 100;
-  let decimalDegrees = d + m / 60;
+  if (!match) {
+    throw new Error(`Invalid degree-minute format: "${degreeMinute}"`);
+  }
+
+  const degrees = parseFloat(match[1]);
+  const minutes = parseFloat(match[2]);
+  const direction = match[3];
+
+  // Convert to decimal degrees
+  let decimalDegrees = degrees + minutes / 60;
+
+  // Adjust for direction
   if (direction === "S" || direction === "W") {
     decimalDegrees = -decimalDegrees;
   }
+
   return decimalDegrees;
 }
 
@@ -168,10 +176,15 @@ async function updateMarkerPosition(
   left,
   imageMap
 ) {
-  const ggaKapal = parseGGA(dataDevices[device].nmea.gga);
-  const contentString = createInfoWindowContent(device, ggaKapal.latMinute, ggaKapal.longMinute);
+  let latMinute = dataDevices[device].nmea.latitude;
+  let longMinute = dataDevices[device].nmea.longitude;
+  const contentString = createInfoWindowContent(device, latMinute, longMinute);
 
   if (markers.hasOwnProperty(device)) {
+    console.log("update marker", {
+      lat: typeof latitude,
+      lng: typeof longitude,
+    });
     markers[device].update(
       device,
       { lat: latitude, lng: longitude },
@@ -179,7 +192,10 @@ async function updateMarkerPosition(
       left,
       width,
       height,
-      (heading + dataDevices[device].kapal.calibration + dataDevices[device].kapal.heading_direction) % 360,
+      (heading +
+        dataDevices[device].kapal.calibration +
+        dataDevices[device].kapal.heading_direction) %
+        360,
       imageMap,
       contentString
     );
@@ -192,7 +208,10 @@ async function updateMarkerPosition(
       left,
       width,
       height,
-      (heading + dataDevices[device].kapal.calibration + dataDevices[device].kapal.heading_direction) % 360,
+      (heading +
+        dataDevices[device].kapal.calibration +
+        dataDevices[device].kapal.heading_direction) %
+        360,
       imageMap,
       contentString
     );
@@ -218,26 +237,19 @@ function getDataKapalMarker(device) {
 
 function dataKapalMarker(device) {
   const data = dataDevices[device];
-  const ggaData = parseGGA(data.nmea.gga);
-  if(data.nmea.hasOwnProperty("hdt")){
-    const hdtData = parseHDT(data.nmea.hdt);
-    document.getElementById("heading_hdt").textContent = `${hdtData + dataDevices[device].kapal.calibration}\u00B0`;
-  }else{
-    document.getElementById("heading_hdt").textContent = `N/A`;
-  }
-  if(data.nmea.hasOwnProperty("vtg")){
-    const vtgData = parseVTG(data.nmea.vtg);
-    document.getElementById("SOG").textContent = `${vtgData.speedKnots} KTS`;
-  }else{
-    document.getElementById("SOG").textContent = `N/A KTS`;
-  }
-
+  document.getElementById("heading_hdt").textContent = `${
+    data.nmea.heading_degree + data.kapal.calibration
+  }\u00B0`;
+  document.getElementById(
+    "SOG"
+  ).textContent = `${data.nmea.speed_in_knots} KTS`;
   document.getElementById("vesselName").textContent = device;
   document.getElementById("status_telnet").textContent = data.nmea.status;
-  document.getElementById("status_telnet").style.color = data.nmea.status == "Connected" ? "green" : "red";
-  document.getElementById("latitude").textContent = ggaData.latMinute;
-  document.getElementById("longitude").textContent = ggaData.longMinute;
-  document.getElementById("SOLN").textContent = ggaData.gpsQuality;
+  document.getElementById("status_telnet").style.color =
+    data.nmea.status == "Connected" ? "green" : "red";
+  document.getElementById("latitude").textContent = data.nmea.latitude;
+  document.getElementById("longitude").textContent = data.nmea.longitude;
+  document.getElementById("SOLN").textContent = data.nmea.gps_quality_indicator;
 }
 
 function switchWindow(onoff) {
@@ -262,7 +274,6 @@ document.getElementById("hideButton").addEventListener("click", function () {
     clearInterval(timeoutID);
   }
 });
-
 
 class VesselOverlay extends google.maps.OverlayView {
   constructor(
@@ -327,13 +338,17 @@ class VesselOverlay extends google.maps.OverlayView {
     const color = status === "Connected" ? [40, 167, 69] : [220, 53, 69]; // Green if Connected, Red if Disconnected
 
     // Use the utility function to change the image color and add shadow
-    changeImageColor(`/public/assets/images/${this.imageMap}`, color, (dataUrl) => {
+    changeImageColor(
+      `/public/assets/images/${this.imageMap}`,
+      color,
+      (dataUrl) => {
         if (dataUrl) {
-            img.src = dataUrl;
+          img.src = dataUrl;
         } else {
-            img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
+          img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
         }
-    });
+      }
+    );
   }
 
   onDblClick(event) {
@@ -420,18 +435,22 @@ class VesselOverlay extends google.maps.OverlayView {
     if (this.div) {
       const img = this.div.firstChild;
 
-        // Determine the color based on device status
-        const status = dataDevices[this.device].nmea.status;
-        const color = status === "Connected" ? [40, 167, 69] : [220, 53, 69]; // Green if Connected, Red if Disconnected
+      // Determine the color based on device status
+      const status = dataDevices[this.device].nmea.status;
+      const color = status === "Connected" ? [40, 167, 69] : [220, 53, 69]; // Green if Connected, Red if Disconnected
 
-        // Use the utility function to change the image color and add shadow
-        changeImageColor(`/public/assets/images/${this.imageMap}`, color, (dataUrl) => {
-            if (dataUrl) {
-                img.src = dataUrl;
-            } else {
-                img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
-            }
-        });
+      // Use the utility function to change the image color and add shadow
+      changeImageColor(
+        `/public/assets/images/${this.imageMap}`,
+        color,
+        (dataUrl) => {
+          if (dataUrl) {
+            img.src = dataUrl;
+          } else {
+            img.src = `/public/assets/images/${this.imageMap}`; // Fallback if processing fails
+          }
+        }
+      );
 
       const transformOriginX =
         (this.offsetFromCenter.x / this.vesselWidthMeters) * 100;
@@ -546,52 +565,52 @@ function changeImageColor(imageUrl, color, callback) {
   img.src = imageUrl;
 
   img.onload = function () {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-      canvas.width = img.width;
-      canvas.height = img.height;
+    canvas.width = img.width;
+    canvas.height = img.height;
 
-      // Draw the image to get the original shape
-      ctx.drawImage(img, 0, 0);
+    // Draw the image to get the original shape
+    ctx.drawImage(img, 0, 0);
 
-      // Save the current context state
-      ctx.save();
+    // Save the current context state
+    ctx.save();
 
-      // Set shadow properties
-      ctx.shadowColor = "rgba(0, 0, 0, 0.5)"; // Shadow color
-      ctx.shadowBlur = 10; // Shadow blur
-      ctx.shadowOffsetX = 0; // Shadow offset X
-      ctx.shadowOffsetY = 0; // Shadow offset Y
+    // Set shadow properties
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)"; // Shadow color
+    ctx.shadowBlur = 10; // Shadow blur
+    ctx.shadowOffsetX = 0; // Shadow offset X
+    ctx.shadowOffsetY = 0; // Shadow offset Y
 
-      // Draw the image again to apply the shadow
-      ctx.drawImage(img, 0, 0);
+    // Draw the image again to apply the shadow
+    ctx.drawImage(img, 0, 0);
 
-      // Restore the context to remove shadow effect for further drawing
-      ctx.restore();
+    // Restore the context to remove shadow effect for further drawing
+    ctx.restore();
 
-      // Get the image data to change colors
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
+    // Get the image data to change colors
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
 
-      const [r, g, b] = color;
+    const [r, g, b] = color;
 
-      for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] !== 0) {
-              // Check if the pixel is not transparent
-              data[i] = r; // Red
-              data[i + 1] = g; // Green
-              data[i + 2] = b; // Blue
-              // data[i + 3] = data[i + 3]; // Alpha (unchanged)
-          }
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] !== 0) {
+        // Check if the pixel is not transparent
+        data[i] = r; // Red
+        data[i + 1] = g; // Green
+        data[i + 2] = b; // Blue
+        // data[i + 3] = data[i + 3]; // Alpha (unchanged)
       }
+    }
 
-      ctx.putImageData(imageData, 0, 0);
-      callback(canvas.toDataURL());
+    ctx.putImageData(imageData, 0, 0);
+    callback(canvas.toDataURL());
   };
 
   img.onerror = function () {
-      console.error("Failed to load image:", imageUrl);
-      callback(null);
+    console.error("Failed to load image:", imageUrl);
+    callback(null);
   };
 }
