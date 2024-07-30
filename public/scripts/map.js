@@ -1,8 +1,10 @@
 let map;
 let poly;
+let stravaPolyline;
 let kmzLayers = [];
 const initialZoom = 16;
 let isRulerOn = false;
+let isPreview = false;
 let distanceMarkers = [];
 let clickListener;
 let mouseMoveListener;
@@ -19,6 +21,7 @@ function createRulerButton(map) {
     width: 50px;
     height: 50px;
     margin-right: 0.5rem;
+    
   `;
   controlButton.innerHTML =
     '<i class="fas fa-solid fa-ruler" style="color: black;"></i>';
@@ -26,6 +29,73 @@ function createRulerButton(map) {
   controlButton.addEventListener("click", toggleRuler);
 
   return controlButton;
+}
+
+function createPreviewButton(map) {
+  const controlButton = document.createElement("button");
+
+  controlButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
+  controlButton.style.cssText = `
+    background-color: white;
+    border: 0;
+    width: 50px;
+    height: 50px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  `;
+  controlButton.innerHTML =
+    '<i class="fas fa-solid fa-eye" style="color: black;"></i>';
+  controlButton.title = "Ruler Button";
+  controlButton.addEventListener("click", previewStrava);
+
+  return controlButton;
+}
+
+async function previewStrava() {
+  isPreview = !isPreview;
+  console.log("asdsd");
+
+  const loading = document.getElementById("spinner");
+  loading.style.display = isPreview ? "block" : "none";
+
+  if (isPreview) {
+    const spinner = document.getElementById("spinner");
+    spinner.style.display = "block";
+
+    const url = "https://binav-avts.id/vessel_records";
+
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok " + response.statusText);
+      }
+
+      const result = await response.json();
+
+      const pathCoordinates = result.map((record) => {
+        return {
+          lat: convertDMSToDecimal(record.latitude),
+          lng: convertDMSToDecimal(record.longitude),
+        };
+      });
+
+       stravaPolyline = new google.maps.Polyline({
+        path: pathCoordinates,
+        geodesic: true,
+        strokeColor: "#FF0000",
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+      });
+      stravaPolyline.setMap(map);
+      spinner.style.display = "none";
+    } catch (error) {
+      // Handle any errors that occur during the fetch
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  }else{
+    if (stravaPolyline) stravaPolyline.setMap(null);
+  }
 }
 
 function toggleRuler() {
@@ -78,6 +148,9 @@ function initMap() {
 
   const rulerButton = createRulerButton(map);
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(rulerButton);
+
+  const previewButton = createPreviewButton(map);
+  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(previewButton);
 
   fetchKMZFiles();
   connectWebSocket();
@@ -151,7 +224,7 @@ function addRulerPoint(event) {
     console.log(path.getAt(path.getLength() - 1) + " points");
     totalLength += distance;
     displayDistanceLabel(newPoint, distance);
-  }else{
+  } else {
     console.log(path.getLength() + " points");
     console.log(path.getAt(path.getLength()) + " points");
     displayDistanceLabel(path.getAt(path.getLength() - 1), 0);
