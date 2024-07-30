@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"golang-app/app/models"
+	"golang-app/database"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,4 +35,15 @@ func (r *Controller) Login(c *gin.Context) {
 	}
 	// Render the index.html template with data
 	c.HTML(http.StatusOK, "login.html", data)
+}
+func (r *Controller) GetVesselRecords(c *gin.Context) {
+	var records []models.VesselRecord
+	result := database.DB.Find(&records)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, records)
 }
