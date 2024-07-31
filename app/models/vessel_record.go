@@ -2,7 +2,9 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
 )
 
 type GpsQuality string
@@ -10,7 +12,7 @@ type GpsQuality string
 const (
 	FixNotValid        GpsQuality = "Fix not valid"
 	GpsFix             GpsQuality = "GPS fix"
-	DifferentialGpsFix GpsQuality = "Differential GPS fix (DGNSS)"
+	DifferentialGpsFix GpsQuality = "Differential GPS fix"
 	NotApplicable      GpsQuality = "Not applicable"
 	RtkFixed           GpsQuality = "RTK Fixed"
 	RtkFloat           GpsQuality = "RTK Float"
@@ -26,7 +28,7 @@ type VesselRecord struct {
 	Longitude           string     `gorm:"varchar(255)" json:"longitude" binding:"required"`
 	HeadingDegree       float64    `gorm:"varchar(255)" json:"heading_degree" binding:"required"`
 	SpeedInKnots        float64    `gorm:"" json:"speed_in_knots" binding:"required"`
-	GpsQualityIndicator GpsQuality `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix (DGNSS)','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
+	GpsQualityIndicator GpsQuality `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
 	WaterDepth          float64    `gorm:"" json:"water_depth" binding:"required"`
 
 	CreatedAt time.Time `json:"created_at"`
@@ -36,6 +38,7 @@ type VesselRecord struct {
 }
 
 func StringToGpsQuality(value string) (GpsQuality, error) {
+	fmt.Println(value)
 	switch value {
 	case string(FixNotValid):
 		return FixNotValid, nil
