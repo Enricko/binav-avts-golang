@@ -1,11 +1,11 @@
 {{ template "header" . }}
-<div style="display: flex;">
-  <div id="map" style="width: 100vw; height: 100vh; position: relative;"></div>
+<div style="display: flex; height: 100vh;">
+  <div id="map" style="width: 100vw; height: 100%; position: relative;"></div>
   <div id="measurement-window">
     <div id="measurement-info">Total Length : 0.0 Km</div>
   </div>
 
-  
+
 
   <div id="spinner">
     <div class="spinner-border" role="status">
@@ -13,48 +13,162 @@
     </div>
   </div>
 
-  <div class="d-flex justify-content-between w-100 align-items-start p-2 overlay-container"
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;">
-    <div class="d-flex align-items-center" style="pointer-events: auto; ">
+  <div id="detail-vessel" style="width: 30%; height: 100%; display: none; ">
+    <table class="table table-bordered" style="font-size: small;">
+      <thead>
+        <tr>
+          <th scope="col" colspan="2" id="vesselName" >Vessel Name</th>
+        </tr>
+      </thead>
+      <tbody >
+        <tr >
+          <td scope="row">Status</td>
+          <td id="status_telnet">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Lat</td>
+          <td id="latitude">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Long</td>
+          <td id="longitude">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Heading (HDT)</td>
+          <td id="heading_hdt">-</td>
+        </tr>
+        <tr>
+          <td scope="row">SOG</td>
+          <td id="SOG">-</td>
+        </tr>
+        <tr>
+          <td scope="row">SOLN</td>
+          <td id="SOLN">-</td>
+        </tr>
+      </tbody>
+    </table>
+    <button id="play-animation" type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: rgb(110, 110, 110); border: 0; width: 50px; height: 50px; margin-left: 0.5rem;">
+        <i class="fas fa-play" style="color: rgb(255, 255, 255);"></i>
+      </button>
+  </div>
+
+  <div
+    class="d-flex justify-content-between w-100 align-items-start p-2 overlay-container"
+    style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    "
+  >
+    <div class="d-flex align-items-center" style="pointer-events: auto">
       <div class="btn-group">
         <div class="dropdown">
-          <button class="btn btn-primary rounded-circle " style="border: 0; margin-right: 0.5rem; background-color: white; width: 50px; height: 50px;"
+          <button
+            class="btn btn-primary rounded-circle"
+            style="
+              border: 0;
+              margin-right: 0.5rem;
+              background-color: white;
+              width: 50px;
+              height: 50px;
+            "
             type="button"
-            data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fa-solid fa-bars" style="color: black;"></i>
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i class="fa-solid fa-bars" style="color: black"></i>
           </button>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#vesselTable">Vessel</a></li>
-            <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mappingTable">Pipeline</a></li>
-            <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#clientTable">Client</a></li>
+            <li>
+              <a
+                class="dropdown-item"
+                data-bs-toggle="modal"
+                data-bs-target="#vesselTable"
+                >Vessel</a
+              >
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                data-bs-toggle="modal"
+                data-bs-target="#mappingTable"
+                >Pipeline</a
+              >
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                data-bs-toggle="modal"
+                data-bs-target="#clientTable"
+                >Client</a
+              >
+            </li>
           </ul>
         </div>
       </div>
 
-      <div class="autoComplete_wrapper ">
-        <input id="vesselSearch" style="border-radius: 30px; height: 50px; padding-left: 20px; padding-right: 20px;" type="search" dir="ltr"
-          spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off"
-          placeholder="Search for vessel..." />
+      <div class="autoComplete_wrapper">
+        <input
+          id="vesselSearch"
+          style="
+            border-radius: 30px;
+            height: 50px;
+            padding-left: 20px;
+            padding-right: 20px;
+          "
+          type="search"
+          dir="ltr"
+          spellcheck="false"
+          autocorrect="off"
+          autocomplete="off"
+          autocapitalize="off"
+          placeholder="Search for vessel..."
+        />
       </div>
 
-      <button id="searchButton" class="btn btn-primary ml-4 rounded-circle"
-        style="background-color: white; border: 0; margin-left: 1rem; width: 50px; height: 50px;">
-        <i class="fa-solid fa-magnifying-glass" style="color: black;"></i>
+      <button
+        id="searchButton"
+        class="btn btn-primary ml-4 rounded-circle"
+        style="
+          background-color: white;
+          border: 0;
+          margin-left: 1rem;
+          width: 50px;
+          height: 50px;
+        "
+      >
+        <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
       </button>
-
     </div>
 
-    <div class="d-flex flex-column align-items-end" style="pointer-events: auto;">
-      <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px; "
+    <div
+      class="d-flex flex-column align-items-end"
+      style="pointer-events: auto"
+    >
+      <!-- <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: white; border: 0; width: 50px; height: 50px; "
         data-bs-toggle="modal" data-bs-target="#profilePage">
         <i class="fas fa-user" style="color: black;"></i>
-      </button>
+      </button> -->
 
-      <button id="hideButton" class="btn btn-primary rounded-circle d-none" type="button"
-        style="background-color: white; border: 0; width: 50px; height: 50px;" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-info" style="color: black;"></i>
+      <button
+        id="hideButton"
+        class="btn btn-primary rounded-circle d-none"
+        type="button"
+        style="background-color: white; border: 0; width: 50px; height: 50px"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <i class="fas fa-info" style="color: black"></i>
       </button>
-      <div class="container pt-2" id="myContainer" style="display: none; background-color: white; pointer-events: auto;">
+      <div
+        class="container pt-2"
+        id="myContainer"
+        style="display: none; background-color: white; pointer-events: auto"
+      >
         <table class="table table-bordered">
           <thead>
             <tr>

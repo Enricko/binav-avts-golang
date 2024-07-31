@@ -1,6 +1,7 @@
 let map;
 let poly;
 let stravaPolyline;
+let markerStrava;
 let kmzLayers = [];
 const initialZoom = 16;
 let isRulerOn = false;
@@ -31,6 +32,24 @@ function createRulerButton(map) {
   return controlButton;
 }
 
+function createProfileButton(map) {
+  const profileButton = document.createElement("button");
+  profileButton.classList.add("btn", "btn-primary", "rounded-circle", "mb-2");
+  profileButton.style.cssText = `
+    background-color: white;
+    border: 0;
+    width: 50px;
+    height: 50px;
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
+  `;
+  profileButton.innerHTML = '<i class="fas fa-user" style="color: black;"></i>';
+  profileButton.setAttribute("data-bs-toggle", "modal");
+  profileButton.setAttribute("data-bs-target", "#profilePage");
+  profileButton.title = "Profile Button";
+  return profileButton;
+}
+
 function createPreviewButton(map) {
   const controlButton = document.createElement("button");
 
@@ -45,40 +64,65 @@ function createPreviewButton(map) {
   `;
   controlButton.innerHTML =
     '<i class="fas fa-solid fa-eye" style="color: black;"></i>';
-  controlButton.title = "Ruler Button";
+  controlButton.title = "Preview Button";
   controlButton.addEventListener("click", previewStrava);
 
   return controlButton;
 }
 
+
+const stravaExample = [
+  { lat: -1.2251, lng: 116.8146 }, // Point 1: Northwest
+    { lat: -1.2401, lng: 116.8346 }, // Point 2: North
+    { lat: -1.2551, lng: 116.8546 }, // Point 3: Northeast
+    { lat: -1.2701, lng: 116.8546 }, // Point 4: East
+    { lat: -1.2851, lng: 116.8346 }, // Point 5: Southeast
+    { lat: -1.3001, lng: 116.8146 }, // Point 6: South
+    { lat: -1.3001, lng: 116.7946 }, // Point 7: Southwest
+    { lat: -1.2851, lng: 116.7746 }, // Point 8: West
+    { lat: -1.2701, lng: 116.7746 }, // Point 9: Northwest
+    { lat: -1.2551, lng: 116.7946 }, // Point 10: North
+    { lat: -1.2401, lng: 116.8146 }, // Point 11: Northeast
+    { lat: -1.2251, lng: 116.8146 }
+];
+
 async function previewStrava() {
   isPreview = !isPreview;
-  console.log("asdsd");
+  console.log("pppppp");
 
   const loading = document.getElementById("spinner");
-  loading.style.display = isPreview ? "block" : "none";
+  const sidebarDetail = document.getElementById("detail-vessel");
 
   if (isPreview) {
-    const spinner = document.getElementById("spinner");
-    spinner.style.display = "block";
+
+  
+    
+    loading.style.display = "block";
 
     const url = "https://binav-avts.id/vessel_records";
 
     try {
-      const response = await fetch(url);
+      // const response = await fetch(url);
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok " + response.statusText);
-      }
+      // if (!response.ok) {
+      //   throw new Error("Network response was not ok " + response.statusText);
+      // }
 
-      const result = await response.json();
+      // const result = await response.json();
 
-      const pathCoordinates = result.map((record) => {
-        return {
-          lat: convertDMSToDecimal(record.latitude),
-          lng: convertDMSToDecimal(record.longitude),
-        };
-      });
+      // const pathCoordinates = result.map((record) => {
+      //   return {
+      //     lat: convertDMSToDecimal(record.latitude),
+      //     lng: convertDMSToDecimal(record.longitude),
+      //   };
+      // });
+
+      const pathCoordinates = stravaExample.map((record) => {
+          return {
+            lat: record.lat,
+            lng: record.lng,
+          };
+        });
 
        stravaPolyline = new google.maps.Polyline({
         path: pathCoordinates,
@@ -88,13 +132,34 @@ async function previewStrava() {
         strokeWeight: 2,
       });
       stravaPolyline.setMap(map);
-      spinner.style.display = "none";
+
+      markerStrava = new google.maps.Marker({
+        position: pathCoordinates[0],
+        map: map,
+        title: "Marker",  
+      });
+  
+      let index = 0;
+      function animateMarker() {
+        markerStrava.setPosition(pathCoordinates[index]);
+        index++;
+        if (index < pathCoordinates.length) {
+          setTimeout(animateMarker, 500);
+        }
+      }
+      animateMarker();
+
+      loading.style.display = "none";
+      sidebarDetail.style.display = "block";
+
     } catch (error) {
-      // Handle any errors that occur during the fetch
       console.error("There was a problem with the fetch operation:", error);
     }
-  }else{
+  } else {
+    loading.style.display = "none";
+    sidebarDetail.style.display = "none";
     if (stravaPolyline) stravaPolyline.setMap(null);
+    if (markerStrava) markerStrava.setMap(null);
   }
 }
 
@@ -137,6 +202,29 @@ function toggleRuler() {
   }
 }
 
+function playStrava(){
+  const pathCoordinates = stravaExample.map((record) => {
+    return {
+      lat: record.lat,
+      lng: record.lng,
+    };
+  });
+  let index = 0;
+  function animateMarker() {
+    markerStrava.setPosition(pathCoordinates[index]);
+    index++;
+    if (index < pathCoordinates.length) {
+      setTimeout(animateMarker, 500);
+    }
+  }
+  animateMarker();
+
+}
+const btnPlay = document.getElementById("play-animation");
+btnPlay.addEventListener('click', playStrava);
+
+
+
 function initMap() {
   map = new google.maps.Map(document.getElementById("map"), {
     zoom: initialZoom,
@@ -145,6 +233,9 @@ function initMap() {
     zoomControl: true,
     scaleControl: true,
   });
+
+  const profileButton = createProfileButton(map);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(profileButton);
 
   const rulerButton = createRulerButton(map);
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(rulerButton);
