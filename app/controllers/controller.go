@@ -57,5 +57,6 @@ func (r *Controller) GetVesselRecords(c *gin.Context) {
 		"call_sign": callSign,
 		"kapal":     kapal,
 		"records":   records,
+		"total_record":len(records),
 	})
 }

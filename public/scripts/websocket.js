@@ -225,11 +225,7 @@ function createInfoWindowContent(device, latitude, longitude) {
     </div>`;
 }
 
-function getDataKapalMarker(device) {
-  switchWindow(true);
-  dataKapalMarker(device);
-  currentSelectedMarker = device;
-}
+
 
 function dataKapalMarker(device) {
   const data = dataDevices[device];
@@ -248,31 +244,6 @@ function dataKapalMarker(device) {
   document.getElementById("SOLN").textContent = data.nmea.gps_quality_indicator;
 }
 
-function switchWindow(onoff) {
-  const hideButton = document.getElementById("hideButton");
-  if (onoff) {
-    hideButton.classList.remove("d-none");
-  } else {
-    hideButton.classList.add("d-none");
-  }
-}
-
-let timeoutID;
-document.getElementById("hideButton").addEventListener("click", function () {
-  const container = document.getElementById("myContainer");
-  const vessel_record_preview = document.getElementById("vessel_record_preview");
-  if (container.style.display === "none") {
-    container.style.display = "block";
-    vessel_record_preview.style.display = "block";
-    timeoutID = setInterval(() => {
-      dataKapalMarker(currentSelectedMarker);
-    }, 500);
-  } else {
-    vessel_record_preview.style.display = "none";
-    container.style.display = "none";
-    clearInterval(timeoutID);
-  }
-});
 
 class VesselOverlay extends google.maps.OverlayView {
   constructor(
@@ -612,4 +583,19 @@ function changeImageColor(imageUrl, color, callback) {
     console.error("Failed to load image:", imageUrl);
     callback(null);
   };
+}
+
+
+function getDataKapalMarker(device) {
+  if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
+  if (markerStrava) markerStrava.setMap(null);
+  btnPlay.disabled = true; 
+  
+  const vessel_record_preview = document.getElementById("vessel_record_preview");
+  dataKapalMarker(device);
+  currentSelectedMarker = device;
+  vessel_record_preview.style.display = "block";
+  isPreview = true;
+  viewDetailKapal()
+  
 }

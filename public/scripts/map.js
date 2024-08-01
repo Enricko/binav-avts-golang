@@ -1,10 +1,8 @@
 let map;
 let poly;
-let stravaPolyline;
 let kmzLayers = [];
 const initialZoom = 16;
 let isRulerOn = false;
-let isPreview = false;
 let distanceMarkers = [];
 let clickListener;
 let mouseMoveListener;
@@ -31,76 +29,23 @@ function createRulerButton(map) {
   return controlButton;
 }
 
-function createPreviewButton(map) {
-  const controlButton = document.createElement("button");
-
-  controlButton.id = "vessel_record_preview";
-
-  controlButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
-  controlButton.style.cssText = `
+function createProfileButton(map) {
+  const profileButton = document.createElement("button");
+  profileButton.classList.add("btn", "btn-primary", "rounded-circle", "mb-2");
+  profileButton.style.cssText = `
     background-color: white;
     border: 0;
     width: 50px;
     height: 50px;
     margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-    display:none;
+    margin-top: 0.5rem;
   `;
-  controlButton.innerHTML =
-    '<i class="fas fa-solid fa-eye" style="color: black;"></i>';
-  controlButton.title = "Vessel Record Preview";
-  controlButton.addEventListener("click", previewStrava);
-
-  return controlButton;
+  profileButton.innerHTML = '<i class="fas fa-user" style="color: black;"></i>';
+  profileButton.setAttribute("data-bs-toggle", "modal");
+  profileButton.setAttribute("data-bs-target", "#profilePage");
+  profileButton.title = "Profile Button";
+  return profileButton;
 }
-
-async function previewStrava() {
-  isPreview = !isPreview;
-  console.log("asdsd");
-
-  const loading = document.getElementById("spinner");
-  loading.style.display = isPreview ? "block" : "none";
-
-  if (isPreview) {
-    const spinner = document.getElementById("spinner");
-    spinner.style.display = "block";
-
-    const url = `http://127.0.0.1:8080/vessel_records/${currentSelectedMarker}`;
-
-    try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok " + response.statusText);
-      }
-
-      const result = await response.json();
-
-      const vesselHistory = result.records.map((record) => {
-        return {
-          lat: convertDMSToDecimal(record.latitude),
-          lng: convertDMSToDecimal(record.longitude),
-        };
-      });
-
-       stravaPolyline = new google.maps.Polyline({
-        path: vesselHistory,
-        geodesic: true,
-        strokeColor: "#FF0000",
-        strokeOpacity: 1.0,
-        strokeWeight: 2,
-      });
-      stravaPolyline.setMap(map);
-      spinner.style.display = "none";
-    } catch (error) {
-      // Handle any errors that occur during the fetch
-      console.error("There was a problem with the fetch operation:", error);
-    }
-  }else{
-    if (stravaPolyline) stravaPolyline.setMap(null);
-  }
-}
-
 function toggleRuler() {
   isRulerOn = !isRulerOn;
 
@@ -148,6 +93,9 @@ function initMap() {
     zoomControl: true,
     scaleControl: true,
   });
+
+  const profileButton = createProfileButton(map);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(profileButton);
 
   const rulerButton = createRulerButton(map);
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(rulerButton);
