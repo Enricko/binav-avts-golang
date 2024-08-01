@@ -8,6 +8,11 @@ let markerStrava;
 
 let isPlayingAnimation = false;
 
+let timeoutIdAnimation;
+let stopAnimation = false;
+
+const durationAnimation = 60000; // 60 seconds in milliseconds
+
 function createPreviewButton(map) {
   const controlButton = document.createElement("button");
 
@@ -30,21 +35,6 @@ function createPreviewButton(map) {
 
   return controlButton;
 }
-
-const stravaExample = [
-  { lat: -1.2251, lng: 116.8146 }, // Point 1: Northwest
-  { lat: -1.2401, lng: 116.8346 }, // Point 2: North
-  { lat: -1.2551, lng: 116.8546 }, // Point 3: Northeast
-  { lat: -1.2701, lng: 116.8546 }, // Point 4: East
-  { lat: -1.2851, lng: 116.8346 }, // Point 5: Southeast
-  { lat: -1.3001, lng: 116.8146 }, // Point 6: South
-  { lat: -1.3001, lng: 116.7946 }, // Point 7: Southwest
-  { lat: -1.2851, lng: 116.7746 }, // Point 8: West
-  { lat: -1.2701, lng: 116.7746 }, // Point 9: Northwest
-  { lat: -1.2551, lng: 116.7946 }, // Point 10: North
-  { lat: -1.2401, lng: 116.8146 }, // Point 11: Northeast
-  { lat: -1.2251, lng: 116.8146 },
-];
 
 function viewDetailKapal() {
   const sidebarDetail = document.getElementById("detail-vessel");
@@ -92,12 +82,18 @@ function playStrava() {
       title: "Marker",
     });
     let index = 0;
+    const interval = durationAnimation / totalHistoryVesselData;
     function animateMarker() {
+      if (stopAnimation) {
+        isPlayingAnimation = false;
+        stopAnimation = false;
+        return;
+      }
       markerStrava.setPosition(historyVesselData[index]);
-      map.panTo(historyVesselData[index]);  // Center the map on the marker's position
+      map.panTo(historyVesselData[index]); // Center the map on the marker's position
       index++;
       if (index < totalHistoryVesselData) {
-        setTimeout(animateMarker, 100);
+        timeoutIdAnimation = setTimeout(animateMarker, interval);
       }
       if (index >= totalHistoryVesselData) {
         isPlayingAnimation = false;
@@ -105,6 +101,12 @@ function playStrava() {
     }
     animateMarker();
   }
+}
+
+function stopStrava() {
+  stopAnimation = true;
+  clearTimeout(timeoutIdAnimation);
+  isPlayingAnimation = false;
 }
 
 async function loadVesselHistory() {
@@ -128,6 +130,7 @@ async function loadVesselHistory() {
       };
     });
     totalHistoryVesselData = result.total_record;
+    document.getElementById("total_records").innerHTML = totalHistoryVesselData;
     loading.style.display = "none";
     if (totalHistoryVesselData > 0) {
       btnPlay.disabled = false;

@@ -590,12 +590,14 @@ function getDataKapalMarker(device) {
   if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
   if (markerStrava) markerStrava.setMap(null);
   btnPlay.disabled = true; 
-  
+
   const vessel_record_preview = document.getElementById("vessel_record_preview");
   dataKapalMarker(device);
   currentSelectedMarker = device;
   vessel_record_preview.style.display = "block";
   isPreview = true;
-  viewDetailKapal()
-  
+  viewDetailKapal();
+  if(isPlayingAnimation){
+    stopStrava();
+  }
 }
