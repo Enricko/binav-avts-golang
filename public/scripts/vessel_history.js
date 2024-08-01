@@ -103,7 +103,7 @@ function playStrava() {
   }
 }
 
-function stopStrava() {
+function dismissStrava() {
   stopAnimation = true;
   clearTimeout(timeoutIdAnimation);
   isPlayingAnimation = false;

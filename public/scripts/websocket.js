@@ -598,6 +598,6 @@ function getDataKapalMarker(device) {
   isPreview = true;
   viewDetailKapal();
   if(isPlayingAnimation){
-    stopStrava();
+    dismissStrava();
   }
 }
