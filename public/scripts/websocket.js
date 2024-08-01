@@ -181,10 +181,6 @@ async function updateMarkerPosition(
   const contentString = createInfoWindowContent(device, latMinute, longMinute);
 
   if (markers.hasOwnProperty(device)) {
-    console.log("update marker", {
-      lat: typeof latitude,
-      lng: typeof longitude,
-    });
     markers[device].update(
       device,
       { lat: latitude, lng: longitude },
@@ -264,12 +260,15 @@ function switchWindow(onoff) {
 let timeoutID;
 document.getElementById("hideButton").addEventListener("click", function () {
   const container = document.getElementById("myContainer");
+  const vessel_record_preview = document.getElementById("vessel_record_preview");
   if (container.style.display === "none") {
     container.style.display = "block";
+    vessel_record_preview.style.display = "block";
     timeoutID = setInterval(() => {
       dataKapalMarker(currentSelectedMarker);
     }, 500);
   } else {
+    vessel_record_preview.style.display = "none";
     container.style.display = "none";
     clearInterval(timeoutID);
   }

@@ -20,7 +20,7 @@ const (
 )
 
 type VesselRecord struct {
-	IdVesselRecord uint64 `gorm:"primary_key" json:"id_ vessel_record"`
+	IdVesselRecord uint64 `gorm:"primary_key" json:"id_vessel_record"`
 	CallSign       string `gorm:"not null;index" json:"call_sign" binding:"required"`
 	SeriesID       uint64 `gorm:"not null" json:"series_id" binding:"required"`
 
@@ -34,7 +34,7 @@ type VesselRecord struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Kapal *Kapal `gorm:"foreignKey:CallSign;association_foreignkey:CallSign"`
+	Kapal *Kapal `gorm:"foreignKey:CallSign;association_foreignkey:CallSign" json:"-"`
 }
 
 func StringToGpsQuality(value string) (GpsQuality, error) {

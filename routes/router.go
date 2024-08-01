@@ -36,6 +36,6 @@ func SetupRouter(r *gin.Engine) {
 
 	r.POST("/user/sendOtp", otpController.InsertOtp)
 
-	r.GET("/vessel_records", mainController.GetVesselRecords)
+	r.GET("/vessel_records/:call_sign", mainController.GetVesselRecords)
 
 }

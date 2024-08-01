@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
+
 )
 
 type Controller struct {
@@ -37,13 +38,24 @@ func (r *Controller) Login(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", data)
 }
 func (r *Controller) GetVesselRecords(c *gin.Context) {
+
+	callSign := c.Param("call_sign")
+	var kapal models.Kapal
 	var records []models.VesselRecord
-	result := database.DB.Find(&records)
+	if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Kapal not found"})
+		return
+	}
+	result := database.DB.Where("call_sign = ?", callSign).Find(&records)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, records)
+	c.JSON(http.StatusOK, gin.H{
+		"call_sign": callSign,
+		"kapal":     kapal,
+		"records":   records,
+	})
 }

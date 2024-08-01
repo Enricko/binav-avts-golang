@@ -34,6 +34,8 @@ function createRulerButton(map) {
 function createPreviewButton(map) {
   const controlButton = document.createElement("button");
 
+  controlButton.id = "vessel_record_preview";
+
   controlButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
   controlButton.style.cssText = `
     background-color: white;
@@ -42,10 +44,11 @@ function createPreviewButton(map) {
     height: 50px;
     margin-right: 0.5rem;
     margin-bottom: 0.5rem;
+    display:none;
   `;
   controlButton.innerHTML =
     '<i class="fas fa-solid fa-eye" style="color: black;"></i>';
-  controlButton.title = "Ruler Button";
+  controlButton.title = "Vessel Record Preview";
   controlButton.addEventListener("click", previewStrava);
 
   return controlButton;
@@ -62,7 +65,7 @@ async function previewStrava() {
     const spinner = document.getElementById("spinner");
     spinner.style.display = "block";
 
-    const url = "https://binav-avts.id/vessel_records";
+    const url = `http://127.0.0.1:8080/vessel_records/${currentSelectedMarker}`;
 
     try {
       const response = await fetch(url);
@@ -73,7 +76,7 @@ async function previewStrava() {
 
       const result = await response.json();
 
-      const pathCoordinates = result.map((record) => {
+      const vesselHistory = result.records.map((record) => {
         return {
           lat: convertDMSToDecimal(record.latitude),
           lng: convertDMSToDecimal(record.longitude),
@@ -81,7 +84,7 @@ async function previewStrava() {
       });
 
        stravaPolyline = new google.maps.Polyline({
-        path: pathCoordinates,
+        path: vesselHistory,
         geodesic: true,
         strokeColor: "#FF0000",
         strokeOpacity: 1.0,
