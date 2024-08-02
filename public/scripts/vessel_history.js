@@ -1,29 +1,26 @@
 // Variables
-let timeoutIDDetailData;
-let isPreview = false;
-let historyVesselData = [];
-let totalHistoryVesselData = 0;
+let previewTimeoutID;
+let isPreviewActive = false;
+let vesselHistoryData = [];
+let totalVesselHistoryRecords = 0;
 
 let vesselPolylineHistory;
-let markerStrava;
-let isPlayingAnimation = false;
-let timeoutIdAnimation;
-let stopAnimation = false;
-let markerHistory;
+let isAnimationPlaying = false;
+let animationTimeoutID;
+let shouldStopAnimation = false;
+let historyMarker;
 
-const durationAnimation = 75000; // 60 seconds in milliseconds
+const animationDuration = 75000; // 75 seconds in milliseconds
 
-let animationIndex = 0;  // Track the current index of animation
-let animationInterval = durationAnimation / totalHistoryVesselData; // Duration of animation per frame
-
-// Functions
+let currentAnimationIndex = 0; // Track the current index of animation
+let animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Duration of animation per frame
 
 // Create preview button
 function createPreviewButton(map) {
-  const controlButton = document.createElement("button");
-  controlButton.id = "vessel_record_preview";
-  controlButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
-  controlButton.style.cssText = `
+  const previewButton = document.createElement("button");
+  previewButton.id = "vessel_record_preview";
+  previewButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
+  previewButton.style.cssText = `
       background-color: white;
       border: 0;
       width: 50px;
@@ -32,44 +29,33 @@ function createPreviewButton(map) {
       margin-bottom: 0.5rem;
       display: none;
     `;
-  controlButton.innerHTML = '<i class="fas fa-solid fa-eye" style="color: black;"></i>';
-  controlButton.title = "Preview Button";
-  controlButton.addEventListener("click", viewDetailKapal);
+  previewButton.innerHTML = '<i class="fas fa-eye" style="color: black;"></i>';
+  previewButton.title = "Preview Vessel Data";
+  previewButton.addEventListener("click", toggleVesselDetailSidebar);
 
-  return controlButton;
+  return previewButton;
 }
 
 // Toggle vessel detail sidebar
-function viewDetailKapal() {
-  const sidebarDetail = document.getElementById("detail-vessel");
-  if (isPreview) {
-    sidebarDetail.style.display = "block";
-    timeoutIDDetailData = setInterval(() => {
+function toggleVesselDetailSidebar() {
+  const sidebar = document.getElementById("detail-vessel");
+  if (isPreviewActive) {
+    sidebar.style.display = "block";
+    previewTimeoutID = setInterval(() => {
       dataKapalMarker(currentSelectedMarker);
     }, 100);
+    
   } else {
-    sidebarDetail.style.display = "none";
-    clearInterval(timeoutIDDetailData);
+    sidebar.style.display = "none";
+    clearInterval(previewTimeoutID);
   }
-  isPreview = !isPreview;
+  isPreviewActive = !isPreviewActive;
 }
 
-// Preview Strava marker animation
-function previewStrava() {
-  let index = 0;
-  function animateMarker() {
-    markerStrava.setPosition(historyVesselData[index]);
-    index++;
-    if (index < historyVesselData.length) {
-      setTimeout(animateMarker, 500);
-    }
-  }
-  animateMarker();
-}
 
 // View history polyline
-function viewHistoryPolyline() {
-  const latlngArray = historyVesselData.map((data) => data.latlng);
+function displayVesselHistoryPolyline() {
+  const latlngArray = vesselHistoryData.map(data => data.latlng);
   vesselPolylineHistory = new google.maps.Polyline({
     path: latlngArray,
     geodesic: true,
@@ -80,76 +66,97 @@ function viewHistoryPolyline() {
   vesselPolylineHistory.setMap(map);
 }
 
-// Play Strava animation
-function playHistory() {
-  if (!isPlayingAnimation) {
-    animationIndex = 0;
-    isPlayingAnimation = true;
-    if (stopAnimation) {
-      stopAnimation = false;
-    } else {
-      // Initialize markerHistory if not already created
-      markerHistory = new VesselOverlayHistory(
-        map,
-        {
-          lat: historyVesselData[animationIndex].latlng.lat,
-          lng: historyVesselData[animationIndex].latlng.lng,
-        },
-        historyVesselData.kapal.top_range,
-        historyVesselData.kapal.left_range,
-        historyVesselData.kapal.width_m,
-        historyVesselData.kapal.height_m,
-        (historyVesselData[animationIndex].record.heading_degree +
-          historyVesselData.kapal.calibration +
-          historyVesselData.kapal.heading_direction) % 360,
-        historyVesselData.kapal.image_map
-      );
-    }
-    animateMarker();
+// Play vessel history animation
+function playVesselHistoryAnimation() {
+  if (shouldStopAnimation) {
+    shouldStopAnimation = false;
+  } else if (currentAnimationIndex === 0) {
+    initializeHistoryMarker();
   }
+  animateMarker();
+}
+
+function initializeHistoryMarker() {
+  historyMarker = new VesselOverlayHistory(
+    map,
+    {
+      lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
+      lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
+    },
+    vesselHistoryData.kapal.top_range,
+    vesselHistoryData.kapal.left_range,
+    vesselHistoryData.kapal.width_m,
+    vesselHistoryData.kapal.height_m,
+    (vesselHistoryData[currentAnimationIndex].record.heading_degree +
+      vesselHistoryData.kapal.calibration +
+      vesselHistoryData.kapal.heading_direction) % 360,
+    vesselHistoryData.kapal.image_map
+  );
 }
 
 function animateMarker() {
-  if (stopAnimation) {
-    isPlayingAnimation = false;
-    clearTimeout(timeoutIdAnimation);
+  if (shouldStopAnimation) {
+    isAnimationPlaying = false;
+    clearTimeout(animationTimeoutID);
     return;
   }
-  const position = {lat : historyVesselData[animationIndex].latlng.lat, lng : historyVesselData[animationIndex].latlng.lng};
+  const position = {
+    lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
+    lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
+  };
 
   map.setCenter(position);
-  markerHistory.update(
+  historyMarker.update(
     position,
-    historyVesselData.kapal.top_range,
-    historyVesselData.kapal.left_range,
-    historyVesselData.kapal.width_m,
-    historyVesselData.kapal.height_m,
-    (historyVesselData[animationIndex].record.heading_degree +
-      historyVesselData.kapal.calibration +
-      historyVesselData.kapal.heading_direction) % 360,
-    historyVesselData.kapal.image_map
+    vesselHistoryData.kapal.top_range,
+    vesselHistoryData.kapal.left_range,
+    vesselHistoryData.kapal.width_m,
+    vesselHistoryData.kapal.height_m,
+    (vesselHistoryData[currentAnimationIndex].record.heading_degree +
+      vesselHistoryData.kapal.calibration +
+      vesselHistoryData.kapal.heading_direction) % 360,
+    vesselHistoryData.kapal.image_map
   );
-  displayTableHistory(animationIndex);
-  animationIndex++;
-  if (animationIndex < totalHistoryVesselData) {
-    timeoutIdAnimation = setTimeout(animateMarker, animationInterval);
+  updateHistoryTable(currentAnimationIndex);
+  currentAnimationIndex++;
+  if (currentAnimationIndex < totalVesselHistoryRecords) {
+    animationTimeoutID = setTimeout(animateMarker, animationFrameDuration);
   } else {
-    isPlayingAnimation = false;
+    stopVesselHistoryAnimation();
+    currentAnimationIndex = 0;
   }
 }
 
-// Stop Strava animation
-function dismissHistory() {
-  stopAnimation = true;
-  clearTimeout(timeoutIdAnimation);
-  isPlayingAnimation = false;
+// Stop vessel history animation
+function stopVesselHistoryAnimation() {
+  shouldStopAnimation = true;
+  clearTimeout(animationTimeoutID);
+  isAnimationPlaying = false;
+}
+
+function togglePlayPause() {
+  isAnimationPlaying = !isAnimationPlaying;
+  if (isAnimationPlaying) {
+    playVesselHistoryAnimation();
+  } else {
+    stopVesselHistoryAnimation();
+  }
+  updatePlayPauseButton();
+}
+
+function updatePlayPauseButton() {
+  if (isAnimationPlaying) {
+    btnPlay.innerHTML = `<i class="fas fa-pause" style="color: rgb(255, 255, 255);"></i>`;
+  } else {
+    btnPlay.innerHTML = `<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i>`;
+  }
 }
 
 // Load vessel history data
-async function loadVesselHistory() {
-  console.log(historyVesselData);
-  const loading = document.getElementById("spinner");
-  loading.style.display = "block";
+async function loadVesselHistoryData() {
+  console.log(vesselHistoryData);
+  const loadingSpinner = document.getElementById("spinner");
+  loadingSpinner.style.display = "block";
 
   const url = `http://127.0.0.1:8080/vessel_records/${currentSelectedMarker}`;
   try {
@@ -159,28 +166,28 @@ async function loadVesselHistory() {
     }
 
     const result = await response.json();
-    historyVesselData = result.records.map((record) => ({
+    vesselHistoryData = result.records.map(record => ({
       record: record,
       latlng: {
         lat: convertDMSToDecimal(record.latitude),
         lng: convertDMSToDecimal(record.longitude),
       },
     }));
-    historyVesselData["kapal"] = result.kapal;
-    totalHistoryVesselData = result.total_record;
-    document.getElementById("total_records").innerHTML = totalHistoryVesselData;
-    loading.style.display = "none";
-    btnPlay.disabled = totalHistoryVesselData === 0;
-    viewHistoryPolyline();
+    vesselHistoryData["kapal"] = result.kapal;
+    totalVesselHistoryRecords = result.total_record;
+    document.getElementById("total_records").textContent = totalVesselHistoryRecords;
+    loadingSpinner.style.display = "none";
+    btnPlay.disabled = totalVesselHistoryRecords === 0;
+    displayVesselHistoryPolyline();
   } catch (error) {
     console.error("There was a problem with the fetch operation:", error);
   }
 }
 
-// Display vessel history table data
-function displayTableHistory(index) {
-  document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalHistoryVesselData} Records`;
-  const record = historyVesselData[index].record;
+// Update vessel history table
+function updateHistoryTable(index) {
+  document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalVesselHistoryRecords} Records`;
+  const record = vesselHistoryData[index].record;
   document.getElementById("latitude_record").textContent = record.latitude;
   document.getElementById("longitude_record").textContent = record.longitude;
   document.getElementById("heading_hdt_record").textContent = record.heading_degree;
@@ -192,7 +199,7 @@ function displayTableHistory(index) {
 
 // Event listeners
 const btnPlay = document.getElementById("play-animation");
-btnPlay.addEventListener("click", playHistory);
+btnPlay.addEventListener("click", togglePlayPause);
 
 const btnLoad = document.getElementById("load-vessel-history");
-btnLoad.addEventListener("click", loadVesselHistory);
+btnLoad.addEventListener("click", loadVesselHistoryData);
