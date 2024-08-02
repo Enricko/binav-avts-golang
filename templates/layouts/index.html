@@ -5,8 +5,6 @@
     <div id="measurement-info">Total Length : 0.0 Km</div>
   </div>
 
-
-
   <div id="spinner">
     <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -17,11 +15,11 @@
     <table class="table table-bordered" style="font-size: small;">
       <thead>
         <tr>
-          <th scope="col" colspan="2" id="vesselName" >Vessel Name</th>
+          <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
         </tr>
       </thead>
-      <tbody >
-        <tr >
+      <tbody>
+        <tr>
           <td scope="row">Status</td>
           <td id="status_telnet">-</td>
         </tr>
@@ -45,16 +43,63 @@
           <td scope="row">SOLN</td>
           <td id="SOLN">-</td>
         </tr>
+        <tr>
+          <td scope="row">Depth</td>
+          <td id="water_depth">-</td>
+        </tr>
       </tbody>
     </table>
-    <button id="load-vessel-history" type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: rgb(110, 110, 110); border: 0; width: 50px; height: 50px; margin-left: 0.5rem;">
+    <button id="load-vessel-history" type="button" class="btn btn-primary rounded-circle mb-2"
+      style="background-color: rgb(110, 110, 110); border: 0; width: 50px; height: 50px; margin-left: 0.5rem;">
       <i class="fa-solid fa-rotate-right" style="color: rgb(255, 255, 255);"></i>
-      </button>
-    <button id="play-animation" type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: rgb(110, 110, 110); border: 0; width: 50px; height: 50px; margin-left: 0.5rem;">
-        <i class="fas fa-play" style="color: rgb(255, 255, 255);"></i>
-      </button>
+    </button>
+    <button id="play-animation" type="button" class="btn btn-primary rounded-circle mb-2"
+      style="background-color: rgb(110, 110, 110); border: 0; width: 50px; height: 50px; margin-left: 0.5rem;">
+      <i class="fas fa-play" style="color: rgb(255, 255, 255);"></i>
+    </button>
 
-      <h6>Total History Records : <span id="total_records">0</span></h6>
+    <h6>Total History Records : <span id="total_records">0</span></h6>
+    <table class="mt-3 table table-bordered" style="font-size: small;">
+      <thead>
+        <tr>
+          <th scope="col" colspan="2" id="record_of_vessel">- of - Records</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- <tr>
+          <td scope="row">Status</td>
+          <td id="status_telnet">-</td>
+        </tr> -->
+        <tr>
+          <td scope="row">Lat</td>
+          <td id="latitude_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Long</td>
+          <td id="longitude_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Heading (HDT)</td>
+          <td id="heading_hdt_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">SOG</td>
+          <td id="SOG_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">SOLN</td>
+          <td id="SOLN_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">Depth</td>
+          <td id="water_depth_record">-</td>
+        </tr>
+        <tr>
+          <td scope="row">DateTime</td>
+          <td id="datetime_record">-</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div
@@ -67,8 +112,7 @@
       height: 100%;
       z-index: 2;
       pointer-events: none;
-    "
-  >
+    ">
     <div class="d-flex align-items-center" style="pointer-events: auto">
       <div class="btn-group">
         <div class="dropdown">
@@ -83,8 +127,7 @@
             "
             type="button"
             data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
+            aria-expanded="false">
             <i class="fa-solid fa-bars" style="color: black"></i>
           </button>
           <ul class="dropdown-menu">
@@ -92,25 +135,19 @@
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#vesselTable"
-                >Vessel</a
-              >
+                data-bs-target="#vesselTable">Vessel</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#mappingTable"
-                >Pipeline</a
-              >
+                data-bs-target="#mappingTable">Pipeline</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#clientTable"
-                >Client</a
-              >
+                data-bs-target="#clientTable">Client</a>
             </li>
           </ul>
         </div>
@@ -131,8 +168,7 @@
           autocorrect="off"
           autocomplete="off"
           autocapitalize="off"
-          placeholder="Search for vessel..."
-        />
+          placeholder="Search for vessel..." />
       </div>
 
       <button
@@ -144,8 +180,7 @@
           margin-left: 1rem;
           width: 50px;
           height: 50px;
-        "
-      >
+        ">
         <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
       </button>
     </div>

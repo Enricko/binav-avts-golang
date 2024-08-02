@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+
 )
 
 type TypeIP string
@@ -11,12 +12,13 @@ const (
 	GGA TypeIP = "gga"
 	HDT TypeIP = "hdt"
 	VTG TypeIP = "vtg"
+	DEPTH TypeIP = "depth"
 )
 
 type IPKapal struct {
 	IdIpKapal uint      `gorm:"primary_key" json:"id_ip_kapal"`
 	CallSign  string    `gorm:"not null;index" json:"call_sign" binding:"required"`
-	TypeIP    TypeIP    `gorm:"type:enum('all','gga','hdt','vtg');not null" json:"type_ip" binding:"required"`
+	TypeIP    TypeIP    `gorm:"type:enum('all','gga','hdt','vtg','depth');not null" json:"type_ip" binding:"required"`
 	IP        string    `gorm:"type:varchar(16);not null;" json:"ip" binding:"required"`
 	Port      uint16    `json:"port;not null;" binding:"required"`
 	CreatedAt time.Time `json:"created_at"`
