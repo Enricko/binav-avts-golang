@@ -9,6 +9,7 @@ let isAnimationPlaying = false;
 let animationTimeoutID;
 let shouldStopAnimation = false;
 let historyMarker;
+let percentage;
 
 const animationDuration = 75000; // 75 seconds in milliseconds
 
@@ -183,11 +184,26 @@ async function loadVesselHistoryData() {
     console.error("There was a problem with the fetch operation:", error);
   }
 }
+const progressSlider = document.getElementById('progress-slider1');
+
+progressSlider.addEventListener("input", toggleVesselDetailSidebar);
+
+function updateHistorybySlider(){
+
+}
+
+
+
+// progressSlider.addEventListener('input', (event) => {
+//   percentage = event.target.value;
+// });
 
 // Update vessel history table
 function updateHistoryTable(index) {
   document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalVesselHistoryRecords} Records`;
   const record = vesselHistoryData[index].record;
+  percentage = ((index + 1) / totalVesselHistoryRecords) * 100;
+  progressSlider.value = percentage;
   document.getElementById("latitude_record").textContent = record.latitude;
   document.getElementById("longitude_record").textContent = record.longitude;
   document.getElementById("heading_hdt_record").textContent = record.heading_degree;
@@ -203,3 +219,11 @@ btnPlay.addEventListener("click", togglePlayPause);
 
 const btnLoad = document.getElementById("load-vessel-history");
 btnLoad.addEventListener("click", loadVesselHistoryData);
+
+const video = document.getElementById('myVideo');
+
+
+video.addEventListener('timeupdate', () => {
+  
+
+});
