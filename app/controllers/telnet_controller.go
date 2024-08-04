@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
+
 )
 
 type TelnetController struct {
@@ -220,11 +222,25 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 						case <-stopTelnet:
 							return
 						default:
-							nmeaData.Status = "Connected"
-
+							
 							conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-							line, err := reader.ReadString('\n')
-							line = strings.TrimSpace(line)
+							var line string
+							var err error
+							if models.TypeIP(server.TypeIP) == "depth" {
+								line, err = reader.ReadString(' ')
+								line = strings.TrimSpace(line)
+
+								number, err := extractNumber(line)
+								if err != nil {
+									line = "" // Clear buffer to start fresh
+									continue
+								}
+								line = strconv.Itoa(number)
+							} else {
+								nmeaData.Status = "Connected"
+								line, err = reader.ReadString('\n')
+								line = strings.TrimSpace(line)
+							}
 
 							if err != nil {
 								log.Printf("Error reading from %s: %v", server.CallSign, err)
@@ -261,7 +277,12 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 								if vtg != nil {
 									nmeaData.SpeedInKnots = vtg.SpeedKnots
 								}
+							}else if models.TypeIP(server.TypeIP) == "depth"{
+								if line != ""{
+									nmeaData.WaterDepth = float64(atoi(line))
+								}
 							}
+
 							r.DataMap.Store(server.CallSign, nmeaData)
 
 							if time.Since(lastCoordinateInsertTime) >= 1*time.Second {
@@ -297,6 +318,24 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 			}
 		}
 	}
+}
+func extractNumber(message string) (int, error) {
+	// Define a regular expression to match any number in the message
+	re := regexp.MustCompile(`\d+`)
+	matches := re.FindString(message)
+
+	if matches == "" {
+		return 0, fmt.Errorf("no number found in message")
+	}
+
+	// Return the extracted number
+	var number int
+	_, err := fmt.Sscanf(matches, "%d", &number)
+	if err != nil {
+		return 0, fmt.Errorf("error converting number: %v", err)
+	}
+
+	return number, nil
 }
 
 func (r *TelnetController) updateKapalDataMap() {
