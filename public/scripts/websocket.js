@@ -262,7 +262,9 @@ function getDataKapalMarker(device) {
   vessel_record_preview.style.display = "block";
   isPreviewActive = true;
   toggleVesselDetailSidebar();
+  progressSlider.value = 0;
+  progressSlider.max = 0;
   if(isAnimationPlaying){
-    dismissHistory();
+    stopVesselHistoryAnimation();
   }
 }
