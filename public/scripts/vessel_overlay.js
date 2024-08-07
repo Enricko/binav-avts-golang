@@ -16,6 +16,8 @@ class VesselOverlay extends google.maps.OverlayView {
     this.map = map;
     this.device = device;
     this.position = position;
+    this.previousPosition = position; // Use previous position if it exists
+    this.targetPosition = position
     this.vesselWidthMeters = width;
     this.vesselHeightMeters = height;
     this.offsetFromCenter = { x: left, y: top };
@@ -41,6 +43,7 @@ class VesselOverlay extends google.maps.OverlayView {
     img.style.width = "100%";
     img.style.height = "100%";
     img.style.pointerEvents = "auto"; // Ensure the image is interactive
+    img.style.transition = "transform 0.5s ease"; // Add CSS transition for smooth rotation
 
     const transformOriginX =
       (this.offsetFromCenter.x / this.vesselWidthMeters) * 100;
@@ -148,7 +151,8 @@ class VesselOverlay extends google.maps.OverlayView {
     imageMap,
     infoContent
   ) {
-    this.position = position;
+    this.previousPosition = this.position || position; // Use previous position if it exists
+    this.targetPosition = position;
     this.vesselWidthMeters = width;
     this.vesselHeightMeters = height;
     this.offsetFromCenter = { x: left, y: top };
@@ -206,9 +210,45 @@ class VesselOverlay extends google.maps.OverlayView {
       this.div.style.top = positionPixel.y - offsetYPixels + "px";
       this.div.style.width = scaledWidth + "px";
       this.div.style.height = scaledHeight + "px";
+      this.startAnimation();
     } else {
       this.setMap(this.map);
     }
+  }
+
+  startAnimation() {
+    const duration = 500; // duration in ms
+    const start = performance.now();
+
+    const animate = (time) => {
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const lat = this.previousPosition.lat + (this.targetPosition.lat - this.previousPosition.lat) * progress;
+      const lng = this.previousPosition.lng + (this.targetPosition.lng - this.previousPosition.lng) * progress;
+      this.position = { lat, lng };
+
+      const overlayProjection = this.getProjection();
+      const positionPixel = overlayProjection.fromLatLngToDivPixel(this.position);
+
+      const scale = this.getScale();
+      const scaledWidth = this.vesselWidthMeters * scale;
+      const scaledHeight = this.vesselHeightMeters * scale;
+
+      const offsetXPixels = this.metersToPixels(this.offsetFromCenter.x, this.position.lat, scale);
+      const offsetYPixels = this.metersToPixels(this.offsetFromCenter.y, this.position.lat, scale);
+
+      this.div.style.left = positionPixel.x - offsetXPixels + "px";
+      this.div.style.top = positionPixel.y - offsetYPixels + "px";
+      this.div.style.width = scaledWidth + "px";
+      this.div.style.height = scaledHeight + "px";
+      this.div.style.zIndex = 999;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
   }
 
   onRemove() {

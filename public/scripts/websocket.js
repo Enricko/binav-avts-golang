@@ -246,24 +246,46 @@ function dataKapalMarker(device) {
   document.getElementById("latitude").textContent = data.nmea.latitude;
   document.getElementById("longitude").textContent = data.nmea.longitude;
   document.getElementById("SOLN").textContent = data.nmea.gps_quality_indicator;
-  document.getElementById("water_depth").textContent = "DBT " + data.nmea.water_depth;
+  document.getElementById("water_depth").textContent = `${formatWaterDepthNumber(data.nmea.water_depth)} Meter`;
+}
+
+function formatWaterDepthNumber(number) {
+  // Convert the number to a string
+  let numberStr = number.toString();
+
+  // Take the part before the last two digits and the last two digits
+  let part1 = numberStr.slice(0, -2);
+  let part2 = numberStr.slice(-2);
+
+  // If part1 is empty, it means the number is less than 100
+  if (part1 === '') {
+      part1 = '0';
+  }
+
+  return part1 + ',' + part2;
 }
 
 
-
 function getDataKapalMarker(device) {
-  if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
-  if (historyMarker) historyMarker.setMap(null);
-  btnPlay.disabled = true; 
-
   const vessel_record_preview = document.getElementById("vessel_record_preview");
   dataKapalMarker(device);
-  currentSelectedMarker = device;
-  vessel_record_preview.style.display = "block";
-  isPreviewActive = true;
-  toggleVesselDetailSidebar();
+  if(currentSelectedMarker != device){
+    btnPlay.disabled = true; 
+    if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
+    if (historyMarker) historyMarker.setMap(null);
+    currentSelectedMarker = device;
+    vessel_record_preview.style.display = "block";
+    isPreviewActive = true;
+    toggleVesselDetailSidebar();
+    resetVesselHistoryAnimation();
+  }
+}
+
+function resetVesselHistoryAnimation(){
   progressSlider.value = 0;
   progressSlider.max = 0;
+  totalVesselHistoryRecords = 0;
+  currentAnimationIndex = 0;
   if(isAnimationPlaying){
     stopVesselHistoryAnimation();
   }

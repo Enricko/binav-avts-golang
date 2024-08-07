@@ -245,8 +245,8 @@ function updateHistoryTable(index) {
     document.getElementById("heading_hdt_record").textContent = record.heading_degree;
     document.getElementById("SOG_record").textContent = `${record.speed_in_knots} KTS`;
     document.getElementById("SOLN_record").textContent = record.gps_quality_indicator;
-    document.getElementById("water_depth_record").textContent = record.water_depth;
     document.getElementById("datetime_record").textContent = formatDateTime(record.created_at);
+    document.getElementById("water_depth_record").textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
 }
 
 // Event listeners for the video element
