@@ -262,17 +262,20 @@ function formatWaterDepthNumber(number) {
       part1 = '0';
   }
 
-  return part1 + ',' + part2;
+  // Combine part1 and part2 and convert to float
+  let formattedNumber = parseFloat(part1 + '.' + part2);
+
+  return formattedNumber;
 }
 
 
 function getDataKapalMarker(device) {
   const vessel_record_preview = document.getElementById("vessel_record_preview");
   dataKapalMarker(device);
-  console.log("asdasdasd");
   startToEndDatetimeFilterForm();
   if(currentSelectedMarker != device) {
     btnPlay.disabled = true; 
+    btnDownloadCSV.disabled = true;
     if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
     if (historyMarker) historyMarker.setMap(null);
     currentSelectedMarker = device;
@@ -280,6 +283,9 @@ function getDataKapalMarker(device) {
     isPreviewActive = true;
     toggleVesselDetailSidebar();
     resetVesselHistoryAnimation();
+    defaultHistoryTable();
+    document.getElementById("total_records").textContent =
+      0;
   }
 }
 

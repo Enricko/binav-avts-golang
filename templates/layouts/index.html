@@ -62,7 +62,20 @@
       min="0"
       max="1212"
       step="1" />
-
+    <button
+      type="button"
+      class="btn btn-primary rounded-circle mb-2"
+      data-bs-toggle="modal"
+      data-bs-target="#filterModal"
+      style="
+        background-color: rgb(110, 110, 110);
+        border: 0;
+        width: 50px;
+        height: 50px;
+        margin-left: 0.5rem;
+      ">
+      <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
+    </button>
     <button
       id="load-vessel-history"
       type="button"
@@ -76,6 +89,7 @@
       ">
       <i class="fa-solid fa-rotate-right" style="color: rgb(255, 255, 255)"></i>
     </button>
+
     <button
       id="play-animation"
       type="button"
@@ -90,11 +104,9 @@
       <i class="fas fa-play" style="color: rgb(255, 255, 255)"></i>
     </button>
     <button
-      id="play-animation"
+      id="history-download-csv"
       type="button"
       class="btn btn-primary rounded-circle mb-2"
-      data-bs-toggle="modal"
-      data-bs-target="#filterModal"
       style="
         background-color: rgb(110, 110, 110);
         border: 0;
@@ -102,7 +114,7 @@
         height: 50px;
         margin-left: 0.5rem;
       ">
-      <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
+      <i class="fas fa-file-csv" style="color: rgb(255, 255, 255)"></i>
     </button>
     <div
       class="modal fade"
@@ -169,7 +181,7 @@
         </tr>
         <tr>
           <td scope="row">Heading (HDT)</td>
-          <td id="heading_hdt_record">-</td>
+          <td id="heading_hdt_record">-°</td>
         </tr>
         <tr>
           <td scope="row">SOG</td>
@@ -177,11 +189,11 @@
         </tr>
         <tr>
           <td scope="row">SOLN</td>
-          <td id="SOLN_record">-</td>
+          <td id="SOLN_record">- KTS</td>
         </tr>
         <tr>
           <td scope="row">Depth</td>
-          <td id="water_depth_record">-</td>
+          <td id="water_depth_record">- Meter</td>
         </tr>
         <tr>
           <td scope="row">DateTime</td>

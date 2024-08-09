@@ -24,6 +24,7 @@ const progressSlider = document.getElementById("progress-slider1");
 const btnPlay = document.getElementById("play-animation");
 const btnLoad = document.getElementById("load-vessel-history");
 const loadingSpinner = document.getElementById("spinner");
+const btnDownloadCSV = document.getElementById("history-download-csv");
 
 // Ensure DOM is fully loaded before attaching event listeners
 document.addEventListener("DOMContentLoaded", () => {
@@ -75,8 +76,6 @@ function displayVesselHistoryPolyline() {
   if (vesselHistoryData.length === 0) return;
 
   const latlngArray = vesselHistoryData.map((data) => data.latlng);
-  console.log("latlngArray");
-  console.log(latlngArray);
 
   vesselPolylineHistory = new google.maps.Polyline({
     path: latlngArray,
@@ -210,6 +209,7 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
       totalVesselHistoryRecords;
     loadingSpinner.style.display = "none";
     btnPlay.disabled = totalVesselHistoryRecords === 0;
+    btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
     progressSlider.value = 0;
     progressSlider.max = totalVesselHistoryRecords;
     animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Update frame duration
@@ -264,8 +264,9 @@ function updateHistoryTable(index) {
   // progressSlider.value = percentage;
   document.getElementById("latitude_record").textContent = record.latitude;
   document.getElementById("longitude_record").textContent = record.longitude;
-  document.getElementById("heading_hdt_record").textContent =
-    record.heading_degree;
+  document.getElementById("heading_hdt_record").textContent = `${
+    record.heading_degree + vesselHistoryData["kapal"].calibration
+  }\u00B0`;
   document.getElementById(
     "SOG_record"
   ).textContent = `${record.speed_in_knots} KTS`;
@@ -279,13 +280,16 @@ function updateHistoryTable(index) {
   ).textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
 }
 
-// submitDateTime.addEventListener('click', function (event) {
-//   formDateTime.submit();
-// });
-
-// function sortByCreatedAt(data) {
-//   return data.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
-// }
+function defaultHistoryTable() {
+  document.getElementById("record_of_vessel").textContent = `0 of 0 Records`;
+  document.getElementById("latitude_record").textContent = "-";
+  document.getElementById("longitude_record").textContent = "-";
+  document.getElementById("heading_hdt_record").textContent = "-°";
+  document.getElementById("SOG_record").textContent = `- KTS`;
+  document.getElementById("SOLN_record").textContent = "-";
+  document.getElementById("datetime_record").textContent = "-";
+  document.getElementById("water_depth_record").textContent = "- Meter";
+}
 
 function filterByDateRange(data, startDate, endDate) {
   const start = new Date(startDate);
@@ -361,4 +365,106 @@ function startEndDatetimeFilterForm() {
 
 $("#filterModal").on("hidden.bs.modal", function () {
   startEndDatetimeFilterForm();
+});
+
+function downloadCSV(filename, data) {
+  btnDownloadCSV.disabled = true;
+  loadingSpinner.style.display = "block";
+
+  // Define headers and field mappings
+  const headers = [
+    "latitude",
+    "longitude",
+    "heading_degree",
+    "speed_in_knots",
+    "gps_quality_indicator",
+    "water_depth",
+    "created_at",
+  ];
+  const headerMapping = {
+    latitude: "latitude",
+    longitude: "longitude",
+    heading_degree: "heading_degree",
+    speed_in_knots: "speed_in_knots",
+    gps_quality_indicator: "gps_quality_indicator",
+    water_depth: "water_depth",
+    created_at: "created_at",
+  };
+
+  // Convert data to CSV format
+  const csvRows = [];
+  csvRows.push(headers.join(",")); // Add headers
+
+  let index = 0;
+
+  function processNextChunk() {
+    const chunkSize = 1000; // Adjust chunk size based on your data size and performance
+    for (let i = 0; i < chunkSize && index < data.length; i++, index++) {
+      const row = data[index];
+      const values = headers.map((header) => {
+        let value = row[headerMapping[header]];
+
+        // Apply formatting function to water_depth
+        if (header === "water_depth" && typeof value === "number") {
+          value = formatWaterDepthNumber(value);
+        }
+
+        // Handle special characters and ensure UTF-8 encoding
+        if (header === "latitude" || header === "longitude") {
+          // Replace unwanted characters like 'Â°' with '°'
+          value = value.replace(/Â°/g, "°");
+
+          // Remove double quotes (optional, if you expect quotes)
+          value = value.replace(/"/g, '""');
+        }
+
+        if (header === "heading_degree") {
+          value = value + vesselHistoryData["kapal"].calibration;
+        }
+
+        if (header === "created_at") {
+          value = formatDateTime(value);
+        }
+
+        return value !== undefined ? value : ""; // Handle undefined values
+      });
+
+      csvRows.push(values.join(",")); // Join values with commas
+    }
+
+    // If more data to process, schedule next chunk
+    if (index < data.length) {
+      setTimeout(processNextChunk, 0);
+    } else {
+      // Create a Blob object with UTF-8 encoding
+      const csvString = csvRows.join("\n");
+      const bom = "\uFEFF"; // UTF-8 BOM
+      const blob = new Blob([bom + csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      // Create a download link and trigger download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url); // Clean up
+
+      btnDownloadCSV.disabled = false;
+      loadingSpinner.style.display = "none";
+    }
+  }
+
+  // Start processing
+  processNextChunk();
+}
+
+btnDownloadCSV.addEventListener("click", () => {
+  downloadCSV(
+    `${currentSelectedMarker}_record_${formatDateTime(
+      startDatetimeFilter
+    )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
+    vesselHistoryData.map((data) => data.record)
+  );
 });

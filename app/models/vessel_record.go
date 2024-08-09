@@ -32,7 +32,7 @@ type VesselRecord struct {
 	WaterDepth          float64    `gorm:"" json:"water_depth" binding:"required"`
 
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"-"`
 
 	Kapal *Kapal `gorm:"foreignKey:CallSign;association_foreignkey:CallSign" json:"-"`
 }
