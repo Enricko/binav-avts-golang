@@ -149,7 +149,8 @@ class VesselOverlay extends google.maps.OverlayView {
     height,
     rotationAngle,
     imageMap,
-    infoContent
+    infoContent,
+    status
   ) {
     this.previousPosition = this.position || position; // Use previous position if it exists
     this.targetPosition = position;
@@ -159,6 +160,7 @@ class VesselOverlay extends google.maps.OverlayView {
     this.rotationAngle = rotationAngle;
     this.imageMap = imageMap;
     this.infoContent = infoContent;
+    this.status = status;
 
     if (this.div) {
       const img = this.div.firstChild;
@@ -217,7 +219,7 @@ class VesselOverlay extends google.maps.OverlayView {
   }
 
   startAnimation() {
-    const duration = 500; // duration in ms
+    const duration = 250; // duration in ms
     const start = performance.now();
 
     const animate = (time) => {

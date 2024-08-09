@@ -13,8 +13,7 @@
 
   <div
     id="detail-vessel"
-    style="width: 30%; height: 100%; display: none; overflow-y: scroll"
-  >
+    style="width: 30%; height: 100%; display: none; overflow-y: scroll">
     <table class="table table-bordered" style="font-size: small">
       <thead>
         <tr>
@@ -62,8 +61,7 @@
       style="width: 100%"
       min="0"
       max="1212"
-      step="1"
-    />
+      step="1" />
 
     <button
       id="load-vessel-history"
@@ -75,8 +73,7 @@
         width: 50px;
         height: 50px;
         margin-left: 0.5rem;
-      "
-    >
+      ">
       <i class="fa-solid fa-rotate-right" style="color: rgb(255, 255, 255)"></i>
     </button>
     <button
@@ -89,8 +86,7 @@
         width: 50px;
         height: 50px;
         margin-left: 0.5rem;
-      "
-    >
+      ">
       <i class="fas fa-play" style="color: rgb(255, 255, 255)"></i>
     </button>
     <button
@@ -105,52 +101,52 @@
         width: 50px;
         height: 50px;
         margin-left: 0.5rem;
-      "
-    >
+      ">
       <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
     </button>
     <div
       class="modal fade"
       id="filterModal"
       tabindex="-1"
-      aria-labelledby="exampleModalLabel"
-      aria-hidden="true"
-    >
+      aria-labelledby="filterModal"
+      aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h1 class="modal-title fs-5" id="exampleModalLabel">Datetime Filter</h1>
+            <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
             <button
               type="button"
               class="btn-close"
               data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+              aria-label="Close"></button>
           </div>
           <div class="modal-body">
-              <div class="form-group mb-2">
-                  <label for="start-date-time" style="font-weight: bold;">From</label>
-                  <input type="datetime-local" class="form-control" id="start-date-time" name="start-date-time">
-              </div>
-              <div class="form-group mb-2">
-                  <label for="end-date-time" style="font-weight: bold;">To</label>
-                  <input type="datetime-local" class="form-control" id="end-date-time" name="end-date-time">
-              </div>
+            <div class="form-group mb-2">
+              <label for="start-date-time" style="font-weight: bold;">From</label>
+              <input type="datetime-local" class="form-control" id="start-date-time" name="start-date-time">
+            </div>
+            <div class="form-group mb-2">
+              <label for="end-date-time" style="font-weight: bold;">To</label>
+              <input type="datetime-local" class="form-control" id="end-date-time" name="end-date-time">
+            </div>
 
-                              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Close
-              </button>
-              <button id="submitFilter" type="button" class="btn btn-primary">Save changes</button>
-              
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal">
+              Close
+            </button>
+            <button id="submitFilter" type="button" class="btn btn-primary">Save changes</button>
+
           </div>
-        
+
         </div>
       </div>
     </div>
+
+    <br>
+    <h6>Start From : <span id="filter_history_start"></span></h6>
+    <h6>End To : <span id="filter_history_end"></span></h6>
 
     <table class="mt-3 table table-bordered" style="font-size: small">
       <thead>
@@ -205,8 +201,7 @@
       height: 100%;
       z-index: 2;
       pointer-events: none;
-    "
-  >
+    ">
     <div class="d-flex align-items-center" style="pointer-events: auto">
       <div class="btn-group">
         <div class="dropdown">
@@ -221,8 +216,7 @@
             "
             type="button"
             data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
+            aria-expanded="false">
             <i class="fa-solid fa-bars" style="color: black"></i>
           </button>
           <ul class="dropdown-menu">
@@ -230,25 +224,19 @@
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#vesselTable"
-                >Vessel</a
-              >
+                data-bs-target="#vesselTable">Vessel</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#mappingTable"
-                >Pipeline</a
-              >
+                data-bs-target="#mappingTable">Pipeline</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#clientTable"
-                >Client</a
-              >
+                data-bs-target="#clientTable">Client</a>
             </li>
           </ul>
         </div>
@@ -269,8 +257,7 @@
           autocorrect="off"
           autocomplete="off"
           autocapitalize="off"
-          placeholder="Search for vessel..."
-        />
+          placeholder="Search for vessel..." />
       </div>
 
       <button
@@ -282,8 +269,7 @@
           margin-left: 1rem;
           width: 50px;
           height: 50px;
-        "
-      >
+        ">
         <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
       </button>
     </div>

@@ -269,7 +269,9 @@ function formatWaterDepthNumber(number) {
 function getDataKapalMarker(device) {
   const vessel_record_preview = document.getElementById("vessel_record_preview");
   dataKapalMarker(device);
-  if(currentSelectedMarker != device){
+  console.log("asdasdasd");
+  startToEndDatetimeFilterForm();
+  if(currentSelectedMarker != device) {
     btnPlay.disabled = true; 
     if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
     if (historyMarker) historyMarker.setMap(null);

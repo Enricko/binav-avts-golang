@@ -5,7 +5,6 @@ let vesselHistoryData = [];
 let vesselHistoryDatetime = [];
 let totalVesselHistoryRecords = 0;
 
-
 let vesselPolylineHistory;
 let isAnimationPlaying = false;
 let animationTimeoutID;
@@ -31,10 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   progressSlider.addEventListener("input", updateHistorybySlider);
   btnPlay.addEventListener("click", togglePlayPause);
   btnLoad.addEventListener("click", () => {
-    loadVesselHistoryData(
-      startDatetimeFilter,
-      endDatetimeFilter
-    );
+    loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
   });
 });
 
@@ -81,12 +77,11 @@ function displayVesselHistoryPolyline() {
   const latlngArray = vesselHistoryData.map((data) => data.latlng);
   console.log("latlngArray");
   console.log(latlngArray);
-  
-  
+
   vesselPolylineHistory = new google.maps.Polyline({
     path: latlngArray,
     geodesic: true,
-    strokeColor: "#FF0000",
+    strokeColor: "#0077b6",
     strokeOpacity: 1.0,
     strokeWeight: 2,
   });
@@ -165,6 +160,7 @@ function stopVesselHistoryAnimation() {
   shouldStopAnimation = true;
   clearTimeout(animationTimeoutID);
   isAnimationPlaying = false;
+  updatePlayPauseButton();
 }
 
 function togglePlayPause() {
@@ -189,11 +185,7 @@ function updatePlayPauseButton() {
 async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
   loadingSpinner.style.display = "block";
 
-  console.log("datetime");
-  console.log(datetimeFrom);
-  console.log(datetimeTo);
-  
-  const url = `http://127.0.0.1:8080/vessel_records/${currentSelectedMarker}`;
+  const url = `${getBaseURL()}vessel_records/${currentSelectedMarker}?start=${datetimeFrom}&end=${datetimeTo}`;
 
   try {
     const response = await fetch(url);
@@ -203,41 +195,15 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
 
     const result = await response.json();
 
-    if (datetimeFrom != null && datetimeTo != null) {
-      console.log("with filter");
-      const filteredData = filterByDateRange(
-        result.records,
-        datetimeFrom,
-        datetimeTo
-      );
-      
-      vesselHistoryData = filteredData.map((record) => ({
-        record: record,
-        latlng: {
-          lat: convertDMSToDecimal(record.latitude),
-          lng: convertDMSToDecimal(record.longitude),
-        },
-        dateTime: record.created_at,
-      }));
-      console.log("hhhhhh");
-      
-      console.log(vesselHistoryData);
-    }else{
-      console.log("without filter");
-      
-      vesselHistoryData = result.records.map((record) => ({
-        record: record,
-        latlng: {
-          lat: convertDMSToDecimal(record.latitude),
-          lng: convertDMSToDecimal(record.longitude),
-        },
-        dateTime: record.created_at,
-      }));
-    }
+    vesselHistoryData = result.records.map((record) => ({
+      record: record,
+      latlng: {
+        lat: convertDMSToDecimal(record.latitude),
+        lng: convertDMSToDecimal(record.longitude),
+      },
+      dateTime: record.created_at,
+    }));
 
-    // const sortedData = await sortByCreatedAt(vesselHistoryData);
-    // console.log(sortedData);
-   
     vesselHistoryData["kapal"] = result.kapal;
     totalVesselHistoryRecords = vesselHistoryData.length;
     document.getElementById("total_records").textContent =
@@ -247,6 +213,8 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
     progressSlider.value = 0;
     progressSlider.max = totalVesselHistoryRecords;
     animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Update frame duration
+    if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
+    if (historyMarker) historyMarker.setMap(null);
     displayVesselHistoryPolyline();
   } catch (error) {
     console.error("There was a problem with the fetch operation:", error);
@@ -288,19 +256,28 @@ function updateHistorybySlider() {
 function updateHistoryTable(index) {
   if (index < 0 || index >= vesselHistoryData.length) return;
 
-    document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalVesselHistoryRecords} Records`;
-    const record = vesselHistoryData[index].record;
-    // percentage = ((index + 1) / totalVesselHistoryRecords) * 100;
-    // progressSlider.value = percentage;
-    document.getElementById("latitude_record").textContent = record.latitude;
-    document.getElementById("longitude_record").textContent = record.longitude;
-    document.getElementById("heading_hdt_record").textContent = record.heading_degree;
-    document.getElementById("SOG_record").textContent = `${record.speed_in_knots} KTS`;
-    document.getElementById("SOLN_record").textContent = record.gps_quality_indicator;
-    document.getElementById("datetime_record").textContent = formatDateTime(record.created_at);
-    document.getElementById("water_depth_record").textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
+  document.getElementById("record_of_vessel").textContent = `${
+    index + 1
+  } of ${totalVesselHistoryRecords} Records`;
+  const record = vesselHistoryData[index].record;
+  // percentage = ((index + 1) / totalVesselHistoryRecords) * 100;
+  // progressSlider.value = percentage;
+  document.getElementById("latitude_record").textContent = record.latitude;
+  document.getElementById("longitude_record").textContent = record.longitude;
+  document.getElementById("heading_hdt_record").textContent =
+    record.heading_degree;
+  document.getElementById(
+    "SOG_record"
+  ).textContent = `${record.speed_in_knots} KTS`;
+  document.getElementById("SOLN_record").textContent =
+    record.gps_quality_indicator;
+  document.getElementById("datetime_record").textContent = formatDateTime(
+    record.created_at
+  );
+  document.getElementById(
+    "water_depth_record"
+  ).textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
 }
-
 
 // submitDateTime.addEventListener('click', function (event) {
 //   formDateTime.submit();
@@ -333,21 +310,24 @@ function formatToISO(dateString) {
 
   // Extract components
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
   const offset = date.getTimezoneOffset();
-  
+
   // Calculate the timezone offset in hours and minutes
-  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0');
-  const sign = offset > 0 ? '-' : '+';
-  
+  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(
+    2,
+    "0"
+  );
+  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
+  const sign = offset > 0 ? "-" : "+";
+
   // Construct ISO 8601 string
   const isoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMinutes}`;
-  
+
   return isoString;
 }
 
@@ -358,20 +338,27 @@ const filterModal = document.getElementById("filterModal");
 const modalInstance = new bootstrap.Modal(filterModal);
 
 submitFilter.addEventListener("click", function (event) {
+  startEndDatetimeFilterForm();
+  modalInstance.hide();
+});
+
+function startEndDatetimeFilterForm() {
   const start = new Date(startDateTimeInput.value);
   const end = new Date(endDateTimeInput.value);
 
   startDatetimeFilter = formatToISO(start);
   endDatetimeFilter = formatToISO(end);
 
-  console.log("Success");
-  console.log(startDatetimeFilter);
-  console.log(endDatetimeFilter);
+  document.getElementById("filter_history_start").textContent =
+    formatDateWithMidnight(start);
+  document.getElementById("filter_history_end").textContent = formatDate(end);
 
   if (endDatetimeFilter <= startDatetimeFilter) {
     event.preventDefault();
     alert("End date and time must be after start date and time.");
   }
-  modalInstance.hide();
-  
+}
+
+$("#filterModal").on("hidden.bs.modal", function () {
+  startEndDatetimeFilterForm();
 });

@@ -175,7 +175,7 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 	stopTelnet := make(chan struct{})
 	defer close(stopTelnet)
 
-	var lastActivity time.Time
+	// var lastActivity time.Time
 	lastCoordinateInsertTime := time.Now()
 
 	nmeaDataChan := make(chan NMEAData)
@@ -206,7 +206,7 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 				retryDelay = 5 * time.Second
 				reader := bufio.NewReader(conn)
 				connClosed := make(chan struct{})
-				lastActivity = time.Now()
+				// lastActivity = time.Now()
 
 				go func() {
 					defer func() {
@@ -245,7 +245,7 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 								return
 							}
 
-							lastActivity = time.Now()
+							// lastActivity = time.Now()
 
 							var nmeaData NMEAData
 							if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
@@ -306,18 +306,19 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 		}
 	}()
 
-	sqlTicker := time.NewTicker(5 * time.Second)
-	defer sqlTicker.Stop()
+	// sqlTicker := time.NewTicker(5 * time.Second)
+	// defer sqlTicker.Stop()
 
 	for {
 		select {
 		case <-stopChan:
 			close(stopTelnet)
 			return
-		case <-sqlTicker.C:
-			if time.Since(lastActivity) > 10*time.Second {
-				nmeaDataChan <- NMEAData{Status: "Disconnected"}
-			}
+	// 	case <-sqlTicker.C:
+	// 		if time.Since(lastActivity) > 10*time.Second {
+	// 			nmeaDataChan <- NMEAData{Status: "Disconnected"}
+	// 			fmt.Println(server.IP,server.Port)
+	// 		}
 		}
 	}
 }
@@ -459,8 +460,6 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 		}
 	}
 
-	fmt.Println(nmeaData)
-
 	return nil
 }
 
@@ -472,7 +471,7 @@ func (r *TelnetController) KapalTelnetWebsocketHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
