@@ -373,22 +373,22 @@ function downloadCSV(filename, data) {
 
   // Define headers and field mappings
   const headers = [
+    "time",
     "latitude",
     "longitude",
     "heading_degree",
     "speed_in_knots",
     "gps_quality_indicator",
     "water_depth",
-    "created_at",
   ];
   const headerMapping = {
+    time: "created_at",
     latitude: "latitude",
     longitude: "longitude",
     heading_degree: "heading_degree",
     speed_in_knots: "speed_in_knots",
     gps_quality_indicator: "gps_quality_indicator",
     water_depth: "water_depth",
-    created_at: "created_at",
   };
 
   // Convert data to CSV format
@@ -422,7 +422,7 @@ function downloadCSV(filename, data) {
           value = value + vesselHistoryData["kapal"].calibration;
         }
 
-        if (header === "created_at") {
+        if (header === "time") {
           value = formatDateTime(value);
         }
 
