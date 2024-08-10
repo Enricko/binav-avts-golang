@@ -423,7 +423,7 @@ function downloadCSV(filename, data) {
         }
 
         if (header === "time") {
-          value = formatDateTime(value);
+          value = formatDateCSV(value);
         }
 
         return value !== undefined ? value : ""; // Handle undefined values

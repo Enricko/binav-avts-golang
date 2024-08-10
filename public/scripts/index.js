@@ -49,6 +49,16 @@ const formatDate = (date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
+const formatDateCSV = (date) => {
+  const pad = (num) => String(num).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+};
 // Format the date for the start time with 00:00:00
 const formatDateWithMidnight = (date) => {
   const pad = (num) => String(num).padStart(2, '0');
