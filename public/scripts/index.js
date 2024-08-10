@@ -49,7 +49,7 @@ const formatDate = (date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
-const formatDateCSV = (date) => {
+const formatDateDisplay = (date) => {
   const pad = (num) => String(num).padStart(2, '0');
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);

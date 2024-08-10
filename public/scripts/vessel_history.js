@@ -272,7 +272,7 @@ function updateHistoryTable(index) {
   ).textContent = `${record.speed_in_knots} KTS`;
   document.getElementById("SOLN_record").textContent =
     record.gps_quality_indicator;
-  document.getElementById("datetime_record").textContent = formatDateTime(
+  document.getElementById("datetime_record").textContent = formatDateDisplay(
     record.created_at
   );
   document.getElementById(
@@ -423,7 +423,7 @@ function downloadCSV(filename, data) {
         }
 
         if (header === "time") {
-          value = formatDateCSV(value);
+          value = formatDateDisplay(value);
         }
 
         return value !== undefined ? value : ""; // Handle undefined values
