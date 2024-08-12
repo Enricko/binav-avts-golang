@@ -56,16 +56,22 @@ function createPreviewButton(map) {
   return previewButton;
 }
 
+const sidebar = document.getElementById("detail-vessel");
+const resizer = document.getElementById("resizer-sidebar");
+const content = resizer.previousElementSibling;
+
 // Toggle vessel detail sidebar
 function toggleVesselDetailSidebar() {
-  const sidebar = document.getElementById("detail-vessel");
+ 
   if (isPreviewActive) {
     sidebar.style.display = "block";
+    resizer.style.display = "block";
     previewTimeoutID = setInterval(() => {
       dataKapalMarker(currentSelectedMarker);
     }, 100);
   } else {
     sidebar.style.display = "none";
+    resizer.style.display = "none";
     clearInterval(previewTimeoutID);
   }
   isPreviewActive = !isPreviewActive;
@@ -468,3 +474,27 @@ btnDownloadCSV.addEventListener("click", () => {
     vesselHistoryData.map((data) => data.record)
   );
 });
+
+
+
+let isResizing = false;
+
+resizer.addEventListener('mousedown', function(e) {
+    isResizing = true;
+    
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+});
+
+function resize(e) {
+  if (!isResizing) return;
+  
+  const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
+  sidebar.style.width = `${Math.min(Math.max(newWidth, 150), 500)}px`;
+}
+
+function stop() {
+  isResizing = false;
+  document.removeEventListener('mousemove', resizeSidebar);
+  document.removeEventListener('mouseup', stopResizing);
+}
