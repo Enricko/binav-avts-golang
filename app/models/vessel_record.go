@@ -4,10 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
 )
 
 type GpsQuality string
+type TelnetStatus string
+
+const (
+	Connected    TelnetStatus = "Connected"
+	Disconnected TelnetStatus = "Disconnected"
+)
 
 const (
 	FixNotValid        GpsQuality = "Fix not valid"
@@ -24,12 +29,13 @@ type VesselRecord struct {
 	CallSign       string `gorm:"not null;index" json:"call_sign" binding:"required"`
 	SeriesID       uint64 `gorm:"not null" json:"series_id" binding:"required"`
 
-	Latitude            string     `gorm:"varchar(255)" json:"latitude" binding:"required"`
-	Longitude           string     `gorm:"varchar(255)" json:"longitude" binding:"required"`
-	HeadingDegree       float64    `gorm:"varchar(255)" json:"heading_degree" binding:"required"`
-	SpeedInKnots        float64    `gorm:"" json:"speed_in_knots" binding:"required"`
-	GpsQualityIndicator GpsQuality `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
-	WaterDepth          float64    `gorm:"" json:"water_depth" binding:"required"`
+	Latitude            string       `gorm:"varchar(255)" json:"latitude" binding:"required"`
+	Longitude           string       `gorm:"varchar(255)" json:"longitude" binding:"required"`
+	HeadingDegree       float64      `gorm:"varchar(255)" json:"heading_degree" binding:"required"`
+	SpeedInKnots        float64      `gorm:"" json:"speed_in_knots" binding:"required"`
+	GpsQualityIndicator GpsQuality   `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
+	WaterDepth          float64      `gorm:"" json:"water_depth" binding:"required"`
+	TelnetStatus        TelnetStatus `gorm:"type:enum('Connected','Disconnected');default:'Connected'" json:"telnet_status" binding:"required"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"-"`

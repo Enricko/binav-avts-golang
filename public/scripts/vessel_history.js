@@ -74,17 +74,51 @@ function toggleVesselDetailSidebar() {
 // View history polyline
 function displayVesselHistoryPolyline() {
   if (vesselHistoryData.length === 0) return;
+  // Clear existing polylines
+  vesselPolylineHistory = [];
+  vesselPolylineHistory.forEach((polyline) => polyline.setMap(null));
 
-  const latlngArray = vesselHistoryData.map((data) => data.latlng);
+  let currentSegment = [];
+  let currentColor = getPolylineColor(vesselHistoryData[0].status);
 
-  vesselPolylineHistory = new google.maps.Polyline({
-    path: latlngArray,
+  vesselHistoryData.forEach((data, index) => {
+    currentSegment.push(data.latlng);
+
+    const nextData = vesselHistoryData[index + 1];
+    if (nextData && nextData.status !== data.status) {
+      // Create a polyline for the current segment
+      createPolylineSegment(currentSegment, currentColor);
+
+      // Start a new segment
+      currentSegment = [data.latlng];
+      currentColor = getPolylineColor(nextData.status);
+    }
+  });
+
+  // Create the last segment
+  if (currentSegment.length > 0) {
+    createPolylineSegment(currentSegment, currentColor);
+  }
+
+  // Center the map on the last known position
+  map.setCenter(vesselHistoryData[vesselHistoryData.length - 1].latlng);
+}
+
+
+function createPolylineSegment(path, color) {
+  const polyline = new google.maps.Polyline({
+    path: path,
     geodesic: true,
-    strokeColor: "#0077b6",
+    strokeColor: color,
     strokeOpacity: 1.0,
     strokeWeight: 2,
   });
-  vesselPolylineHistory.setMap(map);
+  polyline.setMap(map);
+  vesselPolylineHistory.push(polyline);
+}
+
+function getPolylineColor(telnetStatus) {
+  return telnetStatus === "Connected" ? "#0077b6" : "#ff0000";
 }
 
 // Play vessel history animation
@@ -100,22 +134,24 @@ function playVesselHistoryAnimation() {
 function initializeHistoryMarker() {
   if (!vesselHistoryData.length) return;
 
-  historyMarker = new VesselOverlayHistory(
-    map,
-    {
-      lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
-      lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
-    },
-    vesselHistoryData.kapal.top_range,
-    vesselHistoryData.kapal.left_range,
-    vesselHistoryData.kapal.width_m,
-    vesselHistoryData.kapal.height_m,
-    (vesselHistoryData[currentAnimationIndex].record.heading_degree +
-      vesselHistoryData.kapal.calibration +
-      vesselHistoryData.kapal.heading_direction) %
-      360,
-    vesselHistoryData.kapal.image_map
-  );
+  if (historyMarker == undefined || historyMarker == null) {
+    historyMarker = new VesselOverlayHistory(
+      map,
+      {
+        lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
+        lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
+      },
+      vesselHistoryData.kapal.top_range,
+      vesselHistoryData.kapal.left_range,
+      vesselHistoryData.kapal.width_m,
+      vesselHistoryData.kapal.height_m,
+      (vesselHistoryData[currentAnimationIndex].record.heading_degree +
+        vesselHistoryData.kapal.calibration +
+        vesselHistoryData.kapal.heading_direction) %
+        360,
+      vesselHistoryData.kapal.image_map
+    );
+  }
 }
 
 function animateMarker() {
@@ -201,6 +237,7 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
         lng: convertDMSToDecimal(record.longitude),
       },
       dateTime: record.created_at,
+      status: record.telnet_status,
     }));
 
     vesselHistoryData["kapal"] = result.kapal;
@@ -213,9 +250,17 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
     progressSlider.value = 0;
     progressSlider.max = totalVesselHistoryRecords;
     animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Update frame duration
-    if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
-    if (historyMarker) historyMarker.setMap(null);
+    currentAnimationIndex = 0;
+    if (vesselPolylineHistory) {
+      vesselPolylineHistory = [];
+    }
+    if (historyMarker) {
+      historyMarker.setMap(null);
+      historyMarker = null;
+    }
     displayVesselHistoryPolyline();
+    initializeHistoryMarker();
+    updateHistoryTable(0);
   } catch (error) {
     console.error("There was a problem with the fetch operation:", error);
     loadingSpinner.style.display = "none";
@@ -272,9 +317,8 @@ function updateHistoryTable(index) {
   ).textContent = `${record.speed_in_knots} KTS`;
   document.getElementById("SOLN_record").textContent =
     record.gps_quality_indicator;
-  document.getElementById("datetime_record").textContent = formatDateDisplay(
-    record.created_at
-  );
+  document.getElementById("datetime_record").textContent =
+    formatDateTimeDisplay(record.created_at);
   document.getElementById(
     "water_depth_record"
   ).textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
@@ -423,7 +467,7 @@ function downloadCSV(filename, data) {
         }
 
         if (header === "time") {
-          value = formatDateDisplay(value);
+          value = formatDateTimeDisplay(value);
         }
 
         return value !== undefined ? value : ""; // Handle undefined values
@@ -439,7 +483,9 @@ function downloadCSV(filename, data) {
       // Create a Blob object with UTF-8 encoding
       const csvString = csvRows.join("\n");
       const bom = "\uFEFF"; // UTF-8 BOM
-      const blob = new Blob([bom + csvString], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([bom + csvString], {
+        type: "text/csv;charset=utf-8;",
+      });
       const url = URL.createObjectURL(blob);
 
       // Create a download link and trigger download

@@ -196,8 +196,6 @@ async function updateMarkerPosition(
       contentString,
       dataDevices[device].nmea.status
     );
-
-    
   } else {
     markers[device] = new VesselOverlay(
       map,
@@ -229,8 +227,6 @@ function createInfoWindowContent(device, latitude, longitude) {
     </div>`;
 }
 
-
-
 function dataKapalMarker(device) {
   const data = dataDevices[device];
   document.getElementById("heading_hdt").textContent = `${
@@ -246,7 +242,9 @@ function dataKapalMarker(device) {
   document.getElementById("latitude").textContent = data.nmea.latitude;
   document.getElementById("longitude").textContent = data.nmea.longitude;
   document.getElementById("SOLN").textContent = data.nmea.gps_quality_indicator;
-  document.getElementById("water_depth").textContent = `${formatWaterDepthNumber(data.nmea.water_depth)} Meter`;
+  document.getElementById(
+    "water_depth"
+  ).textContent = `${formatWaterDepthNumber(data.nmea.water_depth)} Meter`;
 }
 
 function formatWaterDepthNumber(number) {
@@ -258,43 +256,48 @@ function formatWaterDepthNumber(number) {
   let part2 = numberStr.slice(-2);
 
   // If part1 is empty, it means the number is less than 100
-  if (part1 === '') {
-      part1 = '0';
+  if (part1 === "") {
+    part1 = "0";
   }
 
   // Combine part1 and part2 and convert to float
-  let formattedNumber = parseFloat(part1 + '.' + part2);
+  let formattedNumber = parseFloat(part1 + "." + part2);
 
   return formattedNumber;
 }
 
-
 function getDataKapalMarker(device) {
-  const vessel_record_preview = document.getElementById("vessel_record_preview");
+  const vessel_record_preview = document.getElementById(
+    "vessel_record_preview"
+  );
   dataKapalMarker(device);
   startToEndDatetimeFilterForm();
-  if(currentSelectedMarker != device) {
-    btnPlay.disabled = true; 
+  if (currentSelectedMarker != device) {
+    btnPlay.disabled = true;
     btnDownloadCSV.disabled = true;
-    if (vesselPolylineHistory) vesselPolylineHistory.setMap(null);
-    if (historyMarker) historyMarker.setMap(null);
+    if (vesselPolylineHistory) {
+      vesselPolylineHistory = [];
+    }
+    if (historyMarker) {
+      historyMarker.setMap(null);
+      historyMarker = null;
+    }
     currentSelectedMarker = device;
     vessel_record_preview.style.display = "block";
     isPreviewActive = true;
     toggleVesselDetailSidebar();
     resetVesselHistoryAnimation();
     defaultHistoryTable();
-    document.getElementById("total_records").textContent =
-      0;
+    document.getElementById("total_records").textContent = 0;
   }
 }
 
-function resetVesselHistoryAnimation(){
+function resetVesselHistoryAnimation() {
   progressSlider.value = 0;
   progressSlider.max = 0;
   totalVesselHistoryRecords = 0;
   currentAnimationIndex = 0;
-  if(isAnimationPlaying){
+  if (isAnimationPlaying) {
     stopVesselHistoryAnimation();
   }
 }

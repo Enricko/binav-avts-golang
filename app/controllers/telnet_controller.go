@@ -26,6 +26,7 @@ type TelnetController struct {
 	ConnMap        *sync.Map
 	KapalDataMap   *sync.Map
 	UpdateInterval time.Duration
+	mu             sync.Mutex
 }
 
 func NewTelnetController() *TelnetController {
@@ -65,7 +66,8 @@ type NMEAData struct {
 	GpsQualityIndicator GpsQuality `gorm:"type:enum('Fix not valid','GPS fix','Differential GPS fix','Not applicable','RTK Fixed','RTK Float','INS Dead reckoning');" json:"gps_quality_indicator"`
 	WaterDepth          float64    `gorm:"" json:"water_depth" binding:"required"`
 
-	Status string `json:"status"`
+	Status       string              `json:"status"`
+	TelnetStatus models.TelnetStatus `json:"telnet_status"`
 }
 
 type KapalData struct {
@@ -121,7 +123,8 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	go func() {
 		for {
-			time.Sleep(30 * time.Second)
+			time.Sleep(3 * time.Second)
+
 			var updatedServers []models.IPKapal
 			err := database.DB.Find(&updatedServers).Error
 			if err != nil {
@@ -139,25 +142,25 @@ func (r *TelnetController) StartTelnetConnections() {
 				updatedServerMap[server.IdIpKapal] = server
 			}
 
+			// Handle updated or new servers
 			for id, updatedServer := range updatedServerMap {
-				if currentServer, exists := currentServerMap[id]; !exists || currentServer != updatedServer {
-					if stopChan, ok := r.ConnMap.Load(id); ok {
-						close(stopChan.(chan struct{}))
-						r.ConnMap.Delete(id)
-					}
+				currentServer, exists := currentServerMap[id]
+				if !exists || r.hasServerChanged(currentServer, updatedServer) {
+					log.Printf("Updating connection for server ID: %d, IP: %s, Port: %s", id, updatedServer.IP, updatedServer.Port)
+					r.stopAndRemoveConnection(id) // Properly stop the existing connection
+
 					wg.Add(1)
 					stopChan := make(chan struct{})
 					go r.handleTelnetConnection(updatedServer, &wg, stopChan)
 				}
 			}
 
-			for id := range currentServerMap {
+			// Handle removed servers
+			for id, currentServer := range currentServerMap {
 				if _, exists := updatedServerMap[id]; !exists {
-					if stopChan, ok := r.ConnMap.Load(id); ok {
-						close(stopChan.(chan struct{}))
-						r.ConnMap.Delete(id)
-					}
-					r.DataMap.Delete(currentServerMap[id].CallSign)
+					log.Printf("Removing connection for server ID: %d, CallSign: %s", id, currentServer.CallSign)
+					r.stopAndRemoveConnection(id)
+					r.DataMap.Delete(currentServer.CallSign)
 				}
 			}
 
@@ -167,20 +170,30 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	wg.Wait()
 }
+
+func (r *TelnetController) hasServerChanged(current, updated models.IPKapal) bool {
+	return current.IP != updated.IP || current.Port != updated.Port
+}
+
+func (r *TelnetController) stopAndRemoveConnection(id uint) {
+	if stopChan, ok := r.ConnMap.Load(id); ok {
+		log.Printf("Stopping telnet connection for server ID: %d", id)
+		close(stopChan.(chan struct{}))
+		r.ConnMap.Delete(id)
+	}
+}
+
 func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *sync.WaitGroup, stopChan chan struct{}) {
 	defer wg.Done()
-
+	
 	r.ConnMap.Store(server.IdIpKapal, stopChan)
-	retryDelay := 5 * time.Second
+	defer r.ConnMap.Delete(server.IdIpKapal)
+
 	stopTelnet := make(chan struct{})
 	defer close(stopTelnet)
 
-	// var lastActivity time.Time
-	lastCoordinateInsertTime := time.Now()
-
 	nmeaDataChan := make(chan NMEAData)
 	waterDepthChan := make(chan float64)
-
 	go r.updateDataMap(server.CallSign, nmeaDataChan, waterDepthChan)
 
 	go func() {
@@ -188,138 +201,193 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 			r.ConnMap.Delete(server.IdIpKapal)
 			log.Printf("Stopped telnet connection for %s", server.CallSign)
 		}()
-
 		for {
 			select {
-			case <-stopTelnet:
+			case<-stopTelnet:
 				return
 			default:
-				conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
-				if err != nil {
-					log.Printf("Error connecting to %s: %v", server.CallSign, err)
-					nmeaDataChan <- NMEAData{Status: "Disconnected"}
-					time.Sleep(retryDelay)
-					retryDelay = min(2*retryDelay, 5*time.Minute)
-					continue
+				if err := r.connectAndRead(server, nmeaDataChan, waterDepthChan); err != nil {
+					log.Printf("Error handling connection for %s: %v", server.CallSign, err)
+					r.updateStatus(server.CallSign, models.Disconnected)
+					// Immediately try to reconnect
 				}
-
-				retryDelay = 5 * time.Second
-				reader := bufio.NewReader(conn)
-				connClosed := make(chan struct{})
-				// lastActivity = time.Now()
-
-				go func() {
-					defer func() {
-						conn.Close()
-						close(connClosed)
-					}()
-					for {
-						select {
-						case <-stopTelnet:
-							return
-						default:
-							conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-
-							var line string
-							var err error
-							if models.TypeIP(server.TypeIP) == "depth" {
-								line, err = reader.ReadString(' ')
-								line = strings.TrimSpace(line)
-
-								number, err := extractNumber(line)
-								if err != nil {
-									line = "" // Clear buffer to start fresh
-									continue
-								}
-								line = strconv.Itoa(number)
-							} else {
-								line, err = reader.ReadString('\n')
-								line = strings.TrimSpace(line)
-							}
-
-							if err != nil {
-								log.Printf("Error reading from %s: %v", server.CallSign, err)
-								if models.TypeIP(server.TypeIP) != "depth"{
-									nmeaDataChan <- NMEAData{Status: "Disconnected"}
-								}
-								return
-							}
-
-							// lastActivity = time.Now()
-
-							var nmeaData NMEAData
-							if strings.HasPrefix(line, "$GPGGA") || strings.HasPrefix(line, "$GNGGA") {
-								gga, err := parseGGASentence(line)
-								if err != nil {
-									log.Printf("Error parsing GGA: %v", err)
-								}
-								if gga != nil {
-									nmeaData.Latitude = gga.LatMinute
-									nmeaData.Longitude = gga.LongMinute
-									nmeaData.GpsQualityIndicator = GpsQuality(gga.GPSQuality)
-								}
-							} else if strings.HasPrefix(line, "$GPHDT") || strings.HasPrefix(line, "$GNHDT") {
-								hdt, err := parseHDTSentence(line)
-								if err != nil {
-									log.Printf("Error parsing GGA: %v", err)
-								}
-								if hdt != nil {
-									nmeaData.HeadingDegree = hdt.Heading
-								}
-							} else if strings.HasPrefix(line, "$GPVTG") || strings.HasPrefix(line, "$GNVTG") {
-								vtg, err := parseVTGSentence(line)
-								if err != nil {
-									log.Printf("Error parsing GGA: %v", err)
-								}
-								if vtg != nil {
-									nmeaData.SpeedInKnots = vtg.SpeedKnots
-								}
-							} else if server.TypeIP == "depth" {
-								number, err := extractNumber(line)
-								if err == nil {
-									waterDepthChan <- float64(number)
-								}
-							}
-
-							if models.TypeIP(server.TypeIP) != "depth" {
-								nmeaData.Status = "Connected"
-								nmeaDataChan <- nmeaData
-							}
-
-
-							if time.Since(lastCoordinateInsertTime) >= 1*time.Second {
-								lastCoordinateInsertTime = time.Now()
-								if models.TypeIP(server.TypeIP) != "depth" {
-									if err := r.createOrUpdateCoordinate(server.CallSign, &lastCoordinateInsertTime); err != nil {
-										log.Printf("Error creating or updating coordinate: %v", err)
-									}
-								}
-							}
-						}
-					}
-				}()
-
-				<-connClosed
-				log.Printf("Disconnected from %s. Reconnecting...", server.CallSign)
-				time.Sleep(retryDelay)
 			}
 		}
 	}()
 
-	// sqlTicker := time.NewTicker(5 * time.Second)
-	// defer sqlTicker.Stop()
-
 	for {
 		select {
 		case <-stopChan:
+			r.DataMap.Delete(server.CallSign)
+			log.Printf("asdasdTelnet connection stopped for server ID: %d, CallSign: %s, Port:%a", server.IdIpKapal, server.CallSign,server.Port)
 			close(stopTelnet)
 			return
-	// 	case <-sqlTicker.C:
-	// 		if time.Since(lastActivity) > 10*time.Second {
-	// 			nmeaDataChan <- NMEAData{Status: "Disconnected"}
-	// 			fmt.Println(server.IP,server.Port)
-	// 		}
 		}
+	}
+}
+
+func (r *TelnetController) connectAndRead(server models.IPKapal, nmeaDataChan chan<- NMEAData, waterDepthChan chan<- float64) error {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
+	if err != nil {
+		return fmt.Errorf("error connecting: %w", err)
+	}
+	defer conn.Close()
+
+	reader := bufio.NewReader(conn)
+
+	lastCoordinateInsertTime := time.Now()
+
+	for {
+		if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+			return fmt.Errorf("error setting read deadline: %w", err)
+		}
+
+		line, err := r.readLine(reader, server.TypeIP)
+		if err != nil {
+			return fmt.Errorf("error reading: %w", err)
+		}
+
+		sentences := strings.Split(strings.TrimSpace(line), "\n")
+
+		// Process each sentence
+		for _, sentence := range sentences {
+			if err := r.processLine(sentence, server, nmeaDataChan, waterDepthChan); err != nil {
+				log.Printf("Error processing line for %s: %v", server.CallSign, err)
+				continue
+			}
+		}
+
+		if time.Since(lastCoordinateInsertTime) >= time.Second {
+			lastCoordinateInsertTime = time.Now()
+			if models.TypeIP(server.TypeIP) != "depth" {
+				if err := r.createOrUpdateCoordinate(server.CallSign, &lastCoordinateInsertTime); err != nil {
+					log.Printf("Error creating or updating coordinate: %v", err)
+				}
+			}
+		}
+	}
+}
+
+func (r *TelnetController) readLine(reader *bufio.Reader, typeIP models.TypeIP) (string, error) {
+	var line string
+	var err error
+
+	if typeIP == "depth" {
+		line, err = reader.ReadString(' ')
+		if err != nil {
+			return "", err
+		}
+		line = strings.TrimSpace(line)
+		number, err := extractNumber(line)
+		if err != nil {
+			return "", nil
+		}
+		line = strconv.Itoa(number)
+	} else {
+		data := make([]byte, 1024)
+		n, err := reader.Read(data)
+		if err != nil {
+			return "", err
+		}
+
+		// Convert to string
+		line = string(data[:n])
+
+		// Print the data
+		// fmt.Println(nmeaData)
+	}
+
+	return line, nil
+}
+
+func (r *TelnetController) processLine(line string, server models.IPKapal, nmeaDataChan chan<- NMEAData, waterDepthChan chan<- float64) error {
+	if models.TypeIP(server.TypeIP) == "depth" {
+		if line == "" {
+			return nil
+		}
+		number, err := strconv.ParseFloat(line, 64)
+		if err != nil {
+			return fmt.Errorf("error parsing depth: %w", err)
+		}
+		waterDepthChan <- number
+		return nil
+	}
+
+	var nmeaData NMEAData
+
+	switch {
+	case strings.HasPrefix(line, "$GPGGA"), strings.HasPrefix(line, "$GNGGA"):
+		gga, err := parseGGASentence(line)
+		if err != nil {
+			return fmt.Errorf("error parsing GGA sentence: %w", err)
+		}
+		nmeaData = r.convertGGAToNMEAData(gga)
+	case strings.HasPrefix(line, "$GPHDT"), strings.HasPrefix(line, "$GNHDT"):
+		hdt, err := parseHDTSentence(line)
+		if err != nil {
+			return fmt.Errorf("error parsing HDT sentence: %w", err)
+		}
+		nmeaData = r.convertHDTToNMEAData(hdt)
+	case strings.HasPrefix(line, "$GPVTG"), strings.HasPrefix(line, "$GNVTG"):
+		vtg, err := parseVTGSentence(line)
+		if err != nil {
+			return fmt.Errorf("error parsing VTG sentence: %w", err)
+		}
+		nmeaData = r.convertVTGToNMEAData(vtg)
+	default:
+		return fmt.Errorf("unknown sentence type: %s", line)
+	}
+
+	if line != ""{
+		nmeaData.Status = "Connected"
+		nmeaDataChan <- nmeaData
+	} 
+
+	return nil
+}
+
+func (r *TelnetController) convertGGAToNMEAData(gga *GGASentence) NMEAData {
+	return NMEAData{
+		Latitude:            gga.LatMinute,
+		Longitude:           gga.LongMinute,
+		GpsQualityIndicator: GpsQuality(gga.GPSQuality),
+		// Other fields remain default values
+	}
+}
+
+func (r *TelnetController) convertHDTToNMEAData(hdt *HDTSentence) NMEAData {
+	return NMEAData{
+		HeadingDegree: hdt.Heading,
+		// Other fields remain default values
+	}
+}
+
+func (r *TelnetController) convertVTGToNMEAData(vtg *VTGSentence) NMEAData {
+	return NMEAData{
+		SpeedInKnots: vtg.SpeedKnots,
+		// Other fields remain default values
+	}
+}
+
+func (r *TelnetController) updateStatus(callSign string, status models.TelnetStatus) {
+	// Update in-memory data
+	if data, ok := r.DataMap.Load(callSign); ok {
+		nmeaData := data.(NMEAData)
+		nmeaData.TelnetStatus = status
+		nmeaData.Status = string(status) // For backwards compatibility
+		r.DataMap.Store(callSign, nmeaData)
+	}
+
+	// Update in database
+	var vesselRecord models.VesselRecord
+	result := database.DB.Where("call_sign = ?", callSign).Order("created_at DESC").First(&vesselRecord)
+	if result.Error == nil {
+		vesselRecord.TelnetStatus = status
+		if err := database.DB.Save(&vesselRecord).Error; err != nil {
+			log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
+		}
+	} else {
+		log.Printf("Error fetching vessel record for %s: %v", callSign, result.Error)
 	}
 }
 
@@ -345,6 +413,7 @@ func (r *TelnetController) updateDataMap(callSign string, nmeaDataChan <-chan NM
 				storedData.GpsQualityIndicator = nmeaData.GpsQualityIndicator
 			}
 			storedData.Status = nmeaData.Status
+
 			r.DataMap.Store(callSign, storedData)
 
 		case waterDepth := <-waterDepthChan:
@@ -393,14 +462,14 @@ func (r *TelnetController) updateKapalDataMap() {
 	}
 
 	for _, kapal := range activeKapal {
-		nmeaData, ok := r.DataMap.Load(kapal.CallSign)
-		if !ok {
-			nmeaData = NMEAData{Status: "Disconnected"}
-		}
+		// nmeaData, ok := r.DataMap.Load(kapal.CallSign)
+		// if !ok {
+		// 	nmeaData = NMEAData{Status: "Disconnected"}
+		// }
 
 		r.KapalDataMap.Store(kapal.CallSign, KapalData{
 			Kapal: kapal,
-			NMEA:  nmeaData.(NMEAData),
+			// NMEA:  nmeaData.(NMEAData),
 		})
 	}
 }
@@ -409,7 +478,6 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 	var lastRecord models.VesselRecord
 	result := database.DB.Where("call_sign = ?", callSign).Order("created_at desc").First(&lastRecord)
 
-	
 	data, _ := r.DataMap.Load(callSign)
 	nmeaData := data.(NMEAData)
 
@@ -434,6 +502,7 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 				SpeedInKnots:        nmeaData.SpeedInKnots,
 				WaterDepth:          nmeaData.WaterDepth,
 				GpsQualityIndicator: models.GpsQuality(gpsQuality),
+				TelnetStatus:        models.Connected,
 			}).Error; err != nil {
 				return fmt.Errorf("error creating new coordinate: %w", err)
 			}
@@ -454,6 +523,7 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 				SpeedInKnots:        nmeaData.SpeedInKnots,
 				WaterDepth:          nmeaData.WaterDepth,
 				GpsQualityIndicator: models.GpsQuality(gpsQuality),
+				TelnetStatus:        models.Connected,
 			}).Error; err != nil {
 				return fmt.Errorf("error creating new coordinate: %w", err)
 			}
@@ -464,9 +534,10 @@ func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordin
 }
 
 func (r *TelnetController) KapalTelnetWebsocketHandler(c *gin.Context) {
+	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		http.NotFound(c.Writer, c.Request)
+		log.Println("Error upgrading to WebSocket:", err)
 		return
 	}
 	defer conn.Close()
@@ -474,24 +545,21 @@ func (r *TelnetController) KapalTelnetWebsocketHandler(c *gin.Context) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			data := make(map[string]KapalData)
-			r.KapalDataMap.Range(func(key, value interface{}) bool {
-				kapalData := value.(KapalData)
-				nmeaData, ok := r.DataMap.Load(kapalData.Kapal.CallSign)
-				if ok {
-					kapalData.NMEA = nmeaData.(NMEAData)
-				}
-				data[key.(string)] = kapalData
-				return true
-			})
-
-			if err := conn.WriteJSON(data); err != nil {
-				log.Println("Error writing to WebSocket client:", err)
-				return
+	for range ticker.C {
+		data := make(map[string]KapalData)
+		r.KapalDataMap.Range(func(key, value interface{}) bool {
+			kapalData := value.(KapalData)
+			nmeaData, ok := r.DataMap.Load(kapalData.Kapal.CallSign)
+			if ok {
+				kapalData.NMEA = nmeaData.(NMEAData)
 			}
+			data[key.(string)] = kapalData
+			return true
+		})
+
+		if err := conn.WriteJSON(data); err != nil {
+			log.Println("Error writing to WebSocket client:", err)
+			return
 		}
 	}
 }
