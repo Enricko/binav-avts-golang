@@ -2,46 +2,73 @@
 {{template "insertVessel" .}}
 <div class="modal fade" id="vesselTable" tabindex="-1" role="dialog" aria-labelledby="vesselTableLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl">
-        <div class="modal-content ">
-            <div class="modal-header">
-                <h5 class="modal-title">Table Vessel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Vessel Table</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body ">
-                <div class="border rounded p-3">
-                    <button class="btn btn-primary mb-2" id="tambah_data"
-                        style="float: right;" data-bs-toggle="modal"
-                        data-bs-target="#insertVessel">Tambah Data +</button>
-
-                    <table id="vessel-table"
-                        class="display table-responsive table-bordered">
-                        <thead style="background-color: #212529; color: white;">
-                            <tr>
-                                <th>Call Sign</th>
-                                <th>Image</th>
-                                <th>Image Vessel</th>
-                                <th>Status</th>
-                                <th>Flag</th>
-                                <th>Class</th>
-                                <th>Builder</th>
-                                <th>Year Built</th>
-                                <th>Direction (&deg;)</th>
-                                <th>Lebar Kapal (m)</th>
-                                <th>Panjang (m)</th>
-                                <th>GPS Top (m)</th>
-                                <th>GPS Left (m)</th>
-                                <th>History Store per Min</th>
-                                <th>Min Knot per Gas</th>
-                                <th>Max Knot per Gas</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <!-- Add your table content here -->
-                    </table>
+            <div class="modal-body p-0">
+                <div class="container-fluid py-3">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <button class="btn btn-success" id="tambah_data" data-bs-toggle="modal" data-bs-target="#insertVessel">
+                                <i class="fas fa-plus-circle me-2"></i>Add New Vessel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="table-responsive">
+                                <table id="vessel-table" class="table table-striped table-hover table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Call Sign</th>
+                                            <th>Image</th>
+                                            <th>Image Vessel</th>
+                                            <th>Status</th>
+                                            <th>Flag</th>
+                                            <th>Class</th>
+                                            <th>Builder</th>
+                                            <th>Year Built</th>
+                                            <th>Direction (&deg;)</th>
+                                            <th>Width (m)</th>
+                                            <th>Length (m)</th>
+                                            <th>GPS Top (m)</th>
+                                            <th>GPS Left (m)</th>
+                                            <th>History Store per Sec</th>
+                                            <th>Min Knot per Gas</th>
+                                            <th>Max Knot per Gas</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Table content will be dynamically populated by DataTables -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    #vessel-table th, #vessel-table td {
+        white-space: nowrap;
+    }
+    #vessel-table {
+        font-size: 0.9rem;
+    }
+    .modal-xl {
+        max-width: 95%;
+    }
+    @media (max-width: 768px) {
+        #vessel-table {
+            font-size: 0.8rem;
+        }
+    }
+</style>
 
 {{end}}
