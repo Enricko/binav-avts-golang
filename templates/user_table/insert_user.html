@@ -1,0 +1,126 @@
+{{define "insertUser"}}
+<div class="modal fade" id="insertUser" tabindex="-1" role="dialog" aria-labelledby="insertUserLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Insert New User</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-target="#userTable" data-bs-toggle="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formInsertUser" class="needs-validation" novalidate autocomplete="off">
+          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
+          <div class="row g-3 mb-3">
+            <div class="col-md-12">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="name" name="name" required autocomplete="off">
+              <div class="invalid-feedback">Please provide a name.</div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-12">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email" required autocomplete="off">
+              <div class="invalid-feedback">Please provide a valid email.</div>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-12">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" name="password" required minlength="6" autocomplete="new-password">
+              <div class="invalid-feedback">Please provide a password (minimum 6 characters).</div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="level" class="form-label">User Level</label>
+            <select class="form-select" id="level" name="level" required autocomplete="off">
+              <option value="">Select user level</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+            </select>
+            <div class="invalid-feedback">Please select a user level.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-target="#userTable" data-bs-toggle="modal">Cancel</button>
+        <button type="submit" id="submitUserButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formInsertUser');
+    const submitButton = document.getElementById('submitUserButton');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (this.checkValidity()) {
+            const formData = new FormData(this);
+
+            fetch('/user/insert', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': formData.get('_csrf')
+                },
+            })
+            .then(response => {
+              if (!response.ok) {
+                  return response.json().then(err => { throw err; });
+              }
+              return response.json();
+            })
+            .then(data => {
+                console.log('User created:', data);
+                dataTableMap["user-table"].dataTable.ajax.reload();
+                const insertUserModal = document.getElementById('insertUser');
+                const modalInstance = bootstrap.Modal.getInstance(insertUserModal);
+                modalInstance.hide();
+
+                const userTableModal = document.getElementById('userTable');
+                const userTableModalInstance = new bootstrap.Modal(userTableModal);
+                userTableModalInstance.show();
+
+                form.reset();
+                form.classList.remove('was-validated');
+                Swal.fire({
+                    title: 'Success',
+                    text: data.message || 'User created successfully',
+                    icon: 'success',
+                });
+            })
+            .catch(error => {
+                console.error('Error creating user:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'An error occurred while creating the user',
+                    icon: 'error',
+                });
+            });
+        }
+        
+        this.classList.add('was-validated');
+    });
+
+    // Trigger form submission when the submit button is clicked
+    submitButton.addEventListener('click', function() {
+        form.requestSubmit();
+    });
+
+    // Reset form when modal is hidden
+    const insertUserModal = document.getElementById('insertUser');
+    insertUserModal.addEventListener('hidden.bs.modal', function () {
+        form.reset();
+        form.classList.remove('was-validated');
+    });
+});
+</script>
+{{end}}

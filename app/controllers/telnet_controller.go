@@ -18,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
-
 )
 
 type TelnetController struct {
@@ -79,7 +78,7 @@ func (r *TelnetController) StartTelnetConnections() {
 	var wg sync.WaitGroup
 	var servers []models.IPKapal
 
-	err := database.DB.Find(&servers).Error
+	err := database.DB.Preload("Kapal").Find(&servers).Error
 	if err != nil {
 		log.Println("Error fetching Telnet servers:", err)
 		return
@@ -126,7 +125,7 @@ func (r *TelnetController) StartTelnetConnections() {
 			time.Sleep(3 * time.Second)
 
 			var updatedServers []models.IPKapal
-			err := database.DB.Find(&updatedServers).Error
+			err := database.DB.Preload("Kapal").Find(&updatedServers).Error
 			if err != nil {
 				log.Println("Error fetching updated Telnet servers:", err)
 				continue
@@ -185,7 +184,7 @@ func (r *TelnetController) stopAndRemoveConnection(id uint) {
 
 func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *sync.WaitGroup, stopChan chan struct{}) {
 	defer wg.Done()
-	
+
 	r.ConnMap.Store(server.IdIpKapal, stopChan)
 	defer r.ConnMap.Delete(server.IdIpKapal)
 
@@ -203,11 +202,11 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 		}()
 		for {
 			select {
-			case<-stopTelnet:
+			case <-stopTelnet:
 				return
 			default:
 				if err := r.connectAndRead(server, nmeaDataChan, waterDepthChan); err != nil {
-					log.Printf("Error handling connection for %s: %v", server.CallSign, err)
+					// log.Printf("Error handling connection for %s: %v", server.CallSign, err)
 					r.updateStatus(server.CallSign, models.Disconnected)
 					// Immediately try to reconnect
 				}
@@ -219,7 +218,7 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 		select {
 		case <-stopChan:
 			r.DataMap.Delete(server.CallSign)
-			log.Printf("asdasdTelnet connection stopped for server ID: %d, CallSign: %s, Port:%a", server.IdIpKapal, server.CallSign,server.Port)
+			log.Printf("asdasdTelnet connection stopped for server ID: %d, CallSign: %s, Port:%a", server.IdIpKapal, server.CallSign, server.Port)
 			close(stopTelnet)
 			return
 		}
@@ -238,6 +237,7 @@ func (r *TelnetController) connectAndRead(server models.IPKapal, nmeaDataChan ch
 	lastCoordinateInsertTime := time.Now()
 
 	for {
+
 		if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
 			return fmt.Errorf("error setting read deadline: %w", err)
 		}
@@ -259,7 +259,11 @@ func (r *TelnetController) connectAndRead(server models.IPKapal, nmeaDataChan ch
 
 		if time.Since(lastCoordinateInsertTime) >= time.Second {
 			lastCoordinateInsertTime = time.Now()
-			if models.TypeIP(server.TypeIP) != "depth" {
+			kapal, ok := r.KapalDataMap.Load(server.CallSign)
+			if !ok {
+				return fmt.Errorf("kapal not found in dataMap")
+			}
+			if models.TypeIP(server.TypeIP) != "depth" && kapal.(KapalData).Kapal.RecordStatus {
 				if err := r.createOrUpdateCoordinate(server.CallSign, &lastCoordinateInsertTime); err != nil {
 					log.Printf("Error creating or updating coordinate: %v", err)
 				}
@@ -338,10 +342,10 @@ func (r *TelnetController) processLine(line string, server models.IPKapal, nmeaD
 		return fmt.Errorf("unknown sentence type: %s", line)
 	}
 
-	if line != ""{
+	if line != "" {
 		nmeaData.Status = "Connected"
 		nmeaDataChan <- nmeaData
-	} 
+	}
 
 	return nil
 }
@@ -455,7 +459,7 @@ func extractNumber(message string) (int, error) {
 
 func (r *TelnetController) updateKapalDataMap() {
 	var activeKapal []models.Kapal
-	err := database.DB.Where("status = ?", true).Find(&activeKapal).Error
+	err := database.DB.Find(&activeKapal).Error
 	if err != nil {
 		log.Println("Error fetching active kapal:", err)
 		return

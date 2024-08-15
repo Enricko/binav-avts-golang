@@ -7,16 +7,17 @@ import (
 	"golang-app/database"
 	"math/big"
 	"net/http"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	csrf "github.com/utrack/gin-csrf"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-
 )
 
 func hashPassword(password string) (string, error) {
@@ -58,15 +59,13 @@ func NewUserController() *UserController {
 	}
 }
 
-func (r *UserController) Index(c *gin.Context) {
-	// Data to pass to the index.html template
-	data := gin.H{
-		"title":     "Welcome Administrator",
-		"csrfToken": csrf.GetToken(c),
-	}
-	// Render the index.html template with data
-	c.HTML(http.StatusOK, "dashboard.html", data)
+type Claims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
 }
+
+var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+
 func (r *UserController) GetUsers(c *gin.Context) {
 	// TODO: Change if want to use another model here
 	var data []models.User
@@ -132,165 +131,118 @@ func (r *UserController) GetUsers(c *gin.Context) {
 	})
 
 }
+func (r *UserController) InsertUser(c *gin.Context) {
+	var input struct {
+		Name     string       `form:"name" json:"name" binding:"required"`
+		Email    string       `form:"email" json:"email" binding:"required,email"`
+		Password string       `form:"password" json:"password" binding:"required,min=6"`
+		Level    models.Level `form:"level" json:"level" binding:"required"`
+	}
 
-func (r *UserController) GetUser(c *gin.Context) {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind data", "error": err.Error()})
+		return
+	}
+
+	// Generate a random ID
+	randomID, err := generateRandomString(20)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID"})
-		return
-	}
-
-	// Check if user exists
-	var user models.User
-	if err := database.DB.First(&user, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"data": user,
-	})
-}
-func (r *UserController) GetAllUser(c *gin.Context) {
-	// Check if user exists
-	var data []models.User
-	if err := database.DB.Find(&data).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"data": data,
-	})
-}
-
-func (r *UserController) InsertData(c *gin.Context) {
-	var requestData map[string]interface{}
-	if err := c.BindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON"})
-		return
-	}
-
-	name, nameExists := requestData["name"].(string)
-	email, emailExists := requestData["email"].(string)
-	password, passwordExists := requestData["password"].(string)
-	passwordConfirmation, passwordConfirmationExists := requestData["password_confirmation"].(string)
-
-	// Validate required fields
-	if !nameExists || !emailExists || !passwordExists || !passwordConfirmationExists {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Missing required fields"})
-		return
-	}
-	if password != passwordConfirmation {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Password and Password Confirmation must be the same"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate user ID"})
 		return
 	}
 
 	// Hash the password
-	hashedPassword, err := hashPassword(password)
+	hashedPassword, err := hashPassword(input.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to hash password"})
 		return
 	}
 
-	// Generate id_user (assuming it needs to be unique and not null)
-	idUser, err := generateRandomString(25)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	// Validate user level
+	if !isValidUserLevel(input.Level) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid user level"})
 		return
 	}
 
-	// Manually create map for the user data
-	userData := models.User{
-		IdUser:  idUser,
-		Name:     name,
-		Email:    email,
+	// Create user struct
+	user := models.User{
+		IdUser:   randomID,
+		Name:     input.Name,
+		Email:    input.Email,
 		Password: hashedPassword,
-		// Add other fields as needed
+		Level:    input.Level,
 	}
 
-	fmt.Println(userData)
-
-	// Attempt to insert user data into the database
-	err = database.DB.Create(&userData).Error
+	// Insert the new user into the database
+	err = database.DB.Create(&user).Error
 	if err != nil {
-		if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
+		// Check for duplicate email error
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "Duplicate entry") {
 			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
 			return
 		}
-
-		// Handle other unique constraint errors or internal server errors
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		// Handle other potential errors
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Data Inserted"})
-
+	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully", "data": user})
 }
 
-func (r *UserController) UpdateData(c *gin.Context) {
-	// id := c.Param("id")
-	// var input models.User
-	// if err := c.ShouldBindJSON(&input); err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-	// 	return
-	// }
-
-	// var user models.User
-	// if err := database.DB.First(&user, id).Error; err != nil {
-	// 	c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
-	// 	return
-	// }
-
-	// user.Email = input.Email
-	// user.Username = input.Username
-
-	// err := database.DB.Save(&user).Error
-	// if err != nil {
-	// 	if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_email"` {
-	// 		c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
-	// 		return
-
-	// 	} else if err.Error() == `pq: duplicate key value violates unique constraint "uix_users_username"` {
-	// 		c.JSON(http.StatusConflict, gin.H{"message": "Username already exists"})
-	// 		return
-	// 	}
-
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user"})
-	// 	return
-	// }
-
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"message": "User updated successfully",
-	// })
-}
-func (r *UserController) DeleteData(c *gin.Context) {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID"})
+func (r *UserController) Login(c *gin.Context) {
+	var input struct {
+		Email    string `form:"email" json:"email" binding:"required,email"`
+		Password string `form:"password" json:"password" binding:"required,min=6"`
+	}
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
 		return
 	}
 
-	// Check if user exists
 	var user models.User
-	if err := database.DB.First(&user, id).Error; err != nil {
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
-			return
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid email or password"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error finding user"})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	// Delete the user
-	if err := database.DB.Delete(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid email or password"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User Deleted"})
+	expirationHours, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_HOURS"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Invalid token expiration configuration"})
+		return
+	}
+
+	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
+	claims := &Claims{
+		Email: input.Email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error generating token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Login successful",
+		"token":   tokenString,
+		"user":    user,
+	})
+}
+
+// Helper function to validate user level (unchanged)
+func isValidUserLevel(level models.Level) bool {
+	return level == models.USER || level == models.ADMIN || level == models.OWNER
 }

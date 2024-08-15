@@ -1,0 +1,178 @@
+{{define "userTable"}} {{template "insertUser" .}} 
+<div class="modal fade" id="userTable" tabindex="-1" role="dialog" aria-labelledby="userTableLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">User Table</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="container-fluid py-3">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <button class="btn btn-success" id="tambah_data" data-bs-toggle="modal" data-bs-target="#insertUser">
+                                <i class="fas fa-plus-circle me-2"></i>Add New User
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="table-responsive">
+                                <table id="user-table" class="table table-striped table-hover table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Level</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Table content will be dynamically populated by DataTables -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+  #user-table th,
+  #user-table td {
+    white-space: nowrap;
+  }
+  #user-table {
+    font-size: 0.9rem;
+  }
+  .modal-xl {
+    max-width: 95%;
+  }
+  @media (max-width: 768px) {
+    #user-table {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<script>
+$(document).ready(function() {
+    initializeDataTable("userTable", "user-table", "/user/data", [
+        { data: "id_user", className: "text-center" },
+        { data: "name", className: "text-center" },
+        { data: "email", className: "text-center" },
+        { data: "level", className: "text-center" },
+        {
+            data: "aksi",
+            className: "text-center",
+            width: "10%",
+            render: function(data, type, row, meta) {
+                return `
+                    <div class="container">
+                        <div class="row justify-content-md-center">
+                            <div class="col-auto mb-1">
+                                <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateUser" onclick="editUser('${row.id_user}')"><i class="fas fa-pencil"></i></button>
+                            </div>
+                            <div class="col-auto mb-1">
+                                <button class="btn btn-danger btn-xs" id="delete_data" onclick="deleteUser('${row.id_user}')"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+        },
+    ]);
+});
+
+function editUser(userId) {
+    fetch(`/user/${userId}`)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
+        })
+        .then((data) => {
+            populateUpdateForm(data);
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            Swal.fire({
+                title: "Error",
+                text: "Failed to fetch user data",
+                icon: "error",
+            });
+        });
+}
+
+function deleteUser(userId) {
+    const swalWithBootstrapButtons = Swal.mixin({
+        customClass: {
+            confirmButton: "btn btn-success",
+            cancelButton: "btn btn-danger",
+        },
+        buttonsStyling: false,
+    });
+
+    swalWithBootstrapButtons.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, cancel!",
+        reverseButtons: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/user/delete/${userId}`, {
+                method: "DELETE",
+                headers: {
+                    "X-CSRF-Token": `{{ .csrfToken }}`,
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    dataTableMap["user-table"].dataTable.ajax.reload();
+                    swalWithBootstrapButtons.fire({
+                        title: "Deleted!",
+                        text: data.message || "The user has been deleted.",
+                        icon: "success",
+                    });
+                } else {
+                    swalWithBootstrapButtons.fire({
+                        title: "Deletion Failed!",
+                        text: data.message || "Failed to delete the user.",
+                        icon: "error",
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                swalWithBootstrapButtons.fire({
+                    title: "Error",
+                    text: "An error occurred while deleting the user.",
+                    icon: "error",
+                });
+            });
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            swalWithBootstrapButtons.fire({
+                title: "Cancelled",
+                text: "Your user data is safe :)",
+                icon: "error",
+            });
+        }
+    });
+}
+
+function populateUpdateForm(userData) {
+    // Implement this function to populate the update form with user data
+    // You'll need to create the update form and its fields
+}
+</script>
+{{end}}

@@ -1,3 +1,5 @@
+let autoCompleteInstance;
+
 async function fetchUsers() {
   try {
     const response = await fetch(

@@ -57,21 +57,19 @@ function createPreviewButton(map) {
 }
 
 const sidebar = document.getElementById("detail-vessel");
-const resizer = document.getElementById("resizer-sidebar");
-const content = resizer.previousElementSibling;
+// const resizer = document.getElementById("resizer-sidebar");
+// const content = resizer.previousElementSibling;
 
 // Toggle vessel detail sidebar
 function toggleVesselDetailSidebar() {
  
   if (isPreviewActive) {
     sidebar.style.display = "block";
-    resizer.style.display = "block";
     previewTimeoutID = setInterval(() => {
       dataKapalMarker(currentSelectedMarker);
     }, 100);
   } else {
     sidebar.style.display = "none";
-    resizer.style.display = "none";
     clearInterval(previewTimeoutID);
   }
   isPreviewActive = !isPreviewActive;
@@ -523,24 +521,24 @@ btnDownloadCSV.addEventListener("click", () => {
 
 
 
-let isResizing = false;
+// let isResizing = false;
 
-resizer.addEventListener('mousedown', function(e) {
-    isResizing = true;
+// resizer.addEventListener('mousedown', function(e) {
+//     isResizing = true;
     
-    document.addEventListener('mousemove', resize);
-    document.addEventListener('mouseup', stopResize);
-});
+//     document.addEventListener('mousemove', resize);
+//     document.addEventListener('mouseup', stopResize);
+// });
 
-function resize(e) {
-  if (!isResizing) return;
+// function resize(e) {
+//   if (!isResizing) return;
   
-  const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
-  sidebar.style.width = `${Math.min(Math.max(newWidth, 150), 500)}px`;
-}
+//   const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
+//   sidebar.style.width = `${Math.min(Math.max(newWidth, 150), 500)}px`;
+// }
 
-function stop() {
-  isResizing = false;
-  document.removeEventListener('mousemove', resizeSidebar);
-  document.removeEventListener('mouseup', stopResizing);
-}
+// function stop() {
+//   isResizing = false;
+//   document.removeEventListener('mousemove', resizeSidebar);
+//   document.removeEventListener('mouseup', stopResizing);
+// }

@@ -2,17 +2,17 @@ package main
 
 import (
 	"golang-app/app/controllers"
+	"golang-app/app/middleware"
 	"golang-app/database"
 	"golang-app/routes"
 	"log"
-	"net/http"
-	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	csrf "github.com/utrack/gin-csrf"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -40,25 +40,31 @@ func main() {
 	database.Init()
 
 	r := gin.Default()
-	r.Use(CORSMiddleware())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+	// r.Use(CORSMiddleware())
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 
-	r.Use(csrf.Middleware(csrf.Options{
-		Secret: os.Getenv("SECRET"),
-		ErrorFunc: func(c *gin.Context) {
-			c.String(http.StatusBadRequest, "CSRF token mismatch")
-			c.Abort()
-		},
-	}))
+	excludedPaths := []string{
+		"/login",
+		// Add more paths as needed
+	}
+
+	// Use the NoCSRF middleware with the exclusion list
+	r.Use(middleware.NoCSRF(excludedPaths))
 
 	telnetController := controllers.NewTelnetController()
 
 	// Start Telnet connections in a separate goroutine
 	go telnetController.StartTelnetConnections()
-
-	// telnetController := controllers.NewTelnetController()
 
 	r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
 

@@ -1,4 +1,6 @@
 {{ template "header" . }}
+{{template "mappingTable".}} {{template "vesselTable".}} {{template
+  "userTable".}} {{template "profilePage".}} 
 <div style="display: flex; height: 100vh">
   <div id="map" style="width: 100vw; height: 100%; position: relative"></div>
   <div id="measurement-window">
@@ -11,234 +13,215 @@
     </div>
   </div>
 
-  <div
-    
-    style="
-      display: flex;
-      
-      
-    "
-  >
-    <div class="resizer-sidebar" id="resizer-sidebar"> </div>
-
-    <div id="detail-vessel" style="padding: 10px; height: 100%; overflow-y: scroll; display: none; min-width: 200px; max-width: 500px;">
-     <h4>Detail Vessel</h4>
-      <table class="table table-bordered" style="font-size: small">
-        <thead>
-          <tr>
-            <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td scope="row">Status</td>
-            <td id="status_telnet">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Lat</td>
-            <td id="latitude">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Long</td>
-            <td id="longitude">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Heading (HDT)</td>
-            <td id="heading_hdt">-</td>
-          </tr>
-          <tr>
-            <td scope="row">SOG</td>
-            <td id="SOG">-</td>
-          </tr>
-          <tr>
-            <td scope="row">SOLN</td>
-            <td id="SOLN">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Depth</td>
-            <td id="water_depth">-</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <hr>
-
-      <h4>Detail History</h4>
-      <table class="mt-3 table table-bordered" style="font-size: small">
-        <thead>
-          <tr>
-            <th scope="col" colspan="2" id="record_of_vessel">
-              - of - Records
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- <tr>
-        <td scope="row">Status</td>
-        <td id="status_telnet">-</td>
-      </tr> -->
-          <tr>
-            <td scope="row">Lat</td>
-            <td id="latitude_record">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Long</td>
-            <td id="longitude_record">-</td>
-          </tr>
-          <tr>
-            <td scope="row">Heading (HDT)</td>
-            <td id="heading_hdt_record">-°</td>
-          </tr>
-          <tr>
-            <td scope="row">SOG</td>
-            <td id="SOG_record">-</td>
-          </tr>
-          <tr>
-            <td scope="row">SOLN</td>
-            <td id="SOLN_record">- KTS</td>
-          </tr>
-          <tr>
-            <td scope="row">Depth</td>
-            <td id="water_depth_record">- Meter</td>
-          </tr>
-          <tr>
-            <td scope="row">DateTime</td>
-            <td id="datetime_record">-</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h6>Total History Records : <span id="total_records">0</span></h6>
-
-      <input
-        type="range"
-        id="progress-slider1"
-        value="0"
-        style="width: 100%"
-        min="0"
-        max="1212"
-        step="1"
-      />
-      <button
-        type="button"
-        class="btn btn-primary rounded-circle mb-2"
-        data-bs-toggle="modal"
-        data-bs-target="#filterModal"
-        style="
-          background-color: rgb(110, 110, 110);
-          border: 0;
-          width: 50px;
-          height: 50px;
-          margin-left: 0.5rem;
-        "
-      >
-        <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
-      </button>
-      <button
-        id="load-vessel-history"
-        type="button"
-        class="btn btn-primary rounded-circle mb-2"
-        style="
-          background-color: rgb(110, 110, 110);
-          border: 0;
-          width: 50px;
-          height: 50px;
-          margin-left: 0.5rem;
-        "
-      >
-        <i
-          class="fa-solid fa-rotate-right"
-          style="color: rgb(255, 255, 255)"
-        ></i>
-      </button>
-
-      <button
-        id="play-animation"
-        type="button"
-        class="btn btn-primary rounded-circle mb-2"
-        style="
-          background-color: rgb(110, 110, 110);
-          border: 0;
-          width: 50px;
-          height: 50px;
-          margin-left: 0.5rem;
-        "
-      >
-        <i class="fas fa-play" style="color: rgb(255, 255, 255)"></i>
-      </button>
-      <button
-        id="history-download-csv"
-        type="button"
-        class="btn btn-primary rounded-circle mb-2"
-        style="
-          background-color: rgb(110, 110, 110);
-          border: 0;
-          width: 50px;
-          height: 50px;
-          margin-left: 0.5rem;
-        "
-      >
-        <i class="fas fa-file-csv" style="color: rgb(255, 255, 255)"></i>
-      </button>
-      <div
-        class="modal fade"
-        id="filterModal"
-        tabindex="-1"
-        aria-labelledby="filterModal"
-        aria-hidden="true"
-      >
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div class="form-group mb-2">
-                <label for="start-date-time" style="font-weight: bold"
-                  >From</label
-                >
-                <input
-                  type="datetime-local"
-                  class="form-control"
-                  id="start-date-time"
-                  name="start-date-time"
-                />
+  <div id="detail-vessel" style="display: none;">
+    <div id="sidebar-container" style="display: flex; height: 100%;">
+      <div id="resizer" style="width: 5px; background: #ccc; cursor: ew-resize;"></div>
+      <div style="padding: 10px; height: 100%; overflow-y: auto; width: 300px;">
+        <h4>Detail Vessel</h4>
+        <table class="table table-bordered" style="font-size: small">
+          <thead>
+            <tr>
+              <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td scope="row">Status</td>
+              <td id="status_telnet">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Lat</td>
+              <td id="latitude">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Long</td>
+              <td id="longitude">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Heading (HDT)</td>
+              <td id="heading_hdt">-</td>
+            </tr>
+            <tr>
+              <td scope="row">SOG</td>
+              <td id="SOG">-</td>
+            </tr>
+            <tr>
+              <td scope="row">SOLN</td>
+              <td id="SOLN">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Depth</td>
+              <td id="water_depth">-</td>
+            </tr>
+          </tbody>
+        </table>
+  
+        <hr>
+  
+        <h4>Detail History</h4>
+        <table class="mt-3 table table-bordered" style="font-size: small">
+          <thead>
+            <tr>
+              <th scope="col" colspan="2" id="record_of_vessel">
+                - of - Records
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- <tr>
+          <td scope="row">Status</td>
+          <td id="status_telnet">-</td>
+        </tr> -->
+            <tr>
+              <td scope="row">Lat</td>
+              <td id="latitude_record">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Long</td>
+              <td id="longitude_record">-</td>
+            </tr>
+            <tr>
+              <td scope="row">Heading (HDT)</td>
+              <td id="heading_hdt_record">-°</td>
+            </tr>
+            <tr>
+              <td scope="row">SOG</td>
+              <td id="SOG_record">-</td>
+            </tr>
+            <tr>
+              <td scope="row">SOLN</td>
+              <td id="SOLN_record">- KTS</td>
+            </tr>
+            <tr>
+              <td scope="row">Depth</td>
+              <td id="water_depth_record">- Meter</td>
+            </tr>
+            <tr>
+              <td scope="row">DateTime</td>
+              <td id="datetime_record">-</td>
+            </tr>
+          </tbody>
+        </table>
+  
+        <h6>Total History Records : <span id="total_records">0</span></h6>
+  
+        <input
+          type="range"
+          id="progress-slider1"
+          value="0"
+          style="width: 100%"
+          min="0"
+          max="1212"
+          step="1" />
+        <button
+          type="button"
+          class="btn btn-primary rounded-circle mb-2"
+          data-bs-toggle="modal"
+          data-bs-target="#filterModal"
+          style="
+            background-color: rgb(110, 110, 110);
+            border: 0;
+            width: 50px;
+            height: 50px;
+            margin-left: 0.5rem;
+          ">
+          <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
+        </button>
+        <button
+          id="load-vessel-history"
+          type="button"
+          class="btn btn-primary rounded-circle mb-2"
+          style="
+            background-color: rgb(110, 110, 110);
+            border: 0;
+            width: 50px;
+            height: 50px;
+            margin-left: 0.5rem;
+          ">
+          <i
+            class="fa-solid fa-rotate-right"
+            style="color: rgb(255, 255, 255)"></i>
+        </button>
+  
+        <button
+          id="play-animation"
+          type="button"
+          class="btn btn-primary rounded-circle mb-2"
+          style="
+            background-color: rgb(110, 110, 110);
+            border: 0;
+            width: 50px;
+            height: 50px;
+            margin-left: 0.5rem;
+          ">
+          <i class="fas fa-play" style="color: rgb(255, 255, 255)"></i>
+        </button>
+        <button
+          id="history-download-csv"
+          type="button"
+          class="btn btn-primary rounded-circle mb-2"
+          style="
+            background-color: rgb(110, 110, 110);
+            border: 0;
+            width: 50px;
+            height: 50px;
+            margin-left: 0.5rem;
+          ">
+          <i class="fas fa-file-csv" style="color: rgb(255, 255, 255)"></i>
+        </button>
+        <div
+          class="modal fade"
+          id="filterModal"
+          tabindex="-1"
+          aria-labelledby="filterModal"
+          aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
               </div>
-              <div class="form-group mb-2">
-                <label for="end-date-time" style="font-weight: bold">To</label>
-                <input
-                  type="datetime-local"
-                  class="form-control"
-                  id="end-date-time"
-                  name="end-date-time"
-                />
+              <div class="modal-body">
+                <div class="form-group mb-2">
+                  <label for="start-date-time" style="font-weight: bold">From</label>
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="start-date-time"
+                    name="start-date-time" />
+                </div>
+                <div class="form-group mb-2">
+                  <label for="end-date-time" style="font-weight: bold">To</label>
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="end-date-time"
+                    name="end-date-time" />
+                </div>
+  
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal">
+                  Close
+                </button>
+                <button id="submitFilter" type="button" class="btn btn-primary">
+                  Save changes
+                </button>
               </div>
-
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Close
-              </button>
-              <button id="submitFilter" type="button" class="btn btn-primary">
-                Save changes
-              </button>
             </div>
           </div>
         </div>
+  
+        <br />
+        <h6>Start From : <span id="filter_history_start"></span></h6>
+        <h6>End To : <span id="filter_history_end"></span></h6>
+  
       </div>
-
-      <br />
-      <h6>Start From : <span id="filter_history_start"></span></h6>
-      <h6>End To : <span id="filter_history_end"></span></h6>
-
     </div>
   </div>
 
@@ -252,8 +235,7 @@
       height: 100%;
       z-index: 2;
       pointer-events: none;
-    "
-  >
+    ">
     <div class="d-flex align-items-center" style="pointer-events: auto">
       <div class="btn-group">
         <div class="dropdown">
@@ -268,8 +250,7 @@
             "
             type="button"
             data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
+            aria-expanded="false">
             <i class="fa-solid fa-bars" style="color: black"></i>
           </button>
           <ul class="dropdown-menu">
@@ -277,25 +258,19 @@
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#vesselTable"
-                >Vessel</a
-              >
+                data-bs-target="#vesselTable">Vessel</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#mappingTable"
-                >Pipeline</a
-              >
+                data-bs-target="#mappingTable">Pipeline</a>
             </li>
             <li>
               <a
                 class="dropdown-item"
                 data-bs-toggle="modal"
-                data-bs-target="#clientTable"
-                >Client</a
-              >
+                data-bs-target="#userTable">User</a>
             </li>
           </ul>
         </div>
@@ -316,8 +291,7 @@
           autocorrect="off"
           autocomplete="off"
           autocapitalize="off"
-          placeholder="Search for vessel..."
-        />
+          placeholder="Search for vessel..." />
       </div>
 
       <button
@@ -329,11 +303,39 @@
           margin-left: 1rem;
           width: 50px;
           height: 50px;
-        "
-      >
+        ">
         <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
       </button>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const resizer = document.getElementById('resizer');
+    const sidebar = document.getElementById('sidebar-container');
+    let isResizing = false;
+    let lastDownX;
+  
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      lastDownX = e.clientX;
+    });
+  
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+      const minWidth = 100;
+      const maxWidth = 500;
+      if (offsetRight > minWidth && offsetRight < maxWidth) {
+        sidebar.style.width = offsetRight + 'px';
+      }
+    });
+  
+    document.addEventListener('mouseup', () => {
+      isResizing = false;
+    });
+  });
+  </script>
+  
 {{ template "footer" . }}

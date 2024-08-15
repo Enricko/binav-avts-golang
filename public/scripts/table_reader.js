@@ -66,77 +66,9 @@ $(document).ready(function () {
     },
   ]);
 
-  initializeDataTable("clientTable", "client-table", "/user/data", [
-    { data: "id_user", className: "text-center" },
-    { data: "name", className: "text-center" },
-    {
-      data: "send.email",
-      className: "text-center",
-      width: "20%",
-      render: function (data, type, row, meta) {
-        return `<button class="btn btn-primary btn-xs" onclick="updateForm(${row.ID})">Send Email</button>`;
-      },
-    },
-    {
-      data: "aksi",
-      className: "text-center",
-      width: "10%",
-      render: function (data, type, row, meta) {
-        return `
-                  <div class="container">
-                  <div class="row justify-content-md-center">
-                  <div class="col-auto mb-1">
-                  <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
-                  </div>
-                  
-                  <div class="col-auto mb-1">
-                  <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
-                  </div>
-                  </div>
-                  </div>
-                  `;
-      },
-    },
-  ]);
 
-  initializeDataTable("vesselTable", "vessel-table", "/vessel/data", [
-    { data: "call_sign", className: "text-center" },
-    { data: "image", className: "text-center" },
-    { data: "image_map", className: "text-center" },
-    { data: "status", className: "text-center" },
-    { data: "flag", className: "text-center" },
-    { data: "kelas", className: "text-center" },
-    { data: "builder", className: "text-center" },
-    { data: "year_built", className: "text-center" },
-    { data: "heading_direction", className: "text-center" },
-    { data: "width_m", className: "text-center" },
-    { data: "height_m", className: "text-center" },
-    { data: "top_range", className: "text-center" },
-    { data: "left_range", className: "text-center" },
-    { data: "history_per_second", className: "text-center" },
-    { data: "minimum_knot_per_liter_gasoline", className: "text-center" },
-    { data: "maximum_knot_per_liter_gasoline", className: "text-center" },
-    {
-      data: "aksi",
-      className: "text-center",
-      width: "10%",
-      render: function (data, type, row, meta) {
-        return `
-                  <div class="container">
-                  <div class="row justify-content-md-center">
-                  <div class="col-auto mb-1">
-                  <button class="btn btn-warning btn-xs " id="edit_data" data-bs-toggle="modal" data-bs-target="#updateModal" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
-                  </div>
-                  
-                  <div class="col-auto mb-1">
-                  <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
-                  </div>
-                  </div>
-                  </div>
-                  `;
-      },
-    },
-  ]);
+
+ 
 });
 
 // Form submission handler

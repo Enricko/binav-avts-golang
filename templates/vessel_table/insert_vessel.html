@@ -84,12 +84,14 @@
             </div>
             <div class="col-md-4">
               <label for="minimumKnotPerLiterGasoline" class="form-label">Min Knot/Liter Gasoline</label>
-              <input type="number" class="form-control" id="minimumKnotPerLiterGasoline" name="minimum_knot_per_liter_gasoline" min="0" required>
+              <input type="number" class="form-control" id="minimumKnotPerLiterGasoline" name="minimum_knot_per_liter_gasoline" min="0" step="0.01"
+                required>
               <div class="invalid-feedback">Please provide a valid minimum knot per liter.</div>
             </div>
             <div class="col-md-4">
               <label for="maximumKnotPerLiterGasoline" class="form-label">Max Knot/Liter Gasoline</label>
-              <input type="number" class="form-control" id="maximumKnotPerLiterGasoline" name="maximum_knot_per_liter_gasoline" min="0" required>
+              <input type="number" class="form-control" id="maximumKnotPerLiterGasoline" name="maximum_knot_per_liter_gasoline" min="0" step="0.01"
+                required>
               <div class="invalid-feedback">Please provide a valid maximum knot per liter.</div>
             </div>
           </div>
@@ -108,8 +110,8 @@
           </div>
 
           <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-select" id="status" name="status" required>
+            <label for="recordStatus" class="form-label">Record Status</label>
+            <select class="form-select" id="recordStatus" name="record_status" required>
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
@@ -138,15 +140,24 @@
             const formData = new FormData(this);
         
             // Ensure all number fields are sent, even if they're 0
-            ['year_built', 'heading_direction', 'calibration', 'width_m', 'height_m', 'top_range', 'left_range', 'history_per_second', 'minimum_knot_per_liter_gasoline', 'maximum_knot_per_liter_gasoline'].forEach(function(field) {
+            ['year_built', 'heading_direction', 'calibration', 'width_m', 'height_m', 'top_range', 'left_range', 'history_per_second'].forEach(function(field) {
                 const value = formData.get(field);
                 if (value === "") {
                     formData.set(field, "0");
                 }
             });
+            // Inside the form submit event listener
+            ['minimum_knot_per_liter_gasoline', 'maximum_knot_per_liter_gasoline'].forEach(function(field) {
+                const value = formData.get(field);
+                if (value === "") {
+                    formData.set(field, "0");
+                } else {
+                    formData.set(field, parseFloat(value).toString());
+                }
+            });
 
             // Add status as a boolean
-            formData.set('status', formData.get('status') === 'true');
+            formData.set('record_status', formData.get('record_status') === 'true');
 
             fetch('/vessel/insert', {
                 method: 'POST',
@@ -164,6 +175,11 @@
                 const insertVesselModal = document.getElementById('insertVessel');
                 const modalInstance = bootstrap.Modal.getInstance(insertVesselModal);
                 modalInstance.hide();
+
+                const vesselTableModal = document.getElementById('vesselTable');
+                const vesselTableModalInstance = new bootstrap.Modal(vesselTableModal);
+                vesselTableModalInstance.show();
+
                 form.reset();
                 form.classList.remove('was-validated');
                 Swal.fire({

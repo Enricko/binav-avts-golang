@@ -8,6 +8,7 @@ let clickListener;
 let mouseMoveListener;
 let cursorMarker;
 let totalLength = 0;
+let currentSelectedMarker;
 
 function createRulerButton(map) {
   const controlButton = document.createElement("button");
@@ -263,7 +264,7 @@ function getBaseURL() {
 
 function loadKMZLayer(filePath) {
   // const kmzUrl = `${getBaseURK()}public/${filePath}`;
-  const kmzUrl = `http://8.222.190.213/public/${filePath}`;
+  const kmzUrl = `https://binav-avts.id/public/${filePath}`;
   const kmzLayer = new google.maps.KmlLayer({
     url: kmzUrl,
     map,
@@ -282,6 +283,8 @@ function loadKMZLayer(filePath) {
 function onSearchVessel() {
   document.getElementById("searchButton").addEventListener("click", () => {
     const searchTerm = document.getElementById("vesselSearch").value.trim();
+    console.log(markers);
+    console.log(searchTerm);
     if (markers.hasOwnProperty(searchTerm)) {
       const marker = markers[searchTerm];
       smoothPanTo(marker.position);

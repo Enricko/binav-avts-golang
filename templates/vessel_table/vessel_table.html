@@ -1,0 +1,286 @@
+{{define "vesselTable" }} {{template "insertVessel" .}} {{template
+"updateVessel" .}}
+<div
+    class="modal fade"
+    id="vesselTable"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="vesselTableLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Vessel Table</h5>
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="container-fluid py-3">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <button
+                                class="btn btn-success"
+                                id="tambah_data"
+                                data-bs-toggle="modal"
+                                data-bs-target="#insertVessel">
+                                <i class="fas fa-plus-circle me-2"></i>Add New Vessel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="table-responsive">
+                                <table
+                                    id="vessel-table"
+                                    class="table table-striped table-hover table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Call Sign</th>
+                                            <th>Image</th>
+                                            <th>Image Vessel</th>
+                                            <th>Flag</th>
+                                            <th>Class</th>
+                                            <th>Builder</th>
+                                            <th>Year Built</th>
+                                            <th>Direction (&deg;)</th>
+                                            <th>Width (m)</th>
+                                            <th>Length (m)</th>
+                                            <th>GPS Top (m)</th>
+                                            <th>GPS Left (m)</th>
+                                            <th>History Store per Sec</th>
+                                            <th>Min Knot per Gas</th>
+                                            <th>Max Knot per Gas</th>
+                                            <th>Record Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Table content will be dynamically populated by DataTables -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+  #vessel-table th,
+  #vessel-table td {
+    white-space: nowrap;
+  }
+  #vessel-table {
+    font-size: 0.9rem;
+  }
+  .modal-xl {
+    max-width: 95%;
+  }
+  @media (max-width: 768px) {
+    #vessel-table {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<script>
+  $(document).ready(function () {
+    initializeDataTable("vesselTable", "vessel-table", "/vessel/data", [
+      { data: "call_sign", className: "text-center" },
+      {
+        data: "image",
+        className: "text-center",
+        render: function (data, type, row, meta) {
+          return `
+          <div style="width: 100px; height: 100px; overflow: hidden;">
+            <img src="/public/upload/assets/image/vessel/${data}" alt="image"  style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
+          </div>
+          `;  
+        },
+      },
+      {
+        data: "image_map",
+        className: "text-center",
+        render: function (data, type, row, meta) {
+          return `<div style="width: 100px; height: 100px; overflow: hidden;">
+            <img src="/public/upload/assets/image/vessel_map/${data}" alt="image"  style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
+          </div>`;
+        },
+      },
+      { data: "flag", className: "text-center" },
+      { data: "kelas", className: "text-center" },
+      { data: "builder", className: "text-center" },
+      { data: "year_built", className: "text-center" },
+      { data: "heading_direction", className: "text-center" },
+      { data: "width_m", className: "text-center" },
+      { data: "height_m", className: "text-center" },
+      { data: "top_range", className: "text-center" },
+      { data: "left_range", className: "text-center" },
+      { data: "history_per_second", className: "text-center" },
+      { data: "minimum_knot_per_liter_gasoline", className: "text-center" },
+      { data: "maximum_knot_per_liter_gasoline", className: "text-center" },
+      { 
+            data: "record_status", 
+            className: "text-center",
+            render: function(data) {
+                return data ? `<p style="color:green">Active</p>` : '<p style="color:red">Inactive</p>';
+            }
+        },
+      {
+        data: "aksi",
+        className: "text-center",
+        width: "10%",
+        render: function (data, type, row, meta) {
+          return `
+                  <div class="container">
+                  <div class="row justify-content-md-center">
+                  <div class="col-auto mb-1">
+                  <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateVessel" onclick="editVessel('${row.call_sign}')"><i class="fas fa-pencil"></i></button>
+                  </div>
+                  
+                  <div class="col-auto mb-1">
+                  <button class="btn btn-danger btn-xs " id="delete_data" onclick="deleteVessel('${row.call_sign}')"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                  </div>
+                  </div>
+                  `;
+        },
+      },
+      ]);
+  });
+
+  function editVessel(callSign) {
+    fetch(`/vessel/${callSign}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        populateUpdateForm(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        Swal.fire({
+          title: "Error",
+          text: "Failed to fetch vessel data",
+          icon: "error",
+        });
+      });
+  }
+
+  function deleteVessel(callSign) {
+    const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+        confirmButton: "btn btn-success",
+        cancelButton: "btn btn-danger",
+      },
+      buttonsStyling: false,
+    });
+
+    swalWithBootstrapButtons
+      .fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, cancel!",
+        reverseButtons: true,
+      })
+      .then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/vessel/delete/${callSign}`, {
+            method: "DELETE",
+            headers: {
+              "X-CSRF-Token": `{{ .csrfToken }}`,
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => {
+              return response.json().then((data) => {
+                return { status: response.status, body: data };
+              });
+            })
+            .then((data) => {
+              if (data.status < 300) {
+                // Assuming you have a DataTable instance named vesselTable
+                dataTableMap["vessel-table"].dataTable.ajax.reload();
+
+                const vesselTableModal = document.getElementById("vesselTable");
+                const vesselTableModalInstance = new bootstrap.Modal(
+                  vesselTableModal
+                );
+                vesselTableModalInstance.show();
+
+                swalWithBootstrapButtons.fire({
+                  title: "Deleted!",
+                  text: data.body.message || "The vessel has been deleted.",
+                  icon: "success",
+                });
+              } else {
+                swalWithBootstrapButtons.fire({
+                  title: "Deletion Failed!",
+                  text: data.body.message || "Failed to delete the vessel.",
+                  icon: "error",
+                });
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              swalWithBootstrapButtons.fire({
+                title: "Error",
+                text: "An error occurred while deleting the vessel.",
+                icon: "error",
+              });
+            });
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          swalWithBootstrapButtons.fire({
+            title: "Cancelled",
+            text: "Your vessel is safe :)",
+            icon: "error",
+          });
+        }
+      });
+  }
+
+  function populateUpdateForm(vesselData) {
+    const form = document.getElementById("formUpdateVessel");
+    form.reset();
+
+    document.getElementById("updateCallSignTitle").innerHTML = vesselData.call_sign;
+    document.getElementById("updateVesselId").value = vesselData.call_sign;
+    document.getElementById("updateCallSign").value = vesselData.call_sign;
+    document.getElementById("updateFlag").value = vesselData.flag;
+    document.getElementById("updateKelas").value = vesselData.kelas;
+    document.getElementById("updateBuilder").value = vesselData.builder;
+    document.getElementById("updateYearBuilt").value = vesselData.year_built;
+    document.getElementById("updateHeadingDirection").value =
+      vesselData.heading_direction;
+    document.getElementById("updateCalibration").value = vesselData.calibration;
+    document.getElementById("updateWidthM").value = vesselData.width_m;
+    document.getElementById("updateHeight").value = vesselData.height_m;
+    document.getElementById("updateTopRange").value = vesselData.top_range;
+    document.getElementById("updateLeftRange").value = vesselData.left_range;
+    document.getElementById("updateHistoryPerSecond").value =
+      vesselData.history_per_second;
+    document.getElementById("updateMinimumKnotPerLiterGasoline").value =
+      vesselData.minimum_knot_per_liter_gasoline;
+    document.getElementById("updateMaximumKnotPerLiterGasoline").value =
+      vesselData.maximum_knot_per_liter_gasoline;
+    document.getElementById("updateRecordStatus").value =
+      vesselData.record_status.toString();
+
+    // Clear file inputs
+    document.getElementById("updateImageMap").value = "";
+    document.getElementById("updateImage").value = "";
+  }
+</script>
+
+{{end}}
