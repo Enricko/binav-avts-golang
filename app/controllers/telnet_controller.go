@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
+
 )
 
 type TelnetController struct {
@@ -458,24 +459,33 @@ func extractNumber(message string) (int, error) {
 }
 
 func (r *TelnetController) updateKapalDataMap() {
-	var activeKapal []models.Kapal
-	err := database.DB.Find(&activeKapal).Error
+	var allKapal []models.Kapal
+	err := database.DB.Find(&allKapal).Error
 	if err != nil {
-		log.Println("Error fetching active kapal:", err)
+		log.Println("Error fetching kapal data:", err)
 		return
 	}
 
-	for _, kapal := range activeKapal {
-		// nmeaData, ok := r.DataMap.Load(kapal.CallSign)
-		// if !ok {
-		// 	nmeaData = NMEAData{Status: "Disconnected"}
-		// }
+	// Create a map of all current call signs in the database
+	currentCallSigns := make(map[string]bool)
+	for _, kapal := range allKapal {
+		currentCallSigns[kapal.CallSign] = true
 
+		// Update or add entry in KapalDataMap
 		r.KapalDataMap.Store(kapal.CallSign, KapalData{
 			Kapal: kapal,
-			// NMEA:  nmeaData.(NMEAData),
 		})
 	}
+
+	// Remove entries from KapalDataMap that no longer exist in the database
+	r.KapalDataMap.Range(func(key, value interface{}) bool {
+		callSign := key.(string)
+		if !currentCallSigns[callSign] {
+			r.KapalDataMap.Delete(callSign)
+			log.Printf("Removed KapalDataMap entry for deleted ship with call sign: %s", callSign)
+		}
+		return true
+	})
 }
 
 func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordinateInsertTime *time.Time) error {

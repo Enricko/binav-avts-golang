@@ -88,14 +88,15 @@ function displayVesselHistoryPolyline() {
   vesselHistoryData.forEach((data, index) => {
     currentSegment.push(data.latlng);
 
-    const nextData = vesselHistoryData[index + 1];
-    if (nextData && nextData.status !== data.status) {
+    const currentData = vesselHistoryData[index];
+    // const nextData = vesselHistoryData[index + 1];
+    if (currentData && currentData.status !== data.status) {
       // Create a polyline for the current segment
       createPolylineSegment(currentSegment, currentColor);
 
       // Start a new segment
       currentSegment = [data.latlng];
-      currentColor = getPolylineColor(nextData.status);
+      currentColor = getPolylineColor(currentData.status);
     }
   });
 

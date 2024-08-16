@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
 )
 
 func hashPassword(password string) (string, error) {
@@ -131,6 +132,7 @@ func (r *UserController) GetUsers(c *gin.Context) {
 	})
 
 }
+
 func (r *UserController) InsertUser(c *gin.Context) {
 	var input struct {
 		Name     string       `form:"name" json:"name" binding:"required"`

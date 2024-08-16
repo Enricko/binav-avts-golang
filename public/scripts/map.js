@@ -104,7 +104,9 @@ function initMap() {
   const previewButton = createPreviewButton(map);
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(previewButton);
 
-  fetchKMZFiles();
+  updateKMZLayers();
+  setInterval(updateKMZLayers, 5 * 60 * 1000); // Update every 5 minutes
+  
   connectWebSocket();
   onSearchVessel();
 }
@@ -242,12 +244,29 @@ function smoothPanTo(latLng) {
   panStep();
 }
 
-function fetchKMZFiles() {
+function updateKMZLayers() {
   fetch("/mappings")
     .then((response) => response.json())
-    .then((data) =>
-      data.forEach((mapping) => mapping.status && loadKMZLayer(mapping.file))
-    )
+    .then((data) => {
+      const activeIds = new Set();
+
+      data.forEach((mapping) => {
+        if (mapping.status) {
+          activeIds.add(mapping.id_mapping);
+          if (!kmzLayers[mapping.id_mapping]) {
+            loadKMZLayer(mapping.id_mapping, mapping.file);
+          }
+        }
+      });
+
+      // Remove layers for mappings that are no longer active or have been deleted
+      Object.keys(kmzLayers).forEach((id) => {
+        if (!activeIds.has(parseInt(id))) {
+          kmzLayers[id].setMap(null);
+          delete kmzLayers[id];
+        }
+      });
+    })
     .catch((error) => console.error("Error fetching mappings:", error));
 }
 
@@ -262,9 +281,8 @@ function getBaseURL() {
   return baseURL;
 }
 
-function loadKMZLayer(filePath) {
-  // const kmzUrl = `${getBaseURK()}public/${filePath}`;
-  const kmzUrl = `https://binav-avts.id/public/${filePath}`;
+function loadKMZLayer(id, filePath) {
+  const kmzUrl = `${getBaseURL()}public/upload/assets/image/mapping/${filePath}`;
   const kmzLayer = new google.maps.KmlLayer({
     url: kmzUrl,
     map,
@@ -273,11 +291,11 @@ function loadKMZLayer(filePath) {
 
   kmzLayer.addListener("status_changed", () => {
     if (kmzLayer.getStatus() !== "OK") {
-      console.error("Error loading KMZ layer:", kmzLayer.getStatus());
+      console.error(`Error loading KMZ layer for mapping ${id}:`, kmzLayer.getStatus());
     }
   });
 
-  kmzLayers.push(kmzLayer);
+  kmzLayers[id] = kmzLayer;
 }
 
 function onSearchVessel() {

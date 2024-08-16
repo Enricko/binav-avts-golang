@@ -46,9 +46,6 @@ func Init() {
 	if err := DB.Model(&models.IPKapal{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").Error; err != nil {
 		log.Fatal("Failed to set up foreign key:", err)
 	}
-	if err := DB.Model(&models.Mapping{}).AddForeignKey("id_user", "users(id_user)", "CASCADE", "CASCADE").Error; err != nil {
-		log.Fatal("Failed to set up foreign key:", err)
-	}
 	if err := DB.Model(&models.VesselRecord{}).AddForeignKey("call_sign", "kapals(call_sign)", "CASCADE", "CASCADE").Error; err != nil {
 		log.Fatal("Failed to set up foreign key:", err)
 	}

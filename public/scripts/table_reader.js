@@ -39,32 +39,7 @@ function initializeDataTable(modalId, tableId, ajaxUrl, columns) {
 
 $(document).ready(function () {
   // Initialize DataTables
-  initializeDataTable("mappingTable", "mapping-table", "/mapping/data", [
-    { data: "id_mapping", className: "text-center" },
-    { data: "user.name", className: "text-center" },
-    { data: "name", className: "text-center" },
-    { data: "file", className: "text-center" },
-    { data: "status", className: "text-center" },
-    {
-      data: "aksi",
-      className: "text-center",
-      width: "10%",
-      render: function (data, type, row, meta) {
-        return `
-        <div class="container">
-          <div class="row justify-content-md-center">
-            <div class="col-auto mb-1">
-              <button class="btn btn-warning btn-xs" onclick="updateForm(${row.ID})"><i class="fas fa-pencil"></i></button>
-            </div>
-            <div class="col-auto mb-1">
-              <button class="btn btn-danger btn-xs" onclick="deleteData(${row.ID})"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </div>
-        </div>
-      `;
-      },
-    },
-  ]);
+  
 
 
 

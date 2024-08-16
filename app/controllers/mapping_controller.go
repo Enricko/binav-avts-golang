@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"golang-app/app/models"
 	"golang-app/database"
+	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 )
 
 type MappingController struct {
@@ -27,7 +30,7 @@ func NewMappingController() *MappingController {
 }
 func (r *MappingController) GetMappings(c *gin.Context) {
 	var mappings []models.Mapping
-	if err := database.DB.Preload("User").Find(&mappings).Error; err != nil {
+	if err := database.DB.Find(&mappings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -49,7 +52,7 @@ func (r *MappingController) GetAllMapping(c *gin.Context) {
 	var data []models.Mapping
 
 	// Preload User data while querying Mapping records
-	result := database.DB.Preload("User").Find(&data)
+	result := database.DB.Find(&data)
 	if result.Error != nil {
 		// Log or handle the error
 		fmt.Println("Error loading associated user data:", result.Error)
@@ -116,60 +119,200 @@ func (r *MappingController) GetAllMapping(c *gin.Context) {
 	})
 }
 
-func (r *MappingController) InsertMapping(c *gin.Context) {
+func (r *MappingController) GetMapping(c *gin.Context) {
+	id := c.Param("id")
 	var mapping models.Mapping
-
-	// Get the id_user input
-	idUserInput := c.PostForm("id_user")
-
-	// Split the id_user input
-	parts := strings.Split(idUserInput, " | ")
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id_user format. Please use {id} | {username} format."})
+	if err := database.DB.First(&mapping, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Mapping not found"})
 		return
 	}
-	idUser := parts[0]
-	// username := parts[1]
+	c.JSON(http.StatusOK, mapping)
+}
 
-	// Parse other form fields
-	name := c.PostForm("name")
-	status := c.PostForm("status") == "on"
+func (r *MappingController) InsertMapping(c *gin.Context) {
+	var input struct {
+		Name   string `form:"name" binding:"required"`
+		Status bool   `form:"status" binding:"required"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind data", "error": err.Error()})
+		return
+	}
 
 	// Handle file upload
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get file", "error": err.Error()})
 		return
 	}
 
-	// Create a folder for saving files if it doesn't exist
-	uploadPath := "public/assets/mappings"
-	if _, err := os.Stat(uploadPath); os.IsNotExist(err) {
-		os.Mkdir(uploadPath, os.ModePerm)
+	// Validate file extension
+	if !isValidFileType(file.Filename) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type. Only KML and KMZ files are allowed."})
+		return
 	}
+
+	// Generate filename using datetime and input name
+	filename := generateFilename(input.Name, filepath.Ext(file.Filename))
 
 	// Save the file
-	filePath := filepath.Join(uploadPath, file.Filename)
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "File save failed"})
+	if err := c.SaveUploadedFile(file, filepath.Join("public/upload/assets/image/mapping", filename)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save file", "error": err.Error()})
 		return
 	}
 
-	// Set values in your struct
-	mapping.IdUser = idUser
-	mapping.Name = name
-	mapping.File = filePath
-	mapping.Status = status
+	// Create mapping struct
+	mapping := models.Mapping{
+		Name:   input.Name,
+		File:   filename,
+		Status: input.Status,
+	}
 
-	// Set CreatedAt and UpdatedAt
-	mapping.CreatedAt = time.Now()
-	mapping.UpdatedAt = time.Now()
-
-	// Save the mapping to the database
-	if err := database.DB.Create(&mapping).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Insert the new mapping into the database
+	err = database.DB.Create(&mapping).Error
+	if err != nil {
+		// Handle potential errors
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create mapping", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Mapping inserted successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Mapping created successfully", "data": mapping})
+}
+
+func (r *MappingController) UpdateMapping(c *gin.Context) {
+	// Get the mapping ID from the URL parameter
+	id := c.Param("id")
+
+	// Find the existing mapping
+	var mapping models.Mapping
+	if err := database.DB.First(&mapping, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Mapping not found"})
+		return
+	}
+
+	// Bind the input data
+	var input struct {
+		Name   string `form:"name" binding:"required"`
+		Status bool   `form:"status"`
+	}
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	// Update fields
+	mapping.Name = input.Name
+	mapping.Status = input.Status
+
+	// Handle file upload if a new file is provided
+	file, err := c.FormFile("file")
+	if err == nil {
+		// A new file was uploaded
+		// Validate file extension
+		ext := strings.ToLower(path.Ext(file.Filename))
+		if ext != ".kml" && ext != ".kmz" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type. Only KML and KMZ files are allowed."})
+			return
+		}
+
+		// Generate a unique filename
+		filename := generateFilename(input.Name, path.Ext(file.Filename))
+		filePath := path.Join("public/upload/assets/image/mapping", filename)
+
+		// Save the file
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save file", "error": err.Error()})
+			return
+		}
+
+		// Delete the old file if it exists
+		if mapping.File != "" {
+			oldFilePath := path.Join("public/upload/assets/image/mapping", mapping.File)
+			os.Remove(oldFilePath) // Ignore errors, as the file might not exist
+		}
+
+		mapping.File = filename
+	}
+
+	// Save the updated mapping to the database
+	if err := database.DB.Save(&mapping).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update mapping", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mapping updated successfully", "data": mapping})
+}
+
+func (r *MappingController) DeleteMapping(c *gin.Context) {
+	// Get the mapping ID from the URL parameter
+	id := c.Param("id")
+
+	var input struct {
+		ConfirmationName string `form:"confirmationName" json:"confirmationName" binding:"required"`
+	}
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	// Get the confirmation name from the form data
+	log.Printf("Received form data: %+v", input.ConfirmationName)
+	confirmationName := input.ConfirmationName
+	if confirmationName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Confirmation name is required"})
+		return
+	}
+
+	// Find the mapping in the database
+	var mapping models.Mapping
+	if err := database.DB.First(&mapping, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Mapping not found"})
+		return
+	}
+
+	// Check if the confirmation name matches the actual mapping name
+	if confirmationName != mapping.Name {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Confirmation name does not match the mapping name"})
+		return
+	}
+
+	// Get the file path
+	filePath := filepath.Join("public/upload/assets/image/mapping", mapping.File)
+
+	// Delete the file from the server
+	if err := os.Remove(filePath); err != nil {
+		// If the file doesn't exist, log it but continue with the database deletion
+		if !os.IsNotExist(err) {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete file", "error": err.Error()})
+			return
+		}
+		// Log that the file was not found
+		// You might want to use a proper logging library here
+		log.Printf("File not found: %s", filePath)
+	}
+
+	// Delete the mapping from the database
+	if err := database.DB.Delete(&mapping).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete mapping from database", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mapping deleted successfully"})
+}
+
+// Helper function to generate a filename using datetime and input name
+func generateFilename(name string, ext string) string {
+	// Remove any spaces from the name and replace with underscores
+	sanitizedName := strings.ReplaceAll(name, " ", "_")
+	// Get current date and time
+	now := time.Now()
+	// Format: YYYYMMDD_HHMMSS_name.ext
+	return fmt.Sprintf("%s_%s%s", now.Format("20060102_150405"), sanitizedName, ext)
+}
+
+// Helper function to validate file type
+func isValidFileType(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	return ext == ".kml" || ext == ".kmz"
 }

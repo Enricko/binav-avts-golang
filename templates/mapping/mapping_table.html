@@ -1,37 +1,215 @@
-{{define "mappingTable" }}
-{{template "insertMapping" .}}
-<div class="modal fade" id="mappingTable" tabindex="-1" role="dialog" aria-labelledby="mappingTableLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-xl">
-        <div class="modal-content ">
-            <div class="modal-header">
-                <h5 class="modal-title">Table Pipeline</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+{{define "mappingTable" }} {{template "insertMapping" .}}{{template
+"updateMapping" .}}
+<div
+  class="modal fade"
+  id="mappingTable"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="mappingTableLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Pipeline Table</h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="container-fluid py-3">
+          <div class="row mb-3">
+            <div class="col">
+              <button
+                class="btn btn-success"
+                id="tambah_data"
+                data-bs-toggle="modal"
+                data-bs-target="#insertMapping"
+              >
+                <i class="fas fa-plus-circle me-2"></i>Add New Pipeline
+              </button>
             </div>
-            <div class="modal-body ">
-                <div class="border rounded p-3">
-                    <button class="btn btn-primary mb-2" id="tambah_data"
-                        style="float: right;" data-bs-toggle="modal"
-                        data-bs-target="#insertMapping">Tambah Data +</button>
-
-                    <table id="mapping-table"
-                        class="display table-responsive table-bordered"
-                        style="width:100%">
-                        <thead style="background-color: #212529; color: white;">
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Name</th>
-                                <th>File</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <!-- Add your table content here -->
-                    </table>
-                </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="table-responsive">
+                <table
+                  id="mapping-table"
+                  class="table table-striped table-hover table-bordered"
+                >
+                  <thead class="table-dark">
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>File</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Table content will be dynamically populated by DataTables -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
+
+<style>
+  #mapping-table th,
+  #mapping-table td {
+    white-space: nowrap;
+  }
+  #mapping-table {
+    font-size: 0.9rem;
+  }
+  .modal-xl {
+    max-width: 95%;
+  }
+  @media (max-width: 768px) {
+    #mapping-table {
+      font-size: 0.8rem;
+    }
+  }
+  .my-swal {
+    z-index: 1400 !important; /* Adjust this value as needed */
+  }
+</style>
+<script>
+  $(document).ready(function () {
+    initializeDataTable("mappingTable", "mapping-table", "/mapping/data", [
+      { data: "id_mapping", className: "text-center" },
+      { data: "name", className: "text-center" },
+      { data: "file", className: "text-center" },
+      {
+        data: "status",
+        className: "text-center",
+        render: function (data) {
+          return data
+            ? `<p style="color:green">Active</p>`
+            : '<p style="color:red">Inactive</p>';
+        },
+      },
+      {
+        data: "aksi",
+        className: "text-center",
+        width: "10%",
+        render: function (data, type, row, meta) {
+          return `
+                <div class="container">
+                <div class="row justify-content-md-center">
+                    <div class="col-auto mb-1">
+                    <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateMapping"  onclick="updateForm(${row.id_mapping})"><i class="fas fa-pencil"></i></button>
+                    </div>
+                    <div class="col-auto mb-1">
+                    <button class="btn btn-danger btn-xs" onclick="deleteMapping(${row.id_mapping},'${row.name}')"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                </div>
+                `;
+        },
+      },
+    ]);
+  });
+  function updateForm(mappingId) {
+    fetch(`/mapping/${mappingId}`)
+      .then((response) => response.json())
+      .then((data) => {
+        populateUpdateFormMapping(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        Swal.fire("Error", "Failed to fetch mapping data", "error");
+      });
+  }
+
+  function populateUpdateFormMapping(mapping) {
+    const form = document.getElementById("updateMappingForm");
+    form.reset();
+
+    document.getElementById("updateMappingId").value = mapping.id_mapping;
+    document.getElementById("updateMappingName").value = mapping.name;
+    document.getElementById("updateMappingStatus").value = mapping.status.toString();
+
+    document.getElementById('updateMappingNameTitle').textContent = mapping.name;
+  }
+  function deleteMapping(mappingId, mappingName) {
+    const swalConfig = {
+        backdrop: false,
+        target: document.getElementById("mappingTable"),
+        customClass: { container: "my-swal" }
+    };
+
+    const showAlert = (title, text, icon) => {
+        return Swal.fire({ title, text, icon, ...swalConfig });
+    };
+
+    Swal.fire({
+        title: "Are you sure you want to delete this mapping?",
+        html: `
+            <p>This action cannot be undone.</p>
+            <p>Please type <strong>"${mappingName}"</strong> to confirm deletion.</p>
+        `,
+        icon: "error",  // Changed to error icon for danger
+        input: "text",
+        inputAttributes: { autocapitalize: "off" },
+        showCancelButton: true,
+        confirmButtonText: "Delete",
+        confirmButtonColor: "#dc3545",  // Bootstrap danger color
+        cancelButtonText: "Cancel",
+        cancelButtonColor: "#6c757d",  // Bootstrap secondary color
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        ...swalConfig,
+        didOpen: () => Swal.getInput().focus(),
+        preConfirm: async (inputValue) => {
+            if (inputValue !== mappingName) {
+                Swal.showValidationMessage("The confirmation name does not match");
+                return false;
+            }
+
+            try {
+                const formData = new URLSearchParams({ confirmationName: inputValue });
+                const response = await fetch(`/mapping/delete/${mappingId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRF-Token": "{{ .csrfToken }}"
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Failed to delete the mapping");
+                }
+
+                return await response.json();
+            } catch (error) {
+                Swal.showValidationMessage(`Request failed: ${error}`);
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            if (result.value.message === "Mapping deleted successfully") {
+                dataTableMap["mapping-table"].dataTable.ajax.reload();
+                showAlert("Deleted!", "The mapping has been deleted.", "success");
+            } else {
+                showAlert("Deletion Failed!", result.value.message || "Failed to delete the mapping.", "error");
+            }
+        }
+    }).catch((error) => {
+        console.error("Error in deleteMapping:", error);
+        showAlert("Error", error.message || "An unexpected error occurred", "error");
+    });
+}
+</script>
 
 {{end}}

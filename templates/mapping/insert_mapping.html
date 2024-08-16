@@ -1,44 +1,117 @@
 {{define "insertMapping"}}
-<div class="modal fade" id="insertMapping" tabindex="-2" role="dialog" aria-labelledby="insertMappingLabel" aria-hidden="true">
+<div class="modal fade" id="insertMapping" tabindex="-1" role="dialog" aria-labelledby="insertMappingLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
-    <div class="modal-content ">
-      <div class="modal-header">
-        <h5 class="modal-title">Insert Pipeline</h5>
-        <button type="button" class="btn-close" data-bs-target="#mappingTable" data-bs-toggle="modal" aria-label="Close"></button>
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Insert New Pipeline</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-target="#mappingTable" data-bs-toggle="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body ">
-        <form action="/mapping/data/submit" method="post" enctype="multipart/form-data">
-          
+      <div class="modal-body">
+        <form id="formInsertMapping" class="needs-validation" novalidate autocomplete="off">
           <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
-          <input
-            class="form-control mb-3 " id="selectClient" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="off"
-            autocapitalize="off" name="id_user">
-          <div class="form-floating-sm mb-3">
-            <input
-              type="text"
-              class="form-control "
-              id="floatingInput"
-              placeholder="Name" name="name"/>
+          <div class="row g-3 mb-3">
+            <div class="col-md-12">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="name" name="name" required autocomplete="off">
+              <div class="invalid-feedback">Please provide a name.</div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-12">
+              <label for="file" class="form-label">File (KML/KMZ)</label>
+              <input type="file" class="form-control" id="file" name="file" required accept=".kml,.kmz">
+              <div class="invalid-feedback">Please provide a valid KML or KMZ file.</div>
+            </div>
           </div>
 
           <div class="mb-3">
-            <label for="formFile" class="form-label">Upload File</label>
-            <input class="form-control" type="file" id="formFile" name="file"/>
-          </div>
-          <label for="formFile" class="form-label">Instalation</label>
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" name="status" checked>
-            <label class="form-check-label" for="flexSwitchCheckChecked">(On/Off)</label>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-danger" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status" required autocomplete="off">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <div class="invalid-feedback">Please select a status.</div>
           </div>
         </form>
       </div>
-
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-target="#mappingTable" data-bs-toggle="modal">Cancel</button>
+        <button type="submit" id="submitMappingButton" class="btn btn-primary">Submit</button>
+      </div>
     </div>
   </div>
 </div>
 
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formInsertMapping');
+    const submitButton = document.getElementById('submitMappingButton');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (this.checkValidity()) {
+            const formData = new FormData(this);
+
+            fetch('/mapping/insert', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-Token': formData.get('_csrf')
+                },
+            })
+            .then(response => {
+              if (!response.ok) {
+                  return response.json().then(err => { throw err; });
+              }
+              return response.json();
+            })
+            .then(data => {
+                console.log('Mapping created:', data);
+                dataTableMap["mapping-table"].dataTable.ajax.reload();
+                const insertMappingModal = document.getElementById('insertMapping');
+                const modalInstance = bootstrap.Modal.getInstance(insertMappingModal);
+                modalInstance.hide();
+
+                const mappingTableModal = document.getElementById('mappingTable');
+                const mappingTableModalInstance = new bootstrap.Modal(mappingTableModal);
+                mappingTableModalInstance.show();
+
+                form.reset();
+                form.classList.remove('was-validated');
+                Swal.fire({
+                    title: 'Success',
+                    text: data.message || 'Mapping created successfully',
+                    icon: 'success',
+                });
+            })
+            .catch(error => {
+                console.error('Error creating mapping:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'An error occurred while creating the mapping',
+                    icon: 'error',
+                });
+            });
+        }
+        
+        this.classList.add('was-validated');
+    });
+
+    // Trigger form submission when the submit button is clicked
+    submitButton.addEventListener('click', function() {
+        form.requestSubmit();
+    });
+
+    // Reset form when modal is hidden
+    const insertMappingModal = document.getElementById('insertMapping');
+    insertMappingModal.addEventListener('hidden.bs.modal', function () {
+        form.reset();
+        form.classList.remove('was-validated');
+    });
+});
+</script>
 {{end}}

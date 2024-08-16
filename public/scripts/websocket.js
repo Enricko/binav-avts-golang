@@ -18,9 +18,14 @@ function handleWebSocketMessage(event) {
   const data = JSON.parse(event.data);
   const newDevices = Object.keys(data);
 
-  if (newDevices.sort().toString() !== currentDevices.sort().toString()) {
-    currentDevices = newDevices;
-    updateAutoComplete(currentDevices);
+  // Sort both arrays to ensure consistent comparison
+  const sortedNewDevices = newDevices.sort();
+  const sortedCurrentDevices = currentDevices.sort();
+
+  // Check if the devices have changed
+  if (sortedNewDevices.toString() !== sortedCurrentDevices.toString()) {
+    currentDevices = newDevices; // Update currentDevices
+    updateAutoComplete(currentDevices); // Call updateAutoComplete with the new devices
   }
 
   for (const device in data) {

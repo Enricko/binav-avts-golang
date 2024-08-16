@@ -22,7 +22,12 @@ func SetupRouter(r *gin.Engine) {
 
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)
-	r.POST("/mapping/data/submit", mappingController.InsertMapping)
+	r.POST("/mapping/insert", mappingController.InsertMapping)
+	r.PUT("/mapping/update/:id", mappingController.UpdateMapping)
+	r.POST("/mapping/delete/:id", mappingController.DeleteMapping)
+
+	r.GET("/mapping/:id", mappingController.GetMapping)
+
 	r.GET("/kmz/:id", mappingController.GetKMZFile)
 
 

@@ -1,61 +1,13 @@
 let autoCompleteInstance;
-
-async function fetchUsers() {
-  try {
-    const response = await fetch(
-      "http://localhost:8080/user/data/autocomplete"
-    );
-    const data = await response.json();
-    const users = data.data;
-    return users.map((user) => `${user.id_user} | ${user.name}`); // Format as "idUser | name"
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-}
-
-const selectClient = new autoComplete({
-  selector: "#selectClient",
-  placeHolder: "Choose Client",
-  data: {
-    // cache: true,
-  },
-  resultsList: {
-    element: (list, data) => {
-      if (!data.results.length) {
-        const message = document.createElement("div");
-        message.setAttribute("class", "no_result");
-        message.innerHTML = `<span>Found No Results for "${data.query}"</span>`;
-        list.prepend(message);
-      }
-    },
-    noResults: true,
-  },
-  resultItem: {
-    highlight: true,
-  },
-  events: {
-    input: {
-      selection: (event) => {
-        const selection = event.detail.selection.value;
-        document.querySelector("#selectClient").value = selection;
-      },
-    },
-  },
-});
-
-$("#insertMapping").on("shown.bs.modal", async () => {
-  const userNames = await fetchUsers();
-  selectClient.data.src = userNames;
-});
+let vesselSearch;
 
 function autoCompleteVesselSearch(data) {
-  const vesselSearch = new autoComplete({
+  vesselSearch = new autoComplete({
     selector: "#vesselSearch",
     placeHolder: "Search...",
     data: {
       src: data,
-      cache: true,
+      cache: false,
     },
     resultsList: {
       element: (list, data) => {
@@ -87,9 +39,9 @@ function autoCompleteVesselSearch(data) {
 }
 
 function updateAutoComplete(devices) {
-  if (autoCompleteInstance) {
-    autoCompleteInstance.data.src = devices;
-    autoCompleteInstance.start();
+  if (vesselSearch) {
+    vesselSearch.data.src = devices;
+    vesselSearch.start();
   } else {
     autoCompleteVesselSearch(devices);
   }
