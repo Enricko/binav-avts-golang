@@ -18,7 +18,7 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/", mainController.Index)
 	r.GET("/login", mainController.Login)
 	
-	r.POST("/login", userController.Login)
+	r.POST("/auth/login", userController.Login)
 
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)

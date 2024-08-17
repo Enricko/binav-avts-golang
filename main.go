@@ -54,7 +54,7 @@ func main() {
 	r.Use(sessions.Sessions("mysession", store))
 
 	excludedPaths := []string{
-		"/login",
+		"/auth/login",
 		// Add more paths as needed
 	}
 
