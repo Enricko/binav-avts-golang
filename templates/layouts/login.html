@@ -62,8 +62,8 @@
   }
 </style>
 <nav class="navbar navbar-dark">
-  <div class="container-fluid">
-    <span class="navbar-brand">AVTS - Automated Vessel Tracking System</span>
+  <div class="container-fluid ">
+    <span class="navbar-brand " >AVTS - Automated Vessel Tracking System</span>
   </div>
 </nav>
 
@@ -93,19 +93,26 @@
       </div>
     </div>
     <div class="col-md-6 form-wrapper">
-      <img src="/public/assets/logo_transparent.png" alt="Logo" style="height: 40px;width: 100px; margin-bottom: 1rem;">
+      
 
       <div id="loginForm">
+        <img src="/public/assets/logo_transparent.png" alt="Logo" style="width: 100px; margin-bottom: 1rem;">
         <h5 class="fw-bold">Hi, Welcome to Binav AVTS</h5>
         <h5 class="fw-bold mb-4">Log in to your Account</h5>
+        <br>
         <form id="login-form">
           <div class="mb-3">
-            <label for="email" class="form-label">Email address</label>
-            <input type="email" class="form-control" id="email" aria-describedby="emailHelp" required>
+            <!-- <label for="email" class="form-label">Email address</label> -->
+            <input type="email" class="form-control" id="email" aria-describedby="emailHelp" required placeholder="Email">
           </div>
           <div class="mb-3">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" required>
+            <!-- <label for="password" class="form-label">Password</label> -->
+            <div class="input-group">
+              <input type="password" class="form-control" id="password" required placeholder="Password">
+              <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                <i class="bi bi-eye" id="toggleIcon"></i>
+            </button>
+            </div>
           </div>
           <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn btn-link p-0" onclick="showForgotPassword()">
@@ -117,8 +124,8 @@
       </div>
 
       <div id="forgotPasswordForm" style="display: none;">
-        <button type="button" class="btn p-0 me-3" onclick="showLoginForm()" aria-label="Go back to login">
-          <div class="circular-button">
+        <button type="button" class="btn p-0 me-3 mb-4" onclick="showLoginForm()" aria-label="Go back to login">
+          <div class="circular-button" style="background-color: #0e286c; border: #0e286c;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
               <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
             </svg>
@@ -127,14 +134,38 @@
         <h5 class="fw-bold mb-4">Forgot Password</h5>
         <p>Enter your email and we'll send you an OTP code to reset your password.</p>
         <form id="forgot-password-form">
-          <div class="mb-3">
-            <label for="forgotEmail" class="form-label">Email address</label>
-            <input type="email" class="form-control" id="forgotEmail" required>
+          <div class="mb-4">
+            <!-- <label for="forgotEmail" class="form-label">Email address</label> -->
+            <input type="email" class="form-control" id="forgotEmail" required placeholder="Email Address">
           </div>
-          <button type="submit" class="btn btn-primary w-100 mb-3">Send OTP Code</button>
+          <button type="submit" class="btn btn-primary w-100 mb-3" >Send OTP Code</button>
           <!-- <button type="button" class="btn btn-link w-100" onclick="showLoginForm()">Back to Login</button> -->
         </form>
       </div>
+
+      <div id="OtpForm" style="display: none;">
+        <button type="button" class="btn p-0 me-3 mb-4" onclick="showLoginForm()" aria-label="Go back to login">
+          <div class="circular-button" style="background-color: #0e286c; border: #0e286c;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+            </svg>
+          </div>
+        </button>
+        <h5 class="fw-bold mb-2">OTP Verification</h5>
+        <p id="otpSubtitle" class="mb-3">We've sent a code to your Email</p>
+        <form id="forgot-password-form">
+          <div class="d-flex justify-content-center mb-4" >
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp1" oninput="moveToNext(this, 'otp2')"  onkeydown="moveToPrevious(event, this, null)">
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp2" oninput="moveToNext(this, 'otp3')"  onkeydown="moveToPrevious(event, this, 'otp1')">
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp3" oninput="moveToNext(this, 'otp4')"  onkeydown="moveToPrevious(event, this, 'otp2')">
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp4" oninput="moveToNext(this, 'otp5')"  onkeydown="moveToPrevious(event, this, 'otp3')">
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp5" oninput="moveToNext(this, 'otp6')"  onkeydown="moveToPrevious(event, this, 'otp4')">
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp6" onkeydown="moveToPrevious(event, this, 'otp5')">
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mb-3" >Submit</button>
+        </form>
+      </div>
+
     </div>
   </div>
 </div>
@@ -147,8 +178,18 @@
 
   function showLoginForm() {
       document.getElementById('forgotPasswordForm').style.display = 'none';
+      document.getElementById('OtpForm').style.display = 'none';
       document.getElementById('loginForm').style.display = 'block';
   }
+
+  function handleSubmit() {
+    event.preventDefault();
+      document.getElementById('forgotPasswordForm').style.display = 'none';
+      document.getElementById('OtpForm').style.display = 'block';
+      const email = document.getElementById('forgotEmail').value;
+      document.getElementById('otpSubtitle').innerHTML = `We've sent a code to <strong>${email}</strong>`;
+  }
+  document.getElementById('forgot-password-form').addEventListener('submit', handleSubmit);
 
   document.getElementById('login-form').addEventListener('submit', function(e) {
       e.preventDefault();
