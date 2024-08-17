@@ -378,6 +378,20 @@ func (r *VesselController) UpdateVessel(c *gin.Context) {
 func (r *VesselController) DeleteVessel(c *gin.Context) {
 	callSign := c.Param("call_sign")
 
+	var input struct {
+		ConfirmationName string `form:"confirmationName" json:"confirmationName" binding:"required"`
+	}
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	// Check if the confirmation name matches the actual vessel call sign
+	if input.ConfirmationName != callSign {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Confirmation name does not match the vessel call sign"})
+		return
+	}
+
 	tx := database.DB.Begin()
 
 	// Find the vessel

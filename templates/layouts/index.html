@@ -1,6 +1,86 @@
-{{ template "header" . }}
-{{template "mappingTable".}} {{template "vesselTable".}} {{template
-  "userTable".}} {{template "profilePage".}} 
+{{ template "header" . }} {{template "mappingTable".}} {{template
+"vesselTable".}} {{template "userTable".}} {{template "profilePage".}}
+<style>
+  #map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+  }
+  #detail-vessel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+  }
+  #sidebar-container {
+    height: 100%;
+    overflow-y: auto;
+  }
+  #resizer {
+    width: 5px;
+    background: #007bff;
+    cursor: ew-resize;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+  }
+  .sidebar-content {
+    padding: 20px;
+  }
+  .vessel-info {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  .vessel-info h5 {
+    color: #007bff;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+  }
+  .vessel-info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .vessel-info-label {
+    font-weight: bold;
+    color: #495057;
+  }
+  .vessel-info-value {
+    color: #212529;
+  }
+  .btn-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  .btn-group .btn {
+    flex: 1;
+    margin: 0 5px;
+  }
+  #progress-slider1 {
+    width: 100%;
+    margin: 20px 0;
+  }
+  .vessel-image {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin-bottom: 15px;
+  }
+</style>
 <div style="display: flex; height: 100vh">
   <div id="map" style="width: 100vw; height: 100%; position: relative"></div>
   <div id="measurement-window">
@@ -13,214 +93,229 @@
     </div>
   </div>
 
-  <div id="detail-vessel" style="display: none;">
-    <div id="sidebar-container" style="display: flex; height: 100%;">
-      <div id="resizer" style="width: 5px; background: #ccc; cursor: ew-resize;"></div>
-      <div style="padding: 10px; height: 100%; overflow-y: auto; width: 300px;">
+  <div id="detail-vessel" style="display: none">
+    <div id="resizer"></div>
+    <div id="sidebar-container">
+      <div class="sidebar-content">
         <h4>Detail Vessel</h4>
-        <table class="table table-bordered" style="font-size: small">
-          <thead>
-            <tr>
-              <th scope="col" colspan="2" id="vesselName">Vessel Name</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td scope="row">Status</td>
-              <td id="status_telnet">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Lat</td>
-              <td id="latitude">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Long</td>
-              <td id="longitude">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Heading (HDT)</td>
-              <td id="heading_hdt">-</td>
-            </tr>
-            <tr>
-              <td scope="row">SOG</td>
-              <td id="SOG">-</td>
-            </tr>
-            <tr>
-              <td scope="row">SOLN</td>
-              <td id="SOLN">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Depth</td>
-              <td id="water_depth">-</td>
-            </tr>
-          </tbody>
-        </table>
-  
-        <hr>
-  
-        <h4>Detail History</h4>
-        <table class="mt-3 table table-bordered" style="font-size: small">
-          <thead>
-            <tr>
-              <th scope="col" colspan="2" id="record_of_vessel">
-                - of - Records
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- <tr>
-          <td scope="row">Status</td>
-          <td id="status_telnet">-</td>
-        </tr> -->
-            <tr>
-              <td scope="row">Lat</td>
-              <td id="latitude_record">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Long</td>
-              <td id="longitude_record">-</td>
-            </tr>
-            <tr>
-              <td scope="row">Heading (HDT)</td>
-              <td id="heading_hdt_record">-°</td>
-            </tr>
-            <tr>
-              <td scope="row">SOG</td>
-              <td id="SOG_record">-</td>
-            </tr>
-            <tr>
-              <td scope="row">SOLN</td>
-              <td id="SOLN_record">- KTS</td>
-            </tr>
-            <tr>
-              <td scope="row">Depth</td>
-              <td id="water_depth_record">- Meter</td>
-            </tr>
-            <tr>
-              <td scope="row">DateTime</td>
-              <td id="datetime_record">-</td>
-            </tr>
-          </tbody>
-        </table>
-  
-        <h6>Total History Records : <span id="total_records">0</span></h6>
-  
+
+        <div class="vessel-info">
+          <h5>General Information</h5>
+          <img id="vessel-image" class="vessel-image" src alt="Vessel Image" />
+          <!-- <div id="vessel-image-container" style="position: relative; width: 100%; height: 0; padding-bottom: 100%;"> -->
+          <!-- The vessel image and GPS dot will be inserted here -->
+          <!-- </div> -->
+          <div class="table-container">
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <td>Call Sign</td>
+                  <td id="call_sign_general">-</td>
+                </tr>
+                <tr>
+                  <td>Flag</td>
+                  <td id="flag_general">-</td>
+                </tr>
+                <tr>
+                  <td>Class</td>
+                  <td id="kelas_general">-</td>
+                </tr>
+                <tr>
+                  <td>Builder</td>
+                  <td id="builder_general">-</td>
+                </tr>
+                <tr>
+                  <td>Year Built</td>
+                  <td id="year_built_general">-</td>
+                </tr>
+
+                <tr><td>Wide</td><td id="width_m">-</td></tr>
+                <tr><td>Length</td><td id="height_m">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="vessel-info">
+          <h5>Current Status</h5>
+          <div class="table-container">
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <td>Status</td>
+                  <td id="status_telnet_current">-</td>
+                </tr>
+                <tr>
+                  <td>Latitude</td>
+                  <td id="latitude_current">-</td>
+                </tr>
+                <tr>
+                  <td>Longitude</td>
+                  <td id="longitude_current">-</td>
+                </tr>
+                <tr>
+                  <td>Heading (HDT)</td>
+                  <td id="heading_hdt_current">-</td>
+                </tr>
+                <tr>
+                  <td>SOG</td>
+                  <td id="SOG_current">-</td>
+                </tr>
+                <tr>
+                  <td>SOLN</td>
+                  <td id="SOLN_current">-</td>
+                </tr>
+                <tr>
+                  <td>Depth</td>
+                  <td id="water_depth_current">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- <div class="vessel-info">
+                <h5>Vessel Specifications</h5>
+                <div class="table-container">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr><td>Width</td><td id="width_m">-</td></tr>
+                            <tr><td>Height</td><td id="height_m">-</td></tr>
+                            <tr><td>Top Range</td><td id="top_range">-</td></tr>
+                            <tr><td>Left Range</td><td id="left_range">-</td></tr>
+                            <tr><td>Min Knot/Liter</td><td id="minimum_knot_per_liter_gasoline">-</td></tr>
+                            <tr><td>Max Knot/Liter</td><td id="maximum_knot_per_liter_gasoline">-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div> -->
+
+        <div class="vessel-info">
+          <h5>Detail History</h5>
+          <div class="table-container">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th colspan="2" id="record_of_vessel">- of - Records</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Latitude</td>
+                  <td id="latitude_record">-</td>
+                </tr>
+                <tr>
+                  <td>Longitude</td>
+                  <td id="longitude_record">-</td>
+                </tr>
+                <tr>
+                  <td>Heading (HDT)</td>
+                  <td id="heading_hdt_record">-°</td>
+                </tr>
+                <tr>
+                  <td>SOG</td>
+                  <td id="SOG_record">-</td>
+                </tr>
+                <tr>
+                  <td>SOLN</td>
+                  <td id="SOLN_record">- KTS</td>
+                </tr>
+                <tr>
+                  <td>Depth</td>
+                  <td id="water_depth_record">- Meter</td>
+                </tr>
+                <tr>
+                  <td>DateTime</td>
+                  <td id="datetime_record">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h6>Total History Records: <span id="total_records">0</span></h6>
+
         <input
           type="range"
           id="progress-slider1"
+          class="form-range"
           value="0"
-          style="width: 100%"
           min="0"
           max="1212"
           step="1" />
+
         <button
           type="button"
-          class="btn btn-primary rounded-circle mb-2"
+          class="btn btn-primary"
           data-bs-toggle="modal"
-          data-bs-target="#filterModal"
-          style="
-            background-color: rgb(110, 110, 110);
-            border: 0;
-            width: 50px;
-            height: 50px;
-            margin-left: 0.5rem;
-          ">
-          <i class="fas fa-filter" style="color: rgb(255, 255, 255)"></i>
+          data-bs-target="#filterModal">
+          <i class="fas fa-filter"></i> Filter
         </button>
         <button
           id="load-vessel-history"
           type="button"
-          class="btn btn-primary rounded-circle mb-2"
-          style="
-            background-color: rgb(110, 110, 110);
-            border: 0;
-            width: 50px;
-            height: 50px;
-            margin-left: 0.5rem;
-          ">
-          <i
-            class="fa-solid fa-rotate-right"
-            style="color: rgb(255, 255, 255)"></i>
+          class="btn btn-secondary">
+          <i class="fa-solid fa-rotate-right"></i> Reload
         </button>
-  
-        <button
-          id="play-animation"
-          type="button"
-          class="btn btn-primary rounded-circle mb-2"
-          style="
-            background-color: rgb(110, 110, 110);
-            border: 0;
-            width: 50px;
-            height: 50px;
-            margin-left: 0.5rem;
-          ">
-          <i class="fas fa-play" style="color: rgb(255, 255, 255)"></i>
+        <button id="play-animation" type="button" class="btn btn-success">
+          <i class="fas fa-play"></i> Play
         </button>
-        <button
-          id="history-download-csv"
-          type="button"
-          class="btn btn-primary rounded-circle mb-2"
-          style="
-            background-color: rgb(110, 110, 110);
-            border: 0;
-            width: 50px;
-            height: 50px;
-            margin-left: 0.5rem;
-          ">
-          <i class="fas fa-file-csv" style="color: rgb(255, 255, 255)"></i>
+        <button id="history-download-csv" type="button" class="btn btn-info">
+          <i class="fas fa-file-csv"></i> CSV
         </button>
-        <div
-          class="modal fade"
-          id="filterModal"
-          tabindex="-1"
-          aria-labelledby="filterModal"
-          aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="form-group mb-2">
-                  <label for="start-date-time" style="font-weight: bold">From</label>
-                  <input
-                    type="datetime-local"
-                    class="form-control"
-                    id="start-date-time"
-                    name="start-date-time" />
-                </div>
-                <div class="form-group mb-2">
-                  <label for="end-date-time" style="font-weight: bold">To</label>
-                  <input
-                    type="datetime-local"
-                    class="form-control"
-                    id="end-date-time"
-                    name="end-date-time" />
-                </div>
-  
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-bs-dismiss="modal">
-                  Close
-                </button>
-                <button id="submitFilter" type="button" class="btn btn-primary">
-                  Save changes
-                </button>
-              </div>
-            </div>
-          </div>
+
+        <div class="mt-3">
+          <h6>Start From: <span id="filter_history_start">-</span></h6>
+          <h6>End To: <span id="filter_history_end">-</span></h6>
         </div>
-  
-        <br />
-        <h6>Start From : <span id="filter_history_start"></span></h6>
-        <h6>End To : <span id="filter_history_end"></span></h6>
-  
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="modal fade"
+    id="filterModal"
+    tabindex="-1"
+    aria-labelledby="filterModal"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group mb-2">
+            <label for="start-date-time" style="font-weight: bold">From</label>
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="start-date-time"
+              name="start-date-time" />
+          </div>
+          <div class="form-group mb-2">
+            <label for="end-date-time" style="font-weight: bold">To</label>
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="end-date-time"
+              name="end-date-time" />
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal">
+            Close
+          </button>
+          <button id="submitFilter" type="button" class="btn btn-primary">
+            Save changes
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -311,31 +406,74 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const resizer = document.getElementById('resizer');
-    const sidebar = document.getElementById('sidebar-container');
+  document.addEventListener("DOMContentLoaded", function () {
+    const resizer = document.getElementById("resizer");
+    const sidebar = document.getElementById("detail-vessel");
     let isResizing = false;
     let lastDownX;
-  
-    resizer.addEventListener('mousedown', (e) => {
+
+    resizer.addEventListener("mousedown", (e) => {
       isResizing = true;
       lastDownX = e.clientX;
+      document.body.style.cursor = "col-resize";
+      document.addEventListener("mousemove", resize);
+      document.addEventListener("mouseup", stopResize);
     });
-  
-    document.addEventListener('mousemove', (e) => {
+
+    function resize(e) {
       if (!isResizing) return;
-      const offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
-      const minWidth = 100;
+      const width = document.body.offsetWidth - e.clientX;
+      const minWidth = 250;
       const maxWidth = 500;
-      if (offsetRight > minWidth && offsetRight < maxWidth) {
-        sidebar.style.width = offsetRight + 'px';
+      if (width >= minWidth && width <= maxWidth) {
+        sidebar.style.width = width + "px";
       }
-    });
-  
-    document.addEventListener('mouseup', () => {
+    }
+
+    function stopResize() {
       isResizing = false;
-    });
+      document.body.style.cursor = "default";
+      document.removeEventListener("mousemove", resize);
+      document.removeEventListener("mouseup", stopResize);
+    }
+
+    // Populate vessel details
+    // const vesselData = {
+    //     "call_sign": "ARTANUSA 01",
+    //     "flag": "indo",
+    //     "kelas": "BKI",
+    //     "builder": "Batam",
+    //     "year_built": 2017,
+    //     "heading_direction": 0,
+    //     "calibration": 0,
+    //     "width_m": 12,
+    //     "height_m": 48,
+    //     "top_range": 13,
+    //     "left_range": 3,
+    //     "image_map": "2024-08-15 13_21_44ARTANUSA 01.png",
+    //     "image": "2024-08-15 13_21_44ARTANUSA 01.jpeg",
+    //     "history_per_second": 1,
+    //     "minimum_knot_per_liter_gasoline": 0,
+    //     "maximum_knot_per_liter_gasoline": 1.2,
+    //     "record_status": true
+    // };
+
+    // // Populate vessel details
+    // Object.keys(vesselData).forEach(key => {
+    //     const element = document.getElementById(key);
+    //     if (element) {
+    //         element.textContent = vesselData[key];
+    //     }
+    // });
+
+    // // Add units to specific fields
+    // document.getElementById('width_m').textContent += ' m';
+    // document.getElementById('height_m').textContent += ' m';
+    // document.getElementById('minimum_knot_per_liter_gasoline').textContent += ' KTS';
+    // document.getElementById('maximum_knot_per_liter_gasoline').textContent += ' KTS';
+
+    // Implement other functionalities (search, history, etc.) here
   });
-  </script>
-  
+</script>
+
 {{ template "footer" . }}

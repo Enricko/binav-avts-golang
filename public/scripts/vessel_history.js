@@ -215,9 +215,9 @@ function togglePlayPause() {
 
 function updatePlayPauseButton() {
   if (isAnimationPlaying) {
-    btnPlay.innerHTML = `<i class="fas fa-pause" style="color: rgb(255, 255, 255);"></i>`;
+    btnPlay.innerHTML = `<i class="fas fa-pause" style="color: rgb(255, 255, 255);"></i> Pause`;
   } else {
-    btnPlay.innerHTML = `<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i>`;
+    btnPlay.innerHTML = `<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i> Play`;
   }
 }
 

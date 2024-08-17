@@ -1,73 +1,77 @@
 {{define "vesselTable" }} {{template "insertVessel" .}} {{template
 "updateVessel" .}}
 <div
-    class="modal fade"
-    id="vesselTable"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="vesselTableLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Vessel Table</h5>
-                <button
-                    type="button"
-                    class="btn-close btn-close-white"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+  class="modal fade"
+  id="vesselTable"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="vesselTableLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Vessel Table</h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="container-fluid py-3">
+          <div class="row mb-3">
+            <div class="col">
+              <button
+                class="btn btn-success"
+                id="tambah_data"
+                data-bs-toggle="modal"
+                data-bs-target="#insertVessel"
+              >
+                <i class="fas fa-plus-circle me-2"></i>Add New Vessel
+              </button>
             </div>
-            <div class="modal-body p-0">
-                <div class="container-fluid py-3">
-                    <div class="row mb-3">
-                        <div class="col">
-                            <button
-                                class="btn btn-success"
-                                id="tambah_data"
-                                data-bs-toggle="modal"
-                                data-bs-target="#insertVessel">
-                                <i class="fas fa-plus-circle me-2"></i>Add New Vessel
-                            </button>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <div class="table-responsive">
-                                <table
-                                    id="vessel-table"
-                                    class="table table-striped table-hover table-bordered">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Call Sign</th>
-                                            <th>Image</th>
-                                            <th>Image Vessel</th>
-                                            <th>Flag</th>
-                                            <th>Class</th>
-                                            <th>Builder</th>
-                                            <th>Year Built</th>
-                                            <th>Direction (&deg;)</th>
-                                            <th>Width (m)</th>
-                                            <th>Length (m)</th>
-                                            <th>GPS Top (m)</th>
-                                            <th>GPS Left (m)</th>
-                                            <th>History Store per Sec</th>
-                                            <th>Min Knot per Gas</th>
-                                            <th>Max Knot per Gas</th>
-                                            <th>Record Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Table content will be dynamically populated by DataTables -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="table-responsive">
+                <table
+                  id="vessel-table"
+                  class="table table-striped table-hover table-bordered"
+                >
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Call Sign</th>
+                      <th>Image</th>
+                      <th>Image Vessel</th>
+                      <th>Flag</th>
+                      <th>Class</th>
+                      <th>Builder</th>
+                      <th>Year Built</th>
+                      <th>Direction (&deg;)</th>
+                      <th>Width (m)</th>
+                      <th>Length (m)</th>
+                      <th>GPS Top (m)</th>
+                      <th>GPS Left (m)</th>
+                      <th>History Store per Sec</th>
+                      <th>Min Knot per Gas</th>
+                      <th>Max Knot per Gas</th>
+                      <th>Record Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Table content will be dynamically populated by DataTables -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
@@ -100,7 +104,7 @@
           <div style="width: 100px; height: 100px; overflow: hidden;">
             <img src="/public/upload/assets/image/vessel/${data}" alt="image"  style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
           </div>
-          `;  
+          `;
         },
       },
       {
@@ -124,12 +128,14 @@
       { data: "history_per_second", className: "text-center" },
       { data: "minimum_knot_per_liter_gasoline", className: "text-center" },
       { data: "maximum_knot_per_liter_gasoline", className: "text-center" },
-      { 
-          data: "record_status", 
-          className: "text-center",
-          render: function(data) {
-              return data ? `<p style="color:green">Active</p>` : '<p style="color:red">Inactive</p>';
-          }
+      {
+        data: "record_status",
+        className: "text-center",
+        render: function (data) {
+          return data
+            ? `<p style="color:green">Active</p>`
+            : '<p style="color:red">Inactive</p>';
+        },
       },
       {
         data: "aksi",
@@ -151,7 +157,7 @@
                   `;
         },
       },
-      ]);
+    ]);
   });
 
   function editVessel(callSign) {
@@ -174,79 +180,107 @@
         });
       });
   }
-
   function deleteVessel(callSign) {
-    const swalWithBootstrapButtons = Swal.mixin({
-      customClass: {
-        confirmButton: "btn btn-success",
-        cancelButton: "btn btn-danger",
-      },
-      buttonsStyling: false,
-    });
+    const swalConfig = {
+      backdrop: false,
+      target: document.getElementById("vesselTable"),
+      customClass: { container: "my-swal" },
+    };
 
-    swalWithBootstrapButtons
-      .fire({
-        title: "Are you sure?",
-        text: "You won't be able to revert this!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, delete it!",
-        cancelButtonText: "No, cancel!",
-        reverseButtons: true,
-      })
+    const showAlert = (title, text, icon) => {
+      return Swal.fire({ title, text, icon, ...swalConfig });
+    };
+
+    Swal.fire({
+      title: "Are you sure you want to delete this vessel?",
+      html: `
+        <div style="text-align: left; color: #333;">
+          <p style="color: #d9534f; font-weight: bold; font-size: 1.1em;">Warning: This action is irreversible!</p>
+          <p>You are about to permanently delete:</p>
+          <ul style="color: #0056b3;">
+              <li>This vessel</li>
+              <li>All associated records</li>
+          </ul>
+          <p>To confirm, please type the vessel's call sign:</p>
+          <p style="font-weight: bold; color: #d9534f;">"${callSign}"</p>
+      </div>
+        `,
+      icon: "error",
+      input: "text",
+      inputAttributes: {
+        autocapitalize: "off",
+        autocomplete: "off",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc3545",
+      cancelButtonText: "Cancel",
+      cancelButtonColor: "#6c757d",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      ...swalConfig,
+      didOpen: () => {
+        const input = Swal.getInput();
+        input.focus();
+        input.addEventListener("paste", (e) => {
+          e.preventDefault();
+          Swal.showValidationMessage(
+            "Pasting is not allowed. Please type the name manually."
+          );
+        });
+      },
+      preConfirm: async (inputValue) => {
+        if (inputValue !== callSign) {
+          Swal.showValidationMessage(
+            "The confirmation call sign does not match"
+          );
+          return false;
+        }
+        try {
+          const formData = new URLSearchParams({
+            confirmationName: inputValue,
+          });
+          const response = await fetch(`/vessel/delete/${callSign}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-Token": "{{ .csrfToken }}",
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to delete the vessel");
+          }
+
+          return await response.json();
+        } catch (error) {
+          Swal.showValidationMessage(`Request failed: ${error}`);
+        }
+      },
+    })
       .then((result) => {
         if (result.isConfirmed) {
-          fetch(`/vessel/delete/${callSign}`, {
-            method: "DELETE",
-            headers: {
-              "X-CSRF-Token": `{{ .csrfToken }}`,
-              "Content-Type": "application/json",
-            },
-          })
-            .then((response) => {
-              return response.json().then((data) => {
-                return { status: response.status, body: data };
-              });
-            })
-            .then((data) => {
-              if (data.status < 300) {
-                // Assuming you have a DataTable instance named vesselTable
-                dataTableMap["vessel-table"].dataTable.ajax.reload();
-
-                const vesselTableModal = document.getElementById("vesselTable");
-                const vesselTableModalInstance = new bootstrap.Modal(
-                  vesselTableModal
-                );
-                vesselTableModalInstance.show();
-
-                swalWithBootstrapButtons.fire({
-                  title: "Deleted!",
-                  text: data.body.message || "The vessel has been deleted.",
-                  icon: "success",
-                });
-              } else {
-                swalWithBootstrapButtons.fire({
-                  title: "Deletion Failed!",
-                  text: data.body.message || "Failed to delete the vessel.",
-                  icon: "error",
-                });
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              swalWithBootstrapButtons.fire({
-                title: "Error",
-                text: "An error occurred while deleting the vessel.",
-                icon: "error",
-              });
-            });
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          swalWithBootstrapButtons.fire({
-            title: "Cancelled",
-            text: "Your vessel is safe :)",
-            icon: "error",
-          });
+          if (result.value.message === "Vessel deleted successfully") {
+            dataTableMap["vessel-table"].dataTable.ajax.reload();
+            showAlert("Deleted!", "The vessel has been deleted.", "success");
+          } else {
+            showAlert(
+              "Deletion Failed!",
+              result.value.message || "Failed to delete the vessel.",
+              "error"
+            );
+          }
         }
+      })
+      .catch((error) => {
+        console.error("Error in deleteVessel:", error);
+        showAlert(
+          "Error",
+          error.message || "An unexpected error occurred",
+          "error"
+        );
       });
   }
 
@@ -254,7 +288,8 @@
     const form = document.getElementById("formUpdateVessel");
     form.reset();
 
-    document.getElementById("updateCallSignTitle").innerHTML = vesselData.call_sign;
+    document.getElementById("updateCallSignTitle").innerHTML =
+      vesselData.call_sign;
     document.getElementById("updateVesselId").value = vesselData.call_sign;
     document.getElementById("updateCallSign").value = vesselData.call_sign;
     document.getElementById("updateFlag").value = vesselData.flag;

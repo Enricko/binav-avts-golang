@@ -45,7 +45,7 @@
                       <th>Name</th>
                       <th>Email</th>
                       <th>Level</th>
-                      <th>Action</th>
+                      <!-- <th>Action</th> -->
                     </tr>
                   </thead>
                   <tbody>
@@ -86,25 +86,25 @@
       { data: "name", className: "text-center" },
       { data: "email", className: "text-center" },
       { data: "level", className: "text-center" },
-      {
-        data: "aksi",
-        className: "text-center",
-        width: "10%",
-        render: function (data, type, row, meta) {
-          return `
-            <div class="container">
-                <div class="row justify-content-md-center">
-                    <div class="col-auto mb-1">
-                        <button class="btn btn-danger btn-xs" id="delete_data" onclick="deleteUser('${row.id_user}')"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                </div>
-            </div>
-            `;
-          // <div class="col-auto mb-1">
-          //     <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateUser" onclick="editUser('${row.id_user}')"><i class="fas fa-pencil"></i></button>
-          // </div>
-        },
-      },
+      // {
+      //   data: "aksi",
+      //   className: "text-center",
+      //   width: "10%",
+      //   render: function (data, type, row, meta) {
+      //     return `
+      //       <div class="container">
+      //           <div class="row justify-content-md-center">
+      //               <div class="col-auto mb-1">
+      //                   <button class="btn btn-danger btn-xs" id="delete_data" onclick="deleteUser('${row.id_user}')"><i class="fas fa-trash-alt"></i></button>
+      //               </div>
+      //           </div>
+      //       </div>
+      //       `;
+      //     // <div class="col-auto mb-1">
+      //     //     <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateUser" onclick="editUser('${row.id_user}')"><i class="fas fa-pencil"></i></button>
+      //     // </div>
+      //   },
+      // },
     ]);
   });
 

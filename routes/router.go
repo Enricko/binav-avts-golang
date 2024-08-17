@@ -18,7 +18,7 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/", mainController.Index)
 	r.GET("/login", mainController.Login)
 	
-	r.POST("/login", userController.Login)
+	r.POST("/auth/login", userController.Login)
 
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)
@@ -39,7 +39,7 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/vessel/:call_sign", vesselController.GetVesselByCallSign)
 	r.POST("/vessel/insert", vesselController.InsertVessel)
 	r.PUT("/vessel/update/:call_sign", vesselController.UpdateVessel)
-	r.DELETE("/vessel/delete/:call_sign", vesselController.DeleteVessel)
+	r.POST("/vessel/delete/:call_sign", vesselController.DeleteVessel)
 
 	r.GET("/vessel_records/:call_sign", vesselController.GetVesselRecords)
 	

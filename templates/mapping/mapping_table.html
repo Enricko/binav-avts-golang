@@ -136,80 +136,114 @@
 
     document.getElementById("updateMappingId").value = mapping.id_mapping;
     document.getElementById("updateMappingName").value = mapping.name;
-    document.getElementById("updateMappingStatus").value = mapping.status.toString();
+    document.getElementById("updateMappingStatus").value =
+      mapping.status.toString();
 
-    document.getElementById('updateMappingNameTitle').textContent = mapping.name;
+    document.getElementById("updateMappingNameTitle").textContent =
+      mapping.name;
   }
   function deleteMapping(mappingId, mappingName) {
     const swalConfig = {
-        backdrop: false,
-        target: document.getElementById("mappingTable"),
-        customClass: { container: "my-swal" }
+      backdrop: false,
+      target: document.getElementById("mappingTable"),
+      customClass: { container: "my-swal" },
     };
 
     const showAlert = (title, text, icon) => {
-        return Swal.fire({ title, text, icon, ...swalConfig });
+      return Swal.fire({ title, text, icon, ...swalConfig });
     };
 
     Swal.fire({
-        title: "Are you sure you want to delete this mapping?",
-        html: `
-            <p>This action cannot be undone.</p>
-            <p>Please type <strong>"${mappingName}"</strong> to confirm deletion.</p>
+      title: "Are you sure you want to delete this pipeline?",
+      html: `
+          <div style="text-align: left; color: #333;">
+            <p style="color: #d9534f; font-weight: bold; font-size: 1.1em;">Warning: This action is irreversible!</p>
+            <p>You are about to permanently delete:</p>
+            <ul style="color: #0056b3;">
+                <li>This pipeline</li>
+            </ul>
+            <p>To confirm, please type the pipeline name:</p>
+            <p style="font-weight: bold; color: #d9534f;">"${mappingName}"</p>
+          </div>
         `,
-        icon: "error",  // Changed to error icon for danger
-        input: "text",
-        inputAttributes: { autocapitalize: "off" },
-        showCancelButton: true,
-        confirmButtonText: "Delete",
-        confirmButtonColor: "#dc3545",  // Bootstrap danger color
-        cancelButtonText: "Cancel",
-        cancelButtonColor: "#6c757d",  // Bootstrap secondary color
-        showLoaderOnConfirm: true,
-        allowOutsideClick: () => !Swal.isLoading(),
-        ...swalConfig,
-        didOpen: () => Swal.getInput().focus(),
-        preConfirm: async (inputValue) => {
-            if (inputValue !== mappingName) {
-                Swal.showValidationMessage("The confirmation name does not match");
-                return false;
-            }
-
-            try {
-                const formData = new URLSearchParams({ confirmationName: inputValue });
-                const response = await fetch(`/mapping/delete/${mappingId}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "X-CSRF-Token": "{{ .csrfToken }}"
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Failed to delete the mapping");
-                }
-
-                return await response.json();
-            } catch (error) {
-                Swal.showValidationMessage(`Request failed: ${error}`);
-            }
+      icon: "error", // Changed to error icon for danger
+      input: "text",
+      inputAttributes: {
+        autocapitalize: "off",
+        autocomplete: "off",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc3545",
+      cancelButtonText: "Cancel",
+      cancelButtonColor: "#6c757d",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      ...swalConfig,
+      didOpen: () => {
+        const input = Swal.getInput();
+        input.focus();
+        input.addEventListener("paste", (e) => {
+          e.preventDefault();
+          Swal.showValidationMessage(
+            "Pasting is not allowed. Please type the name manually."
+          );
+        });
+      },
+      preConfirm: async (inputValue) => {
+        if (inputValue !== mappingName) {
+          Swal.showValidationMessage("The confirmation name does not match");
+          return false;
         }
-    }).then((result) => {
+        try {
+          const formData = new URLSearchParams({
+            confirmationName: inputValue,
+          });
+          const response = await fetch(`/mapping/delete/${mappingId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-Token": "{{ .csrfToken }}",
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || "Failed to delete the mapping"
+            );
+          }
+
+          return await response.json();
+        } catch (error) {
+          Swal.showValidationMessage(`Request failed: ${error}`);
+        }
+      },
+    })
+      .then((result) => {
         if (result.isConfirmed) {
-            if (result.value.message === "Mapping deleted successfully") {
-                dataTableMap["mapping-table"].dataTable.ajax.reload();
-                showAlert("Deleted!", "The mapping has been deleted.", "success");
-            } else {
-                showAlert("Deletion Failed!", result.value.message || "Failed to delete the mapping.", "error");
-            }
+          if (result.value.message === "Mapping deleted successfully") {
+            dataTableMap["mapping-table"].dataTable.ajax.reload();
+            showAlert("Deleted!", "The mapping has been deleted.", "success");
+          } else {
+            showAlert(
+              "Deletion Failed!",
+              result.value.message || "Failed to delete the mapping.",
+              "error"
+            );
+          }
         }
-    }).catch((error) => {
+      })
+      .catch((error) => {
         console.error("Error in deleteMapping:", error);
-        showAlert("Error", error.message || "An unexpected error occurred", "error");
-    });
-}
+        showAlert(
+          "Error",
+          error.message || "An unexpected error occurred",
+          "error"
+        );
+      });
+  }
 </script>
 
 {{end}}

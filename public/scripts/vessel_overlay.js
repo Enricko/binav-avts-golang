@@ -151,12 +151,31 @@ class VesselOverlay extends BaseVesselOverlay {
 }
 
 class VesselOverlayHistory extends BaseVesselOverlay {
+  constructor(map, position, top, left, width, height, rotationAngle, imageMap) {
+    super(map, position, top, left, width, height, rotationAngle, imageMap);
+    this.img = null;
+  }
+
+  onAdd() {
+    super.onAdd();
+    this.img = this.div.firstChild;
+    this.updateRotation();
+  }
+
   updateImage() {
     changeImageColor(`/public/upload/assets/image/vessel_map/${this.imageMap}`, [150, 112, 0], (dataUrl) => {
-      if (dataUrl && this.div && this.div.firstChild) {
-        this.div.firstChild.src = dataUrl;
+      if (dataUrl && this.img) {
+        this.img.src = dataUrl;
+        this.updateRotation();
       }
     });
+  }
+
+  updateRotation() {
+    if (this.img) {
+      this.img.style.transformOrigin = `${(this.offsetFromCenter.x / this.vesselDimensions.width) * 100}% ${(this.offsetFromCenter.y / this.vesselDimensions.height) * 100}%`;
+      this.img.style.transform = `rotate(${this.rotationAngle}deg)`;
+    }
   }
 
   update(position, top, left, width, height, rotationAngle, imageMap) {
@@ -167,6 +186,7 @@ class VesselOverlayHistory extends BaseVesselOverlay {
     this.imageMap = imageMap;
 
     this.updateImage();
+    this.updateRotation();
     this.draw();
   }
 }
