@@ -13,6 +13,7 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -77,3 +78,4 @@ func main() {
 
 	defer database.DB.Close()
 }
+
