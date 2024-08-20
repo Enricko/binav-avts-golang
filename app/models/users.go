@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Level string
 
@@ -18,8 +20,8 @@ type User struct {
 	Level    Level  `gorm:"type:enum('user','admin','owner');not null;" json:"level" binding:"required"`
 
 	ResetOTP       string    `json:"reset_otp"`
-	ResetOTPExpiry time.Time `json:"reset_otp_expiry"`
-	
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ResetOTPExpiry time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"reset_otp_expiry"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

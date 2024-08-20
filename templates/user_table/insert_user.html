@@ -64,13 +64,10 @@
         if (this.checkValidity()) {
             const formData = new FormData(this);
 
+            
             fetch('/user/insert', {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': formData.get('_csrf')
-                },
+                body: formData
             })
             .then(response => {
               if (!response.ok) {
