@@ -56,6 +56,8 @@ func main() {
 
 	excludedPaths := []string{
 		"/auth/login",
+		"/forgot-password",
+		"/reset-password",
 		// Add more paths as needed
 	}
 

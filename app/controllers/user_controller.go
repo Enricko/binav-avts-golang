@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/rand"
 	"fmt"
+	"golang-app/app/helper"
 	"golang-app/app/models"
 	"golang-app/database"
 	"math/big"
@@ -18,7 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-
 )
 
 func hashPassword(password string) (string, error) {
@@ -61,7 +61,8 @@ func NewUserController() *UserController {
 }
 
 type Claims struct {
-	Email string `json:"email"`
+	Email string       `json:"email"`
+	Level models.Level `json:"level"`
 	jwt.StandardClaims
 }
 
@@ -225,6 +226,7 @@ func (r *UserController) Login(c *gin.Context) {
 	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
 	claims := &Claims{
 		Email: input.Email,
+		Level: user.Level,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -242,6 +244,108 @@ func (r *UserController) Login(c *gin.Context) {
 		"token":   tokenString,
 		"user":    user,
 	})
+}
+
+func (r *UserController) InitiatePasswordReset(c *gin.Context) {
+	var input struct {
+		Email string `form:"email" json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	// Generate OTP
+	otp, err := helper.GenerateOTP(6)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate OTP"})
+		return
+	}
+
+	// Save OTP to the user record
+	user.ResetOTP = otp
+	user.ResetOTPExpiry = time.Now().Add(15 * time.Minute) // OTP valid for 15 minutes
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save OTP"})
+		return
+	}
+
+	// Send OTP to user's email
+	if err := helper.SendOTPEmail(user, otp); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send OTP email"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully to your email"})
+}
+
+func (r *UserController) ResetPassword(c *gin.Context) {
+	var input struct {
+		Email                string `form:"email" json:"email" binding:"required,email"`
+		OTP                  string `form:"otp" json:"otp" binding:"required"`
+		NewPassword          string `form:"new_password" json:"new_password" binding:"required,min=6"`
+		ConfirmationPassword string `form:"confirmation_password" json:"confirmation_password" binding:"required"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	// Check if passwords match
+	if input.NewPassword != input.ConfirmationPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Passwords do not match"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found", "error": err.Error()})
+		return
+	}
+
+	// Verify OTP
+	if user.ResetOTP != input.OTP {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid OTP"})
+		return
+	}
+
+	// Check if OTP has expired
+	if user.ResetOTPExpiry.IsZero() || time.Now().After(user.ResetOTPExpiry) {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "OTP has expired"})
+		return
+	}
+
+	// Hash the new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to hash password", "error": err.Error()})
+		return
+	}
+
+	// Update user's password
+	if err := database.DB.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update password", "error": err.Error()})
+		return
+	}
+
+	// Clear OTP fields
+	if err := database.DB.Model(&user).Updates(map[string]interface{}{
+		"reset_otp":        "",
+		"reset_otp_expiry": time.Now(), // This sets it to the zero value
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to clear OTP fields", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }
 
 // Helper function to validate user level (unchanged)

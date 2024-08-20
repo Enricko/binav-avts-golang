@@ -19,6 +19,9 @@ func SetupRouter(r *gin.Engine) {
 	r.GET("/login", mainController.Login)
 	
 	r.POST("/auth/login", userController.Login)
+	
+	r.POST("/forgot-password", userController.InitiatePasswordReset)
+	r.POST("/reset-password", userController.ResetPassword)
 
 	r.GET("/mappings", mappingController.GetMappings)
 	r.GET("/mapping/data", mappingController.GetAllMapping)
