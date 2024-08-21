@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"golang-app/app/models"
 	"golang-app/database"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 )
 
 type VesselController struct {
@@ -438,24 +441,10 @@ func (r *VesselController) DeleteVessel(c *gin.Context) {
 func (r *VesselController) GetVesselRecords(c *gin.Context) {
 	callSign := c.Param("call_sign")
 	var kapal models.Kapal
-	var records []models.VesselRecord
 
 	// Parse start and end datetime from query parameters
-	start := c.Query("start")
-	end := c.Query("end")
-
-	// Set default start to 3 days ago and end to now if not provided
-	if start == "" || end == "" {
-		now := time.Now()
-		defaultEnd := now.Format("2006-01-02 15:04:05")
-		defaultStart := now.AddDate(0, 0, -3).Format("2006-01-02 15:04:05")
-		if start == "" {
-			start = defaultStart
-		}
-		if end == "" {
-			end = defaultEnd
-		}
-	}
+	start := c.DefaultQuery("start", time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05"))
+	end := c.DefaultQuery("end", time.Now().Format("2006-01-02 15:04:05"))
 
 	// Find the Kapal with the given call sign
 	if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
@@ -464,24 +453,55 @@ func (r *VesselController) GetVesselRecords(c *gin.Context) {
 	}
 
 	// Initialize the query for fetching records
-	query := database.DB.Where("call_sign = ?", callSign)
+	query := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ?", callSign, start, end)
 
-	// Apply datetime range filter
-	query = query.Where("created_at BETWEEN ? AND ?", start, end)
-
-	// Execute the query to find the records
-	result := query.Find(&records)
-
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	// Count total records
+	var totalRecords int64
+	if err := query.Model(&models.VesselRecord{}).Count(&totalRecords).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Respond with the records and additional information
-	c.JSON(http.StatusOK, gin.H{
-		"call_sign":    callSign,
-		"kapal":        kapal,
-		"records":      records,
-		"total_record": len(records),
-	})
+	// Set up streaming response
+	c.Header("Content-Type", "application/json")
+	c.Header("Transfer-Encoding", "chunked")
+
+	// Start the JSON response
+	c.Writer.Write([]byte(fmt.Sprintf(`{"call_sign":"%s","kapal":%s,"total_record":%d,"records":[`,
+		callSign, toJSON(kapal), totalRecords)))
+
+	// Stream records
+	rows, err := query.Model(&models.VesselRecord{}).Rows()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	isFirstRecord := true
+	for rows.Next() {
+		var record models.VesselRecord
+		if err := database.DB.ScanRows(rows, &record); err != nil {
+			// Log the error and continue
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+
+		if !isFirstRecord {
+			c.Writer.Write([]byte(","))
+		}
+		c.Writer.Write([]byte(toJSON(record)))
+		c.Writer.Flush()
+		isFirstRecord = false
+	}
+
+	// Close the JSON response
+	c.Writer.Write([]byte("]}"))
+	c.Writer.Flush()
+}
+
+// Helper function to convert struct to JSON
+func toJSON(v interface{}) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }
