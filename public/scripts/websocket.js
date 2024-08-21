@@ -1,14 +1,19 @@
+// Constants
+const WEBSOCKET_RECONNECT_DELAY = 5000; // 5 seconds
+
+// Global variables
 let currentDevices = [];
 let markers = {};
 let dataDevices = {};
 let websocket;
 
+// WebSocket functions
 function connectWebSocket() {
-  // websocket = new WebSocket(websocketUrl);
   websocket = new WebSocket(websocketUrl);
   websocket.onopen = () => console.log("WebSocket connected");
   websocket.onmessage = handleWebSocketMessage;
-  websocket.onclose = () => setTimeout(connectWebSocket, 5000);
+  websocket.onclose = () =>
+    setTimeout(connectWebSocket, WEBSOCKET_RECONNECT_DELAY);
   websocket.onerror = (error) => {
     console.error("WebSocket error:", error);
     websocket.close();
@@ -19,24 +24,21 @@ function handleWebSocketMessage(event) {
   const data = JSON.parse(event.data);
   const newDevices = Object.keys(data);
 
-  // Sort both arrays to ensure consistent comparison
   const sortedNewDevices = newDevices.sort();
   const sortedCurrentDevices = currentDevices.sort();
 
-  // Check if the devices have changed
   if (sortedNewDevices.toString() !== sortedCurrentDevices.toString()) {
-    currentDevices = newDevices; // Update currentDevices
-    updateAutoComplete(currentDevices); // Call updateAutoComplete with the new devices
+    currentDevices = newDevices;
+    updateAutoComplete(currentDevices);
   }
 
   for (const device in data) {
-    // if (data[device].kapal.status) {
     dataDevices[device] = data[device];
     updateMarkerIfNeeded(device, data[device]);
-    // }
   }
 }
 
+// Marker functions
 function updateMarkerIfNeeded(device, data) {
   const { nmea, kapal } = data;
   if (nmea.latitude && nmea.longitude) {
@@ -83,16 +85,6 @@ function updateMarkerIfNeeded(device, data) {
   }
 }
 
-function convertDMSToDecimal(degreeMinute) {
-  const [degrees, minutes, direction] = degreeMinute
-    .match(/(\d+)°(\d+\.\d+)°([NS|EW])/)
-    .slice(1);
-  let decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
-  return direction === "S" || direction === "W"
-    ? -decimalDegrees
-    : decimalDegrees;
-}
-
 function createInfoWindowContent(device, latitude, longitude) {
   const data = dataDevices[device];
   if (!data) return "";
@@ -132,6 +124,7 @@ function createInfoWindowContent(device, latitude, longitude) {
     </div>`;
 }
 
+// Vessel data functions
 function dataKapalMarker(device) {
   const data = dataDevices[device];
   if (!data) return;
@@ -148,7 +141,6 @@ function dataKapalMarker(device) {
     water_depth_current: `${formatWaterDepthNumber(
       data.nmea.water_depth
     )} Meter`,
-    // Add kapal data
     call_sign_general: data.kapal.call_sign,
     flag_general: data.kapal.flag,
     kelas_general: data.kapal.kelas,
@@ -180,75 +172,11 @@ function dataKapalMarker(device) {
     }
   }
 
-  // Update vessel image
   const imageElement = document.getElementById("vessel-image");
   if (imageElement && data.kapal && data.kapal.image) {
     imageElement.src = "/public/upload/assets/image/vessel/" + data.kapal.image;
     imageElement.alt = `Image of ${device}`;
   }
-
-  //   updateVesselImage(
-  //     data.kapal.image_map,
-  //     data.kapal.width_m,
-  //     data.kapal.height_m,
-  //     data.kapal.top_range,
-  //     data.kapal.left_range
-  // );
-}
-
-// TODO : Image Detail Vessel That displayed on MAP locate the GPS with Dot with real places
-// function updateVesselImage(imageUrl, width, height, topRange, leftRange) {
-//   const container = document.getElementById('vessel-image-container');
-//   container.innerHTML = ''; // Clear previous content
-
-//   // Set container height based on aspect ratio (width is already 100%)
-//   container.style.paddingBottom = `${(width / height) * 100}%`;
-
-//   const imageWrapper = document.createElement('div');
-//   imageWrapper.style.position = 'absolute';
-//   imageWrapper.style.top = '0';
-//   imageWrapper.style.left = '0';
-//   imageWrapper.style.width = '100%';
-//   imageWrapper.style.height = '100%';
-//   imageWrapper.style.transform = 'rotate(90deg)';
-//   imageWrapper.style.transformOrigin = 'top left';
-
-//   const img = document.createElement('img');
-//   img.src = `/public/upload/assets/image/vessel_map/${imageUrl}`;
-//   img.style.width = '100%';
-//   img.style.height = '100%';
-//   img.style.objectFit = 'contain';
-//   img.style.transform = 'rotate(-90deg) translateY(-100%)';
-//   img.style.transformOrigin = 'top left';
-
-//   const dot = document.createElement('div');
-//   dot.style.position = 'absolute';
-//   dot.style.width = '6px';
-//   dot.style.height = '6px';
-//   dot.style.borderRadius = '50%';
-//   dot.style.backgroundColor = 'red';
-//   dot.style.border = '1px solid white';
-
-//   // Calculate dot position (swapped due to rotation)
-//   const topPercentage = (leftRange / width) * 100;
-//   const leftPercentage = (1 - (topRange / height)) * 100;
-
-//   dot.style.top = `${topPercentage}%`;
-//   dot.style.left = `${leftPercentage}%`;
-//   dot.style.transform = 'translate(-50%, -50%)';
-
-//   imageWrapper.appendChild(img);
-//   container.appendChild(imageWrapper);
-//   container.appendChild(dot);
-// }
-
-function formatWaterDepthNumber(number) {
-  const [part1, part2] = number
-    .toString()
-    .padStart(3, "0")
-    .match(/^(\d+)(\d{2})$/)
-    .slice(1);
-  return parseFloat(`${part1 || "0"}.${part2}`);
 }
 
 function getDataKapalMarker(device) {
@@ -265,12 +193,15 @@ function getDataKapalMarker(device) {
     isPreviewActive = true;
     toggleVesselDetailSidebar();
     defaultHistoryTable();
-    document.getElementById("total_records").textContent = "0";
+    if (document.getElementById("total_records"))
+      document.getElementById("total_records").textContent = "0";
   }
 }
 
 function resetVesselState() {
-  btnPlay.disabled = btnDownloadCSV.disabled = true;
+  if (btnDownloadCSV) {
+    btnPlay.disabled = btnDownloadCSV.disabled = true;
+  }
   vesselPolylineHistory = [];
   if (historyMarker) {
     historyMarker.setMap(null);
@@ -280,13 +211,40 @@ function resetVesselState() {
 }
 
 function resetVesselHistoryAnimation() {
-  progressSlider.value =
-    progressSlider.max =
-    totalVesselHistoryRecords =
-    currentAnimationIndex =
-      0;
+  if (progressSlider)
+    progressSlider.value =
+      progressSlider.max =
+      totalVesselHistoryRecords =
+      currentAnimationIndex =
+        0;
   if (isAnimationPlaying) stopVesselHistoryAnimation();
 }
 
-// Initialize WebSocket connection
-connectWebSocket();
+// Utility functions
+function convertDMSToDecimal(degreeMinute) {
+  const [degrees, minutes, direction] = degreeMinute
+    .match(/(\d+)°(\d+\.\d+)°([NS|EW])/)
+    .slice(1);
+  let decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
+  return direction === "S" || direction === "W"
+    ? -decimalDegrees
+    : decimalDegrees;
+}
+
+function formatWaterDepthNumber(number) {
+  const [part1, part2] = number
+    .toString()
+    .padStart(3, "0")
+    .match(/^(\d+)(\d{2})$/)
+    .slice(1);
+  return parseFloat(`${part1 || "0"}.${part2}`);
+}
+
+// Initialization
+// function initVesselTrackingSystem() {
+//   connectWebSocket();
+//   // Any other initialization steps
+// }
+
+// // Call initialization function
+// initVesselTrackingSystem();

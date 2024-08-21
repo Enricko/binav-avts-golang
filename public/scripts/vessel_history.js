@@ -7,16 +7,19 @@ let isPreviewActive = false;
 let vesselHistoryData = [];
 let vesselHistoryDatetime = [];
 let totalVesselHistoryRecords = 0;
+
 let vesselPolylineHistory;
 let isAnimationPlaying = false;
 let animationTimeoutID;
 let shouldStopAnimation = false;
 let historyMarker;
+let percentage;
+
 let startDatetimeFilter;
 let endDatetimeFilter;
-let currentAnimationIndex = 0;
-let animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
-let currentSelectedMarker;
+
+let currentAnimationIndex = 0; // Track the current index of animation
+let animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords; // Duration of animation per frame
 
 // DOM Elements
 const progressSlider = document.getElementById("progress-slider1");
@@ -33,21 +36,28 @@ const modalInstance = new bootstrap.Modal(filterModal);
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
-  progressSlider.addEventListener("input", updateHistorybySlider);
-  btnPlay.addEventListener("click", togglePlayPause);
-  btnLoad.addEventListener("click", () => {
-    loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
-  });
-  submitFilter.addEventListener("click", function (event) {
-    startEndDatetimeFilterForm();
-    modalInstance.hide();
-  });
-  btnDownloadCSV.addEventListener("click", () => {
-    downloadCSV(
-      `${currentSelectedMarker}_record_${formatDateTime(startDatetimeFilter)}_to_${formatDateTime(endDatetimeFilter)}.csv`,
-      vesselHistoryData.map((data) => data.record)
-    );
-  });
+  if (progressSlider) {
+    progressSlider.addEventListener("input", updateHistorybySlider);
+  }
+  if (btnPlay) btnPlay.addEventListener("click", togglePlayPause);
+  if (btnLoad)
+    btnLoad.addEventListener("click", () => {
+      loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
+    });
+  if (submitFilter)
+    submitFilter.addEventListener("click", function (event) {
+      startEndDatetimeFilterForm();
+      modalInstance.hide();
+    });
+  if (btnDownloadCSV)
+    btnDownloadCSV.addEventListener("click", () => {
+      downloadCSV(
+        `${currentSelectedMarker}_record_${formatDateTime(
+          startDatetimeFilter
+        )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
+        vesselHistoryData.map((data) => data.record)
+      );
+    });
 });
 
 $("#filterModal").on("hidden.bs.modal", function () {
@@ -90,7 +100,7 @@ function toggleVesselDetailSidebar() {
 
 function displayVesselHistoryPolyline() {
   if (vesselHistoryData.length === 0) return;
-  
+
   vesselPolylineHistory = [];
   vesselPolylineHistory.forEach((polyline) => polyline.setMap(null));
 
@@ -153,7 +163,8 @@ function initializeHistoryMarker() {
       vesselHistoryData.kapal.height_m,
       (vesselHistoryData[currentAnimationIndex].record.heading_degree +
         vesselHistoryData.kapal.calibration +
-        vesselHistoryData.kapal.heading_direction) % 360,
+        vesselHistoryData.kapal.heading_direction) %
+        360,
       vesselHistoryData.kapal.image_map
     );
   }
@@ -182,7 +193,8 @@ function animateMarker() {
     vesselHistoryData.kapal.height_m,
     (vesselHistoryData[currentAnimationIndex].record.heading_degree +
       vesselHistoryData.kapal.calibration +
-      vesselHistoryData.kapal.heading_direction) % 360,
+      vesselHistoryData.kapal.heading_direction) %
+      360,
     vesselHistoryData.kapal.image_map
   );
   progressSlider.value = currentAnimationIndex;
@@ -239,9 +251,11 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
 
     vesselHistoryData.kapal = result.kapal;
     totalVesselHistoryRecords = vesselHistoryData.length;
-    document.getElementById("total_records").textContent = totalVesselHistoryRecords;
+    document.getElementById("total_records").textContent =
+      totalVesselHistoryRecords;
     loadingSpinner.style.display = "none";
-    btnPlay.disabled = btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
+    btnPlay.disabled = btnDownloadCSV.disabled =
+      totalVesselHistoryRecords === 0;
     progressSlider.value = 0;
     progressSlider.max = totalVesselHistoryRecords;
     animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
@@ -277,7 +291,8 @@ function updateHistorybySlider() {
         vesselHistoryData.kapal.height_m,
         (vesselHistoryData[progressValue].record.heading_degree +
           vesselHistoryData.kapal.calibration +
-          vesselHistoryData.kapal.heading_direction) % 360,
+          vesselHistoryData.kapal.heading_direction) %
+          360,
         vesselHistoryData.kapal.image_map
       );
     }
@@ -290,30 +305,41 @@ function updateHistoryTable(index) {
   if (index < 0 || index >= vesselHistoryData.length) return;
 
   const record = vesselHistoryData[index].record;
-  document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalVesselHistoryRecords} Records`;
+  document.getElementById("record_of_vessel").textContent = `${
+    index + 1
+  } of ${totalVesselHistoryRecords} Records`;
   document.getElementById("latitude_record").textContent = record.latitude;
   document.getElementById("longitude_record").textContent = record.longitude;
-  document.getElementById("heading_hdt_record").textContent = `${record.heading_degree + vesselHistoryData.kapal.calibration}°`;
-  document.getElementById("SOG_record").textContent = `${record.speed_in_knots} KTS`;
-  document.getElementById("SOLN_record").textContent = record.gps_quality_indicator;
-  document.getElementById("datetime_record").textContent = formatDateTimeDisplay(record.created_at);
-  document.getElementById("water_depth_record").textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
+  document.getElementById("heading_hdt_record").textContent = `${
+    record.heading_degree + vesselHistoryData.kapal.calibration
+  }°`;
+  document.getElementById(
+    "SOG_record"
+  ).textContent = `${record.speed_in_knots} KTS`;
+  document.getElementById("SOLN_record").textContent =
+    record.gps_quality_indicator;
+  document.getElementById("datetime_record").textContent =
+    formatDateTimeDisplay(record.created_at);
+  document.getElementById(
+    "water_depth_record"
+  ).textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
 }
 
 function defaultHistoryTable() {
   const elements = {
-    "record_of_vessel": "0 of 0 Records",
-    "latitude_record": "-",
-    "longitude_record": "-",
-    "heading_hdt_record": "-°",
-    "SOG_record": "- KTS",
-    "SOLN_record": "-",
-    "datetime_record": "-",
-    "water_depth_record": "- Meter"
+    record_of_vessel: "0 of 0 Records",
+    latitude_record: "-",
+    longitude_record: "-",
+    heading_hdt_record: "-°",
+    SOG_record: "- KTS",
+    SOLN_record: "-",
+    datetime_record: "-",
+    water_depth_record: "- Meter",
   };
 
   for (const [id, value] of Object.entries(elements)) {
-    document.getElementById(id).textContent = value;
+    if (document.getElementById(id))
+      document.getElementById(id).textContent = value;
   }
 }
 
@@ -329,11 +355,16 @@ function filterByDateRange(data, startDate, endDate) {
 function formatToISO(dateString) {
   const date = new Date(dateString);
   const offset = date.getTimezoneOffset();
-  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
+  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(
+    2,
+    "0"
+  );
   const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
   const sign = offset > 0 ? "-" : "+";
 
-  return date.toISOString().slice(0, 19) + sign + offsetHours + ":" + offsetMinutes;
+  return (
+    date.toISOString().slice(0, 19) + sign + offsetHours + ":" + offsetMinutes
+  );
 }
 
 function startEndDatetimeFilterForm() {
@@ -343,7 +374,8 @@ function startEndDatetimeFilterForm() {
   startDatetimeFilter = formatToISO(start);
   endDatetimeFilter = formatToISO(end);
 
-  document.getElementById("filter_history_start").textContent = formatDateWithMidnight(start);
+  document.getElementById("filter_history_start").textContent =
+    formatDateWithMidnight(start);
   document.getElementById("filter_history_end").textContent = formatDate(end);
 
   if (endDatetimeFilter <= startDatetimeFilter) {
