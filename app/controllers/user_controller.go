@@ -287,6 +287,39 @@ func (r *UserController) InitiatePasswordReset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully to your email"})
 }
 
+func (r *UserController) ValidateOTP(c *gin.Context) {
+	var input struct {
+		Email string `form:"email" json:"email" binding:"required,email"`
+		OTP   string `form:"otp" json:"otp" binding:"required"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	// Check if OTP matches
+	if user.ResetOTP != input.OTP {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid OTP"})
+		return
+	}
+
+	// Check if OTP has expired
+	if user.ResetOTPExpiry.IsZero() || time.Now().After(user.ResetOTPExpiry) {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "OTP has expired"})
+		return
+	}
+
+	// OTP is valid
+	c.JSON(http.StatusOK, gin.H{"message": "OTP is valid"})
+}
+
 func (r *UserController) ResetPassword(c *gin.Context) {
 	var input struct {
 		Email                string `form:"email" json:"email" binding:"required,email"`

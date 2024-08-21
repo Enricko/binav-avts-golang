@@ -21,6 +21,7 @@ func SetupRouter(r *gin.Engine) {
 	r.POST("/auth/login", userController.Login)
 	
 	r.POST("/forgot-password", userController.InitiatePasswordReset)
+	r.POST("/validate-otp", userController.ValidateOTP)
 	r.POST("/reset-password", userController.ResetPassword)
 
 	r.GET("/mappings", mappingController.GetMappings)

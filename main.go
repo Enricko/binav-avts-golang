@@ -58,6 +58,7 @@ func main() {
 		"/auth/login",
 		"/forgot-password",
 		"/reset-password",
+		"/validate-otp",
 		// Add more paths as needed
 	}
 
