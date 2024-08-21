@@ -375,6 +375,12 @@ func (r *TelnetController) convertVTGToNMEAData(vtg *VTGSentence) NMEAData {
 }
 
 func (r *TelnetController) updateStatus(callSign string, status models.TelnetStatus) {
+	kapal, ok := r.KapalDataMap.Load(callSign)
+	if !ok {
+		log.Printf("kapal not found in dataMap")
+	}
+	historyPerSecond := kapal.(KapalData).Kapal.HistoryPerSecond
+	disconnectThreshold := time.Duration(float64(historyPerSecond) * 1.5) * time.Second
 	// Update in-memory data
 	if data, ok := r.DataMap.Load(callSign); ok {
 		nmeaData := data.(NMEAData)
@@ -388,8 +394,15 @@ func (r *TelnetController) updateStatus(callSign string, status models.TelnetSta
 	result := database.DB.Where("call_sign = ?", callSign).Order("created_at DESC").First(&vesselRecord)
 	if result.Error == nil {
 		vesselRecord.TelnetStatus = status
-		if err := database.DB.Save(&vesselRecord).Error; err != nil {
-			log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
+		if time.Since(vesselRecord.CreatedAt) > disconnectThreshold &&  string(status) == "Disconnected"{
+			if err := database.DB.Save(&vesselRecord).Error; err != nil {
+				log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
+			}
+		}
+		if string(status) != "Disconnected"{
+			if err := database.DB.Save(&vesselRecord).Error; err != nil {
+				log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
+			}
 		}
 	} else {
 		log.Printf("Error fetching vessel record for %s: %v", callSign, result.Error)
