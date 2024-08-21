@@ -1,23 +1,22 @@
-// Variables
+// Constants
+const ANIMATION_DURATION = 75000; // 75 seconds in milliseconds
+
+// Global variables
 let previewTimeoutID;
 let isPreviewActive = false;
 let vesselHistoryData = [];
 let vesselHistoryDatetime = [];
 let totalVesselHistoryRecords = 0;
-
 let vesselPolylineHistory;
 let isAnimationPlaying = false;
 let animationTimeoutID;
 let shouldStopAnimation = false;
 let historyMarker;
-let percentage;
-
 let startDatetimeFilter;
 let endDatetimeFilter;
-
-const animationDuration = 75000; // 75 seconds in milliseconds
-let currentAnimationIndex = 0; // Track the current index of animation
-let animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Duration of animation per frame
+let currentAnimationIndex = 0;
+let animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
+let currentSelectedMarker;
 
 // DOM Elements
 const progressSlider = document.getElementById("progress-slider1");
@@ -25,30 +24,50 @@ const btnPlay = document.getElementById("play-animation");
 const btnLoad = document.getElementById("load-vessel-history");
 const loadingSpinner = document.getElementById("spinner");
 const btnDownloadCSV = document.getElementById("history-download-csv");
+const sidebar = document.getElementById("detail-vessel");
+const submitFilter = document.getElementById("submitFilter");
+const startDateTimeInput = document.getElementById("start-date-time");
+const endDateTimeInput = document.getElementById("end-date-time");
+const filterModal = document.getElementById("filterModal");
+const modalInstance = new bootstrap.Modal(filterModal);
 
-// Ensure DOM is fully loaded before attaching event listeners
+// Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
   progressSlider.addEventListener("input", updateHistorybySlider);
   btnPlay.addEventListener("click", togglePlayPause);
   btnLoad.addEventListener("click", () => {
     loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
   });
+  submitFilter.addEventListener("click", function (event) {
+    startEndDatetimeFilterForm();
+    modalInstance.hide();
+  });
+  btnDownloadCSV.addEventListener("click", () => {
+    downloadCSV(
+      `${currentSelectedMarker}_record_${formatDateTime(startDatetimeFilter)}_to_${formatDateTime(endDatetimeFilter)}.csv`,
+      vesselHistoryData.map((data) => data.record)
+    );
+  });
 });
 
-// Create preview button
+$("#filterModal").on("hidden.bs.modal", function () {
+  startEndDatetimeFilterForm();
+});
+
+// Functions
 function createPreviewButton(map) {
   const previewButton = document.createElement("button");
   previewButton.id = "vessel_record_preview";
   previewButton.classList.add("btn", "btn-primary", "rounded-circle", "ml-4");
   previewButton.style.cssText = `
-        background-color: white;
-        border: 0;
-        width: 50px;
-        height: 50px;
-        margin-right: 0.5rem;
-        margin-bottom: 0.5rem;
-        display: none;
-    `;
+    background-color: white;
+    border: 0;
+    width: 50px;
+    height: 50px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: none;
+  `;
   previewButton.innerHTML = '<i class="fas fa-eye" style="color: black;"></i>';
   previewButton.title = "Preview Vessel Data";
   previewButton.addEventListener("click", toggleVesselDetailSidebar);
@@ -56,13 +75,7 @@ function createPreviewButton(map) {
   return previewButton;
 }
 
-const sidebar = document.getElementById("detail-vessel");
-// const resizer = document.getElementById("resizer-sidebar");
-// const content = resizer.previousElementSibling;
-
-// Toggle vessel detail sidebar
 function toggleVesselDetailSidebar() {
- 
   if (isPreviewActive) {
     sidebar.style.display = "block";
     previewTimeoutID = setInterval(() => {
@@ -75,10 +88,9 @@ function toggleVesselDetailSidebar() {
   isPreviewActive = !isPreviewActive;
 }
 
-// View history polyline
 function displayVesselHistoryPolyline() {
   if (vesselHistoryData.length === 0) return;
-  // Clear existing polylines
+  
   vesselPolylineHistory = [];
   vesselPolylineHistory.forEach((polyline) => polyline.setMap(null));
 
@@ -89,26 +101,19 @@ function displayVesselHistoryPolyline() {
     currentSegment.push(data.latlng);
 
     const currentData = vesselHistoryData[index];
-    // const nextData = vesselHistoryData[index + 1];
     if (currentData && currentData.status !== data.status) {
-      // Create a polyline for the current segment
       createPolylineSegment(currentSegment, currentColor);
-
-      // Start a new segment
       currentSegment = [data.latlng];
       currentColor = getPolylineColor(currentData.status);
     }
   });
 
-  // Create the last segment
   if (currentSegment.length > 0) {
     createPolylineSegment(currentSegment, currentColor);
   }
 
-  // Center the map on the last known position
   map.setCenter(vesselHistoryData[vesselHistoryData.length - 1].latlng);
 }
-
 
 function createPolylineSegment(path, color) {
   const polyline = new google.maps.Polyline({
@@ -126,7 +131,6 @@ function getPolylineColor(telnetStatus) {
   return telnetStatus === "Connected" ? "#0077b6" : "#ff0000";
 }
 
-// Play vessel history animation
 function playVesselHistoryAnimation() {
   if (shouldStopAnimation) {
     shouldStopAnimation = false;
@@ -139,21 +143,17 @@ function playVesselHistoryAnimation() {
 function initializeHistoryMarker() {
   if (!vesselHistoryData.length) return;
 
-  if (historyMarker == undefined || historyMarker == null) {
+  if (!historyMarker) {
     historyMarker = new VesselOverlayHistory(
       map,
-      {
-        lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
-        lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
-      },
+      vesselHistoryData[currentAnimationIndex].latlng,
       vesselHistoryData.kapal.top_range,
       vesselHistoryData.kapal.left_range,
       vesselHistoryData.kapal.width_m,
       vesselHistoryData.kapal.height_m,
       (vesselHistoryData[currentAnimationIndex].record.heading_degree +
         vesselHistoryData.kapal.calibration +
-        vesselHistoryData.kapal.heading_direction) %
-        360,
+        vesselHistoryData.kapal.heading_direction) % 360,
       vesselHistoryData.kapal.image_map
     );
   }
@@ -171,10 +171,7 @@ function animateMarker() {
     return;
   }
 
-  const position = {
-    lat: vesselHistoryData[currentAnimationIndex].latlng.lat,
-    lng: vesselHistoryData[currentAnimationIndex].latlng.lng,
-  };
+  const position = vesselHistoryData[currentAnimationIndex].latlng;
 
   map.setCenter(position);
   historyMarker.update(
@@ -185,8 +182,7 @@ function animateMarker() {
     vesselHistoryData.kapal.height_m,
     (vesselHistoryData[currentAnimationIndex].record.heading_degree +
       vesselHistoryData.kapal.calibration +
-      vesselHistoryData.kapal.heading_direction) %
-      360,
+      vesselHistoryData.kapal.heading_direction) % 360,
     vesselHistoryData.kapal.image_map
   );
   progressSlider.value = currentAnimationIndex;
@@ -195,7 +191,6 @@ function animateMarker() {
   animationTimeoutID = setTimeout(animateMarker, animationFrameDuration);
 }
 
-// Stop vessel history animation
 function stopVesselHistoryAnimation() {
   shouldStopAnimation = true;
   clearTimeout(animationTimeoutID);
@@ -214,14 +209,11 @@ function togglePlayPause() {
 }
 
 function updatePlayPauseButton() {
-  if (isAnimationPlaying) {
-    btnPlay.innerHTML = `<i class="fas fa-pause" style="color: rgb(255, 255, 255);"></i> Pause`;
-  } else {
-    btnPlay.innerHTML = `<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i> Play`;
-  }
+  btnPlay.innerHTML = isAnimationPlaying
+    ? '<i class="fas fa-pause" style="color: rgb(255, 255, 255);"></i> Pause'
+    : '<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i> Play';
 }
 
-// Load vessel history data
 async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
   loadingSpinner.style.display = "block";
 
@@ -245,20 +237,16 @@ async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
       status: record.telnet_status,
     }));
 
-    vesselHistoryData["kapal"] = result.kapal;
+    vesselHistoryData.kapal = result.kapal;
     totalVesselHistoryRecords = vesselHistoryData.length;
-    document.getElementById("total_records").textContent =
-      totalVesselHistoryRecords;
+    document.getElementById("total_records").textContent = totalVesselHistoryRecords;
     loadingSpinner.style.display = "none";
-    btnPlay.disabled = totalVesselHistoryRecords === 0;
-    btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
+    btnPlay.disabled = btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
     progressSlider.value = 0;
     progressSlider.max = totalVesselHistoryRecords;
-    animationFrameDuration = animationDuration / totalVesselHistoryRecords; // Update frame duration
+    animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
     currentAnimationIndex = 0;
-    if (vesselPolylineHistory) {
-      vesselPolylineHistory = [];
-    }
+    vesselPolylineHistory = [];
     if (historyMarker) {
       historyMarker.setMap(null);
       historyMarker = null;
@@ -278,10 +266,7 @@ function updateHistorybySlider() {
     if (!historyMarker) {
       initializeHistoryMarker();
     } else {
-      const position = {
-        lat: vesselHistoryData[progressValue].latlng.lat,
-        lng: vesselHistoryData[progressValue].latlng.lng,
-      };
+      const position = vesselHistoryData[progressValue].latlng;
 
       map.setCenter(position);
       historyMarker.update(
@@ -292,8 +277,7 @@ function updateHistorybySlider() {
         vesselHistoryData.kapal.height_m,
         (vesselHistoryData[progressValue].record.heading_degree +
           vesselHistoryData.kapal.calibration +
-          vesselHistoryData.kapal.heading_direction) %
-          360,
+          vesselHistoryData.kapal.heading_direction) % 360,
         vesselHistoryData.kapal.image_map
       );
     }
@@ -302,42 +286,35 @@ function updateHistorybySlider() {
   }
 }
 
-// Update vessel history table
 function updateHistoryTable(index) {
   if (index < 0 || index >= vesselHistoryData.length) return;
 
-  document.getElementById("record_of_vessel").textContent = `${
-    index + 1
-  } of ${totalVesselHistoryRecords} Records`;
   const record = vesselHistoryData[index].record;
-  // percentage = ((index + 1) / totalVesselHistoryRecords) * 100;
-  // progressSlider.value = percentage;
+  document.getElementById("record_of_vessel").textContent = `${index + 1} of ${totalVesselHistoryRecords} Records`;
   document.getElementById("latitude_record").textContent = record.latitude;
   document.getElementById("longitude_record").textContent = record.longitude;
-  document.getElementById("heading_hdt_record").textContent = `${
-    record.heading_degree + vesselHistoryData["kapal"].calibration
-  }\u00B0`;
-  document.getElementById(
-    "SOG_record"
-  ).textContent = `${record.speed_in_knots} KTS`;
-  document.getElementById("SOLN_record").textContent =
-    record.gps_quality_indicator;
-  document.getElementById("datetime_record").textContent =
-    formatDateTimeDisplay(record.created_at);
-  document.getElementById(
-    "water_depth_record"
-  ).textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
+  document.getElementById("heading_hdt_record").textContent = `${record.heading_degree + vesselHistoryData.kapal.calibration}°`;
+  document.getElementById("SOG_record").textContent = `${record.speed_in_knots} KTS`;
+  document.getElementById("SOLN_record").textContent = record.gps_quality_indicator;
+  document.getElementById("datetime_record").textContent = formatDateTimeDisplay(record.created_at);
+  document.getElementById("water_depth_record").textContent = `${formatWaterDepthNumber(record.water_depth)} Meter`;
 }
 
 function defaultHistoryTable() {
-  document.getElementById("record_of_vessel").textContent = `0 of 0 Records`;
-  document.getElementById("latitude_record").textContent = "-";
-  document.getElementById("longitude_record").textContent = "-";
-  document.getElementById("heading_hdt_record").textContent = "-°";
-  document.getElementById("SOG_record").textContent = `- KTS`;
-  document.getElementById("SOLN_record").textContent = "-";
-  document.getElementById("datetime_record").textContent = "-";
-  document.getElementById("water_depth_record").textContent = "- Meter";
+  const elements = {
+    "record_of_vessel": "0 of 0 Records",
+    "latitude_record": "-",
+    "longitude_record": "-",
+    "heading_hdt_record": "-°",
+    "SOG_record": "- KTS",
+    "SOLN_record": "-",
+    "datetime_record": "-",
+    "water_depth_record": "- Meter"
+  };
+
+  for (const [id, value] of Object.entries(elements)) {
+    document.getElementById(id).textContent = value;
+  }
 }
 
 function filterByDateRange(data, startDate, endDate) {
@@ -349,51 +326,15 @@ function filterByDateRange(data, startDate, endDate) {
   });
 }
 
-// function extractLatLon(filteredData) {
-//   return filteredData.map((item) => {
-//     return {
-//       latitude: convertDMSToDecimal(item.latitude),
-//       longitude: convertDMSToDecimal(item.longitude),
-//     };
-//   });
-// }
 function formatToISO(dateString) {
-  // Parse the date string to a Date object
   const date = new Date(dateString);
-
-  // Extract components
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
   const offset = date.getTimezoneOffset();
-
-  // Calculate the timezone offset in hours and minutes
-  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(
-    2,
-    "0"
-  );
+  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
   const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
   const sign = offset > 0 ? "-" : "+";
 
-  // Construct ISO 8601 string
-  const isoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMinutes}`;
-
-  return isoString;
+  return date.toISOString().slice(0, 19) + sign + offsetHours + ":" + offsetMinutes;
 }
-
-const submitFilter = document.getElementById("submitFilter");
-const startDateTimeInput = document.getElementById("start-date-time");
-const endDateTimeInput = document.getElementById("end-date-time");
-const filterModal = document.getElementById("filterModal");
-const modalInstance = new bootstrap.Modal(filterModal);
-
-submitFilter.addEventListener("click", function (event) {
-  startEndDatetimeFilterForm();
-  modalInstance.hide();
-});
 
 function startEndDatetimeFilterForm() {
   const start = new Date(startDateTimeInput.value);
@@ -402,25 +343,18 @@ function startEndDatetimeFilterForm() {
   startDatetimeFilter = formatToISO(start);
   endDatetimeFilter = formatToISO(end);
 
-  document.getElementById("filter_history_start").textContent =
-    formatDateWithMidnight(start);
+  document.getElementById("filter_history_start").textContent = formatDateWithMidnight(start);
   document.getElementById("filter_history_end").textContent = formatDate(end);
 
   if (endDatetimeFilter <= startDatetimeFilter) {
-    event.preventDefault();
     alert("End date and time must be after start date and time.");
   }
 }
-
-$("#filterModal").on("hidden.bs.modal", function () {
-  startEndDatetimeFilterForm();
-});
 
 function downloadCSV(filename, data) {
   btnDownloadCSV.disabled = true;
   loadingSpinner.style.display = "block";
 
-  // Define headers and field mappings
   const headers = [
     "time",
     "latitude",
@@ -440,52 +374,41 @@ function downloadCSV(filename, data) {
     water_depth: "water_depth",
   };
 
-  // Convert data to CSV format
-  const csvRows = [];
-  csvRows.push(headers.join(",")); // Add headers
-
+  const csvRows = [headers.join(",")];
   let index = 0;
 
   function processNextChunk() {
-    const chunkSize = 1000; // Adjust chunk size based on your data size and performance
+    const chunkSize = 1000;
     for (let i = 0; i < chunkSize && index < data.length; i++, index++) {
       const row = data[index];
       const values = headers.map((header) => {
         let value = row[headerMapping[header]];
 
-        // Apply formatting function to water_depth
         if (header === "water_depth" && typeof value === "number") {
           value = formatWaterDepthNumber(value);
         }
 
-        // Handle special characters and ensure UTF-8 encoding
         if (header === "latitude" || header === "longitude") {
-          // Replace unwanted characters like 'Â°' with '°'
-          value = value.replace(/Â°/g, "°");
-
-          // Remove double quotes (optional, if you expect quotes)
-          value = value.replace(/"/g, '""');
+          value = value.replace(/Â°/g, "°").replace(/"/g, '""');
         }
 
         if (header === "heading_degree") {
-          value = value + vesselHistoryData["kapal"].calibration;
+          value = value + vesselHistoryData.kapal.calibration;
         }
 
         if (header === "time") {
           value = formatDateTimeDisplay(value);
         }
 
-        return value !== undefined ? value : ""; // Handle undefined values
+        return value !== undefined ? value : "";
       });
 
-      csvRows.push(values.join(",")); // Join values with commas
+      csvRows.push(values.join(","));
     }
 
-    // If more data to process, schedule next chunk
     if (index < data.length) {
       setTimeout(processNextChunk, 0);
     } else {
-      // Create a Blob object with UTF-8 encoding
       const csvString = csvRows.join("\n");
       const bom = "\uFEFF"; // UTF-8 BOM
       const blob = new Blob([bom + csvString], {
@@ -493,53 +416,18 @@ function downloadCSV(filename, data) {
       });
       const url = URL.createObjectURL(blob);
 
-      // Create a download link and trigger download
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url); // Clean up
+      URL.revokeObjectURL(url);
 
       btnDownloadCSV.disabled = false;
       loadingSpinner.style.display = "none";
     }
   }
 
-  // Start processing
   processNextChunk();
 }
-
-btnDownloadCSV.addEventListener("click", () => {
-  downloadCSV(
-    `${currentSelectedMarker}_record_${formatDateTime(
-      startDatetimeFilter
-    )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
-    vesselHistoryData.map((data) => data.record)
-  );
-});
-
-
-
-// let isResizing = false;
-
-// resizer.addEventListener('mousedown', function(e) {
-//     isResizing = true;
-    
-//     document.addEventListener('mousemove', resize);
-//     document.addEventListener('mouseup', stopResize);
-// });
-
-// function resize(e) {
-//   if (!isResizing) return;
-  
-//   const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
-//   sidebar.style.width = `${Math.min(Math.max(newWidth, 150), 500)}px`;
-// }
-
-// function stop() {
-//   isResizing = false;
-//   document.removeEventListener('mousemove', resizeSidebar);
-//   document.removeEventListener('mouseup', stopResizing);
-// }

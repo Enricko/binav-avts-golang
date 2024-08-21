@@ -4,6 +4,7 @@ let dataDevices = {};
 let websocket;
 
 function connectWebSocket() {
+  // websocket = new WebSocket(websocketUrl);
   websocket = new WebSocket(websocketUrl);
   websocket.onopen = () => console.log("WebSocket connected");
   websocket.onmessage = handleWebSocketMessage;

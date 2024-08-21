@@ -240,6 +240,17 @@ func (r *UserController) Login(c *gin.Context) {
 		return
 	}
 
+	// Set token in cookie
+    c.SetCookie(
+        "token",
+        tokenString,
+        expirationHours * 3600, // convert hours to seconds
+        "/",
+        "",
+        false,
+        true,
+    )
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
 		"token":   tokenString,

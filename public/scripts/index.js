@@ -56,7 +56,7 @@ function formatDateTimeDisplay(input) {
 }
 
 const formatDate = (date) => {
-  const pad = (num) => String(num).padStart(2, '0');
+  const pad = (num) => String(num).padStart(2, "0");
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);
   const day = pad(date.getDate());
@@ -68,7 +68,7 @@ const formatDate = (date) => {
 
 // Format the date for the start time with 00:00:00
 const formatDateWithMidnight = (date) => {
-  const pad = (num) => String(num).padStart(2, '0');
+  const pad = (num) => String(num).padStart(2, "0");
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);
   const day = pad(date.getDate());
@@ -81,54 +81,75 @@ function startToEndDatetimeFilterForm() {
 
   // Set default end date to now
   const endDateTime = now;
-  document.getElementById("end-date-time").value = formatDate(endDateTime);
 
   // Set default start date to 3 days ago with time 00:00:00
   const startDateTime = new Date(now);
   startDateTime.setDate(startDateTime.getDate() - 3);
-  document.getElementById("start-date-time").value = formatDateWithMidnight(startDateTime);
 
-  document.getElementById("filter_history_start").textContent = formatDateWithMidnight(startDateTime);
-  document.getElementById("filter_history_end").textContent = formatDate(endDateTime);
+  // Try to set input values if elements exist
+  const startDateTimeInput = document.getElementById("start-date-time");
+  const endDateTimeInput = document.getElementById("end-date-time");
 
-  const start = new Date(startDateTimeInput.value);
-  const end = new Date(endDateTimeInput.value);
+  if (startDateTimeInput) {
+    startDateTimeInput.value = formatDateWithMidnight(startDateTime);
+  }
 
-  startDatetimeFilter = formatToISO(start);
-  endDatetimeFilter = formatToISO(end);
+  if (endDateTimeInput) {
+    endDateTimeInput.value = formatDate(endDateTime);
+  }
+
+  // Try to update filter history text if elements exist
+  const filterHistoryStart = document.getElementById("filter_history_start");
+  const filterHistoryEnd = document.getElementById("filter_history_end");
+
+  if (filterHistoryStart) {
+    filterHistoryStart.textContent = formatDateWithMidnight(startDateTime);
+  }
+
+  if (filterHistoryEnd) {
+    filterHistoryEnd.textContent = formatDate(endDateTime);
+  }
+
+  startDatetimeFilter = formatToISO(startDateTime);
+  endDatetimeFilter = formatToISO(endDateTime);
 }
 
-const togglePassword = document.querySelector('#togglePassword');
-const password = document.querySelector('#password');
-const toggleIcon = document.querySelector('#toggleIcon');
+const togglePassword = document.querySelector("#togglePassword");
+const password = document.querySelector("#password");
+const toggleIcon = document.querySelector("#toggleIcon");
 
-togglePassword.addEventListener('click', function () {
-    // Toggle the type attribute
-    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-    password.setAttribute('type', type);
+togglePassword.addEventListener("click", function () {
+  // Toggle the type attribute
+  const type =
+    password.getAttribute("type") === "password" ? "text" : "password";
+  password.setAttribute("type", type);
 
-    // Toggle the icon
-    toggleIcon.classList.toggle('bi-eye');
-    toggleIcon.classList.toggle('bi-eye-slash');
+  // Toggle the icon
+  toggleIcon.classList.toggle("bi-eye");
+  toggleIcon.classList.toggle("bi-eye-slash");
 });
 
 function moveToNext(current, nextFieldID) {
   if (current.value.length >= 1) {
-      document.getElementById(nextFieldID).focus();
+    document.getElementById(nextFieldID).focus();
   }
 }
 function moveToPrevious(event, currentElement, previousFieldID) {
-  if (event.key === "Backspace" && currentElement.value === "" && previousFieldID) {
-      document.getElementById(previousFieldID).focus();
+  if (
+    event.key === "Backspace" &&
+    currentElement.value === "" &&
+    previousFieldID
+  ) {
+    document.getElementById(previousFieldID).focus();
   }
 }
 
-document.getElementById('otpForm').addEventListener('submit', function (e) {
+document.getElementById("otpForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  let otp = '';
+  let otp = "";
   for (let i = 1; i <= 6; i++) {
-      otp += document.getElementById('otp' + i).value;
+    otp += document.getElementById("otp" + i).value;
   }
-  alert('OTP Entered: ' + otp);
+  alert("OTP Entered: " + otp);
   // Here you can send the OTP value to your server for verification
 });

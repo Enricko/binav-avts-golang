@@ -2,9 +2,9 @@ package routes
 
 import (
 	"golang-app/app/controllers"
+	"golang-app/app/middleware"
 
 	"github.com/gin-gonic/gin"
-
 )
 
 func SetupRouter(r *gin.Engine) {
@@ -15,38 +15,41 @@ func SetupRouter(r *gin.Engine) {
 	vesselController := controllers.NewVesselController()
 	otpController := controllers.NewOtpController()
 
-	r.GET("/", mainController.Index)
-	r.GET("/login", mainController.Login)
-	
-	r.POST("/auth/login", userController.Login)
-	
+	r.Use(middleware.UserAuthMiddleware())
+
+	r.GET("/login", middleware.AlreadyLoggedIn(), mainController.Login)
+
+	r.POST("/auth/login", middleware.AlreadyLoggedIn(), userController.Login)
+
 	r.POST("/forgot-password", userController.InitiatePasswordReset)
 	r.POST("/validate-otp", userController.ValidateOTP)
 	r.POST("/reset-password", userController.ResetPassword)
 
-	r.GET("/mappings", mappingController.GetMappings)
-	r.GET("/mapping/data", mappingController.GetAllMapping)
-	r.POST("/mapping/insert", mappingController.InsertMapping)
-	r.PUT("/mapping/update/:id", mappingController.UpdateMapping)
-	r.POST("/mapping/delete/:id", mappingController.DeleteMapping)
+	protected := r.Group("/")
+	protected.Use(middleware.IsLoggedIn())
+	{
+		protected.GET("/", mainController.Index)
+		protected.GET("/mappings", mappingController.GetMappings)
+		protected.GET("/mapping/data", mappingController.GetAllMapping)
+		protected.POST("/mapping/insert", mappingController.InsertMapping)
+		protected.PUT("/mapping/update/:id", mappingController.UpdateMapping)
+		protected.POST("/mapping/delete/:id", mappingController.DeleteMapping)
 
-	r.GET("/mapping/:id", mappingController.GetMapping)
+		protected.GET("/mapping/:id", mappingController.GetMapping)
 
-	r.GET("/kmz/:id", mappingController.GetKMZFile)
+		protected.GET("/kmz/:id", mappingController.GetKMZFile)
 
+		protected.GET("/user/data", userController.GetUsers)
+		protected.POST("/user/insert", userController.InsertUser)
 
-	r.GET("/user/data", userController.GetUsers)
-	r.POST("/user/insert", userController.InsertUser)
+		protected.GET("/vessel/data", vesselController.GetVessel)
+		protected.GET("/vessel/:call_sign", vesselController.GetVesselByCallSign)
+		protected.POST("/vessel/insert", vesselController.InsertVessel)
+		protected.PUT("/vessel/update/:call_sign", vesselController.UpdateVessel)
+		protected.POST("/vessel/delete/:call_sign", vesselController.DeleteVessel)
 
-
-	r.GET("/vessel/data", vesselController.GetVessel)
-	r.GET("/vessel/:call_sign", vesselController.GetVesselByCallSign)
-	r.POST("/vessel/insert", vesselController.InsertVessel)
-	r.PUT("/vessel/update/:call_sign", vesselController.UpdateVessel)
-	r.POST("/vessel/delete/:call_sign", vesselController.DeleteVessel)
-
-	r.GET("/vessel_records/:call_sign", vesselController.GetVesselRecords)
-	
+		protected.GET("/vessel_records/:call_sign", vesselController.GetVesselRecords)
+	}
 
 	r.POST("/user/sendOtp", otpController.InsertOtp)
 
