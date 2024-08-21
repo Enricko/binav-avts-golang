@@ -136,15 +136,15 @@
         <form id="forgot-password-form">
           <div class="mb-4">
             <!-- <label for="forgotEmail" class="form-label">Email address</label> -->
-            <input type="email" class="form-control" id="forgotEmail" required placeholder="Email Address">
+            <input name="email" type="email" class="form-control" id="forgotEmail" required placeholder="Email Address">
           </div>
-          <button type="submit" class="btn btn-primary w-100 mb-3" >Send OTP Code</button>
+          <button id="btn-forgot" type="submit" class="btn btn-primary w-100 mb-3" >Send OTP Code</button>
           <!-- <button type="button" class="btn btn-link w-100" onclick="showLoginForm()">Back to Login</button> -->
         </form>
       </div>
 
       <div id="OtpForm" style="display: none;">
-        <button type="button" class="btn p-0 me-3 mb-4" onclick="showLoginForm()" aria-label="Go back to login">
+        <button type="button" class="btn p-0 me-3 mb-4" onclick="showForgotPassForm()" aria-label="Go back to login">
           <div class="circular-button" style="background-color: #0e286c; border: #0e286c;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
               <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
@@ -153,22 +153,80 @@
         </button>
         <h5 class="fw-bold mb-2">OTP Verification</h5>
         <p id="otpSubtitle" class="mb-3">We've sent a code to your Email</p>
-        <form id="forgot-password-form">
+        <form id="otp-form">
           <div class="d-flex justify-content-center mb-4" >
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp1" oninput="moveToNext(this, 'otp2')"  onkeydown="moveToPrevious(event, this, null)">
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp2" oninput="moveToNext(this, 'otp3')"  onkeydown="moveToPrevious(event, this, 'otp1')">
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp3" oninput="moveToNext(this, 'otp4')"  onkeydown="moveToPrevious(event, this, 'otp2')">
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp4" oninput="moveToNext(this, 'otp5')"  onkeydown="moveToPrevious(event, this, 'otp3')">
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp5" oninput="moveToNext(this, 'otp6')"  onkeydown="moveToPrevious(event, this, 'otp4')">
-            <input type="text" class="form-control otp-input" maxlength="1" id="otp6" onkeydown="moveToPrevious(event, this, 'otp5')">
-        </div>
-        <button type="submit" class="btn btn-primary w-100 mb-3" >Submit</button>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp1" oninput="moveToNext(this, 'otp2')"  onkeydown="moveToPrevious(event, this, null)" required>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp2" oninput="moveToNext(this, 'otp3')"  onkeydown="moveToPrevious(event, this, 'otp1')" required>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp3" oninput="moveToNext(this, 'otp4')"  onkeydown="moveToPrevious(event, this, 'otp2')" required>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp4" oninput="moveToNext(this, 'otp5')"  onkeydown="moveToPrevious(event, this, 'otp3')" required>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp5" oninput="moveToNext(this, 'otp6')"  onkeydown="moveToPrevious(event, this, 'otp4')" required>
+            <input type="text" class="form-control otp-input" maxlength="1" id="otp6" onkeydown="moveToPrevious(event, this, 'otp5')" required>
+          </div>
+        <button id="btn-submit-otp" type="submit" class="btn btn-primary w-100 mb-3" >Submit</button>
+        </form>
+      </div>
+
+      <div id="ResetPassForm" style="display: none;">
+        <button type="button" class="btn p-0 me-3 mb-4" onclick="showLoginForm()" aria-label="Go back to login">
+          <div class="circular-button" style="background-color: #0e286c; border: #0e286c;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+            </svg>
+          </div>
+        </button>
+        <h5 class="fw-bold mb-2">Change Your Password</h5>
+        <p id="otpSubtitle" class="mb-3">Enter a new password below to change your password</p>
+        <form id="reset-pass-form">
+          <div class="mb-3">
+            <label for="new_password" class="form-label">New Password</label>
+            <input type="password" class="form-control" id="new_password" name="new_password" required placeholder="New Password">
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Confirm Password</label>
+            <input type="password" class="form-control" id="confirmation_password" name="confirmation_password" required placeholder="Confirm your Password">
+          </div>
+        <button id="btn-reset-pass" type="submit" class="btn btn-primary w-100 mb-3" >Submit</button>
         </form>
       </div>
 
     </div>
   </div>
 </div>
+<!-- Alert Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="errorModalLabel">Error</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="title-alert">
+        Invalid Email or password. Please try again.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="successModalLabel">Success</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="title-alert">
+        Your Password has been updated successfully
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
   function showForgotPassword() {
@@ -177,19 +235,24 @@
   }
 
   function showLoginForm() {
-      document.getElementById('forgotPasswordForm').style.display = 'none';
-      document.getElementById('OtpForm').style.display = 'none';
       document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('forgotPasswordForm').style.display = 'none';
+      
   }
 
-  function handleSubmit() {
-    event.preventDefault();
-      document.getElementById('forgotPasswordForm').style.display = 'none';
-      document.getElementById('OtpForm').style.display = 'block';
-      const email = document.getElementById('forgotEmail').value;
-      document.getElementById('otpSubtitle').innerHTML = `We've sent a code to <strong>${email}</strong>`;
+  function showForgotPassForm() {
+    document.getElementById('OtpForm').style.display = 'none';
+      document.getElementById('forgotPasswordForm').style.display = 'block';
   }
-  document.getElementById('forgot-password-form').addEventListener('submit', handleSubmit);
+
+  // function handleSubmit() {
+  //   event.preventDefault();
+  //     document.getElementById('forgotPasswordForm').style.display = 'none';
+  //     document.getElementById('OtpForm').style.display = 'block';
+  //     const email = document.getElementById('forgotEmail').value;
+  //     document.getElementById('otpSubtitle').innerHTML = `We've sent a code to <strong>${email}</strong>`;
+  // }
+  // document.getElementById('forgot-password-form').addEventListener('submit', handleSubmit);
 
   document.getElementById('login-form').addEventListener('submit', function(e) {
       e.preventDefault();
