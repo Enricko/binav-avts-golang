@@ -23,8 +23,11 @@ loginForm.addEventListener("submit", async (event) => {
         })
         .then((data) => {
           buttonLogin.innerHTML = originalText;
-            window.location.href = "/";
-            localStorage.setItem("token", data.token); // Example of saving JWT token
+          localStorage.setItem("token", data.token);
+
+          window.location.href = "/?alert=Login successful&message=Login Successfull";
+            
+             // Example of saving JWT token
         })
         .catch((error) => {
           console.error("Error:", error);
@@ -191,3 +194,14 @@ resetPassForm.addEventListener("submit", async (event) => {
 
 }
 );
+
+
+const btnLogout = document.getElementById("btn-logout");
+
+btnLogout.addEventListener("click", async (event) => {
+  localStorage.clear();
+  window.location.href = "/login";
+  console.log("success");
+  
+} );
+

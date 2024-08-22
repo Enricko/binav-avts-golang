@@ -18,6 +18,7 @@ func SetupRouter(r *gin.Engine) {
 	r.Use(middleware.UserAuthMiddleware())
 
 	r.GET("/login", middleware.AlreadyLoggedIn(), mainController.Login)
+	r.GET("/logout", mainController.Logout)
 
 	r.POST("/auth/login", middleware.AlreadyLoggedIn(), userController.Login)
 

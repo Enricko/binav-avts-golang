@@ -15,7 +15,7 @@
                             <i class="fas fa-user" style="color: black;"></i>
                           </button>
                     </div>
-                    <h5>Binav@gmail.com</h5>
+                    <h5>{{.user.Email}}</h5>
                     
                 </div>
             </div>
@@ -24,15 +24,12 @@
                 <i class="fa-solid fa-key"></i>
 
             </button>
-            <button class="btn btn-danger w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-dismiss="modal"  data-bs-toggle="modal">
+            <button id="btn-logout" class="btn btn-danger w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-dismiss="modal"  data-bs-toggle="modal" onclick="logout()">
                 Log Out
                 <i class="fa-solid fa-right-from-bracket"></i>
-
             </button>
             <!-- <button class="btn btn-danger w-100">Log out</button> -->
-            
-                
-                    
+             
         </div>
       </div>
     </div>
@@ -78,5 +75,41 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function logout() {
+      fetch("/logout", {
+        method: "GET",
+      }).then(response => {
+          if (!response.ok) {
+              return response.json().then(err => { throw err; });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          window.location.href = "/?alert=Logged out successfully&message=Logout Successfull";
+          // const Toast = Swal.mixin({
+          //     toast: true,
+          //     position: "bottom-end",
+          //     showConfirmButton: false,
+          //     timer: 3000,
+          //     timerProgressBar: true,
+          //     didOpen: (toast) => {
+          //       toast.onmouseenter = Swal.stopTimer;
+          //       toast.onmouseleave = Swal.resumeTimer;
+          //     }
+          //   });
+          //   Toast.fire({
+          //     icon: "success",
+          //     title: "Logout Success"
+          //   });
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+ 
+  
+    }
+</script>
 
   {{end}}

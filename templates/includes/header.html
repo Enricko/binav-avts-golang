@@ -131,7 +131,7 @@
         const message = urlParams.get("message");
 
         if (alert && message) {
-          let icon = "info";
+          let icon = "success";
           let title = "Information";
 
           if (alert === "unauthorized") {
@@ -144,13 +144,28 @@
             icon = "info";
             title = "Information";
           }
-
-          Swal.fire({
-            title: title,
-            text: message,
-            icon: icon,
-            confirmButtonText: "OK",
+          const Toast = Swal.mixin({
+            toast: true,
+            position: "bottom-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+              toast.onmouseenter = Swal.stopTimer;
+              toast.onmouseleave = Swal.resumeTimer;
+            },
           });
+          Toast.fire({
+            icon: icon,
+            title: message,
+          });
+
+          // Swal.fire({
+          //   title: title,
+          //   text: message,
+          //   icon: icon,
+          //   confirmButtonText: "OK",
+          // });
 
           // Remove the alert parameters from the URL
           window.history.replaceState(
@@ -162,4 +177,5 @@
       });
     </script>
   </head>
-    {{end}}
+  {{end}}
+</html>

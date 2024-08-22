@@ -120,7 +120,7 @@ func CheckUserLevel(requiredLevel models.Level) gin.HandlerFunc {
 			if authHeader == "" {
 				redirectToAlert(c, "/login", "unauthorized", "Authorization token required")
 				return
-			}
+			}	
 			splitToken := strings.Split(authHeader, "Bearer ")
 			if len(splitToken) != 2 {
 				redirectToAlert(c, "/login", "unauthorized", "Invalid token format")
