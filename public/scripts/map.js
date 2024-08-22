@@ -53,6 +53,8 @@ function toggleRuler() {
   const measurementWindow = document.getElementById("measurement-window");
   measurementWindow.style.display = isRulerOn ? "block" : "none";
 
+  console.log(isRulerOn);
+
   if (isRulerOn) {
     poly = new google.maps.Polyline({
       strokeColor: "#000000",
