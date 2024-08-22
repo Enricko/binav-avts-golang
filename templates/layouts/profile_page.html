@@ -1,115 +1,166 @@
 {{define "profilePage" }}
 
-<div class="modal fade" id="profilePage" tabindex="-1" aria-labelledby="profilePageLabel" aria-hidden="true">
-    <div class="modal-dialog " >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Profile Page</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-2">
-            <div class="p-3">
-                <div class="d-flex flex-column align-items-center">
-                    <div class="d-flex ">
-                        <button type="button" class="btn btn-primary rounded-circle mb-2" style="background-color: #b6b1b1; border: 0; width: 80px; height: 80px;">
-                            <i class="fas fa-user" style="color: black;"></i>
-                          </button>
-                    </div>
-                    <h5>{{.user.Email}}</h5>
-                    
-                </div>
+<div
+  class="modal fade"
+  id="profilePage"
+  tabindex="-1"
+  aria-labelledby="profilePageLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Profile Page</h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body p-2">
+        <div class="p-3">
+          <div class="d-flex flex-column align-items-center">
+            <div class="d-flex">
+              <button
+                type="button"
+                class="btn btn-primary rounded-circle mb-2"
+                style="
+                  background-color: #b6b1b1;
+                  border: 0;
+                  width: 80px;
+                  height: 80px;
+                "
+              >
+                <i class="fas fa-user" style="color: black"></i>
+              </button>
             </div>
-            <button class="btn btn-secondary w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-target="#changePassword" data-bs-toggle="modal">
-                Change Password
-                <i class="fa-solid fa-key"></i>
-
-            </button>
-            <button id="btn-logout" class="btn btn-danger w-100 mb-2 d-flex justify-content-between align-items-center p-2" data-bs-dismiss="modal"  data-bs-toggle="modal" onclick="logout()">
-                Log Out
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-            <!-- <button class="btn btn-danger w-100">Log out</button> -->
-             
+            <h5>{{.user.Email}}</h5>
+          </div>
         </div>
+        <button
+          class="btn btn-secondary w-100 mb-2 d-flex justify-content-between align-items-center p-2"
+          data-bs-target="#changePassword"
+          data-bs-toggle="modal"
+        >
+          Change Password
+          <i class="fa-solid fa-key"></i>
+        </button>
+        <button
+          id="btn-logout"
+          class="btn btn-danger w-100 mb-2 d-flex justify-content-between align-items-center p-2"
+          data-bs-dismiss="modal"
+          data-bs-toggle="modal"
+          onclick="logout()"
+        >
+          Log Out
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+        <!-- <button class="btn btn-danger w-100">Log out</button> -->
       </div>
     </div>
   </div>
+</div>
 
-  <div class="modal fade" id="changePassword" aria-hidden="true" aria-labelledby="changePasswordLabel" tabindex="-1">
-    <div class="modal-dialog ">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalToggleLabel2">Change Password</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div
+  class="modal fade"
+  id="changePassword"
+  aria-hidden="true"
+  aria-labelledby="changePasswordLabel"
+  tabindex="-1"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalToggleLabel2">
+          Change Password
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-floating-sm mb-3">
+          <label for="formOldPass" class="form-label">Old Password</label>
+          <input
+            type="text"
+            class="form-control"
+            id="floatingInput"
+            placeholder="Old Password"
+          />
         </div>
-        <div class="modal-body">
-            <div class="form-floating-sm mb-3">
-                <label for="formOldPass" class="form-label">Old Password</label>
-                <input
-                  type="text"
-                  class="form-control "
-                  id="floatingInput"
-                  placeholder="Old Password" />
-              </div>
-              <div class="form-floating-sm mb-3">
-                <label for="formNewPass" class="form-label">New Password</label>
-                <input
-                  type="text"
-                  class="form-control "
-                  id="floatingInput"
-                  placeholder="New Password" />
-              </div>
-              <div class="form-floating-sm mb-3">
-                <label for="formConfirmPass" class="form-label">Confirm Password</label>
-                <input
-                  type="text"
-                  class="form-control "
-                  id="floatingInput"
-                  placeholder="Confirm Password" />
-              </div>
+        <div class="form-floating-sm mb-3">
+          <label for="formNewPass" class="form-label">New Password</label>
+          <input
+            type="text"
+            class="form-control"
+            id="floatingInput"
+            placeholder="New Password"
+          />
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-target="#profilePage" data-bs-toggle="modal">Cancel</button>
-          <button class="btn btn-primary" data-bs-target="#profilePage" data-bs-toggle="modal">Submit</button>
+        <div class="form-floating-sm mb-3">
+          <label for="formConfirmPass" class="form-label"
+            >Confirm Password</label
+          >
+          <input
+            type="text"
+            class="form-control"
+            id="floatingInput"
+            placeholder="Confirm Password"
+          />
         </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-outline-secondary"
+          data-bs-target="#profilePage"
+          data-bs-toggle="modal"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-primary"
+          data-bs-target="#profilePage"
+          data-bs-toggle="modal"
+        >
+          Submit
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    function logout() {
-      fetch("/logout", {
-        method: "GET",
-      }).then(response => {
-          if (!response.ok) {
-              return response.json().then(err => { throw err; });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          window.location.href = "/?alert=Logged out successfully&message=Logout Successfull";
-          // const Toast = Swal.mixin({
-          //     toast: true,
-          //     position: "bottom-end",
-          //     showConfirmButton: false,
-          //     timer: 3000,
-          //     timerProgressBar: true,
-          //     didOpen: (toast) => {
-          //       toast.onmouseenter = Swal.stopTimer;
-          //       toast.onmouseleave = Swal.resumeTimer;
-          //     }
-          //   });
-          //   Toast.fire({
-          //     icon: "success",
-          //     title: "Logout Success"
-          //   });
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
- 
-  
-    }
+<script>
+
+  function logout() {
+    fetch("/logout", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": "{{ .csrfToken }}",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Logout failed");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log(data.message);
+        // Clear the token cookie on the client side
+        document.cookie =
+          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        // Handle successful logout (e.g., redirect to login page)
+        window.location.href = "/login"; // Adjust the URL as needed
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        // Handle logout error (e.g., show an error message to the user)
+      });
+  }
 </script>
 
-  {{end}}
+{{end}}

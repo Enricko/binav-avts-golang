@@ -67,12 +67,12 @@ func (r *Controller) Login(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", data)
 }
 
-func (r *Controller) Logout(c *gin.Context) {
-	// Set the cookie expiration time to the past to delete it
-	c.SetCookie("token", "", -1, "/", "", false, true)
+// func (r *Controller) Logout(c *gin.Context) {
+// 	// Set the cookie expiration time to the past to delete it
+// 	c.SetCookie("token", "", -1, "/", "", false, true)
 
-	// Optionally, you can add a message or redirect the user to the login page
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Logged out successfully",
-	})
-}
+// 	// Optionally, you can add a message or redirect the user to the login page
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"message": "Logged out successfully",
+// 	})
+// }

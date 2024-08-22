@@ -102,7 +102,7 @@ function initMap() {
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(rulerButton);
 
   const previewButton = createPreviewButton(map);
-  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(previewButton);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(previewButton);
 
   updateKMZLayers();
   setInterval(updateKMZLayers, 5 * 60 * 1000); // Update every 5 minutes

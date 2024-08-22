@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
 )
 
 func hashPassword(password string) (string, error) {
@@ -397,12 +398,12 @@ func (r *UserController) ResetPassword(c *gin.Context) {
 }
 
 func (r *UserController) Logout(c *gin.Context) {
-	tokenString := c.GetHeader("Authorization")
-	if tokenString == "" {
+	// Get token from cookie
+	tokenString, err := c.Cookie("token")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "No token provided"})
 		return
 	}
-	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 	// Parse the token
 	claims := &Claims{}
