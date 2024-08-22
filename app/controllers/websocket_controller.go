@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+
 )
 
 var upgrader = websocket.Upgrader{
@@ -205,26 +206,45 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 		Payload: map[string]int64{"total_records": totalRecords},
 	}
 
-	// Stream records in batches
-	const batchSize = 1000
-	var offset int64 = 0
-	for offset < totalRecords {
-		var records []models.VesselRecord
-		if err := query.Offset(int(offset)).Limit(batchSize).Find(&records).Error; err != nil {
-			recordsChan <- WebSocketMessage{
-				Type:    "error",
-				Payload: map[string]string{"error": err.Error()},
+	// Create a channel for batches and a done channel
+	batchChan := make(chan []models.VesselRecord)
+	doneChan := make(chan struct{})
+
+	// Start a goroutine to send batches
+	go func() {
+		defer close(doneChan)
+		const batchSize = 1000
+		var offset int64 = 0
+		for offset < totalRecords {
+			var records []models.VesselRecord
+			if err := query.Offset(int(offset)).Limit(batchSize).Find(&records).Error; err != nil {
+				recordsChan <- WebSocketMessage{
+					Type:    "error",
+					Payload: map[string]string{"error": err.Error()},
+				}
+				return
 			}
-			return
+			batchChan <- records
+			offset += int64(len(records))
 		}
+	}()
 
-		recordsChan <- WebSocketMessage{
-			Type:    "vessel_records_batch",
-			Payload: records,
+	// Send batches as they come in
+	go func() {
+		for batch := range batchChan {
+			recordsChan <- WebSocketMessage{
+				Type:    "vessel_records_batch",
+				Payload: batch,
+			}
 		}
+	}()
 
-		offset += int64(len(records))
-	}
+	// Wait for all batches to be sent
+	<-doneChan
+	close(batchChan)
+
+	
+	// time.Sleep(1 * time.Second)
 
 	processingTime := time.Since(startTime).Milliseconds()
 

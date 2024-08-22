@@ -85,6 +85,19 @@ function createPreviewButton(map) {
   return previewButton;
 }
 
+function initializeCompleteHistory(payload) {
+  loadingSpinner.style.display = "none";
+
+  btnPlay.disabled = btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
+  progressSlider.value = 0;
+  progressSlider.max = totalVesselHistoryRecords;
+  animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
+  currentAnimationIndex = 0;
+
+  console.log(totalVesselHistoryRecords);
+  console.log(vesselHistoryData);
+}
+
 function toggleVesselDetailSidebar() {
   if (isPreviewActive) {
     sidebar.style.display = "block";
@@ -223,52 +236,16 @@ function updatePlayPauseButton() {
     : '<i class="fas fa-play" style="color: rgb(255, 255, 255);"></i> Play';
 }
 
-async function loadVesselHistoryData(datetimeFrom, datetimeTo) {
-  loadingSpinner.style.display = "block";
-
-  const url = `${getBaseURL()}vessel_records/${currentSelectedMarker}?start=${datetimeFrom}&end=${datetimeTo}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Network response was not ok " + response.statusText);
-    }
-
-    const result = await response.json();
-
-    vesselHistoryData = result.records.map((record) => ({
-      record: record,
-      latlng: {
-        lat: convertDMSToDecimal(record.latitude),
-        lng: convertDMSToDecimal(record.longitude),
-      },
-      dateTime: record.created_at,
-      status: record.telnet_status,
-    }));
-
-    vesselHistoryData.kapal = result.kapal;
-    totalVesselHistoryRecords = vesselHistoryData.length;
-    document.getElementById("total_records").textContent =
-      totalVesselHistoryRecords;
-    loadingSpinner.style.display = "none";
-    btnPlay.disabled = btnDownloadCSV.disabled =
-      totalVesselHistoryRecords === 0;
-    progressSlider.value = 0;
-    progressSlider.max = totalVesselHistoryRecords;
-    animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
-    currentAnimationIndex = 0;
-    vesselPolylineHistory = [];
-    if (historyMarker) {
-      historyMarker.setMap(null);
-      historyMarker = null;
-    }
-    displayVesselHistoryPolyline();
-    initializeHistoryMarker();
-    updateHistoryTable(0);
-  } catch (error) {
-    console.error("There was a problem with the fetch operation:", error);
-    loadingSpinner.style.display = "none";
-  }
+function loadVesselHistoryData(datetimeFrom, datetimeTo) {
+  const message = {
+      type: "vessel_records_request",
+      payload: {
+          call_sign: currentSelectedMarker,
+          start: datetimeFrom,
+          end: datetimeTo
+      }
+  };
+  websocket.send(JSON.stringify(message));
 }
 
 function updateHistorybySlider() {

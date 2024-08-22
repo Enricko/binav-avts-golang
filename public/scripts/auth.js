@@ -5,7 +5,6 @@ const titleAlert = document.getElementById("title-alert");
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   event.stopPropagation();
-    console.log("asdasd");
     if (loginForm.checkValidity()) {
       const form = new FormData(loginForm);
 
@@ -23,10 +22,8 @@ loginForm.addEventListener("submit", async (event) => {
           return response.json();
         })
         .then((data) => {
-          console.log(data);
           buttonLogin.innerHTML = originalText;
             window.location.href = "/";
-            console.log(data.token);
             localStorage.setItem("token", data.token); // Example of saving JWT token
         })
         .catch((error) => {
@@ -56,7 +53,6 @@ function showOtpForm() {
 forgotPassForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   event.stopPropagation();
-    console.log("forgot pass");
     if (forgotPassForm.checkValidity()) {
       const form = new FormData(forgotPassForm);
 
@@ -74,7 +70,6 @@ forgotPassForm.addEventListener("submit", async (event) => {
           return response.json();
         })
         .then((data) => {
-          console.log(data);
           buttonForgot.innerHTML = originalText;
           showOtpForm();
           forgotPassForm.reset();
@@ -129,9 +124,7 @@ otpForm.addEventListener("submit", async (event) => {
           return response.json();
         })
         .then((data) => {
-          console.log(data);
           buttonSubmitOtp.innerHTML = originalText;
-          console.log("Success");
           showResetPassForm();
           otpForm.reset();
         })
@@ -179,9 +172,7 @@ resetPassForm.addEventListener("submit", async (event) => {
           return response.json();
         })
         .then((data) => {
-          console.log(data);
           buttonResetPass.innerHTML = originalText;
-          console.log("Success");
           showLoginForm();
           const successModal = new bootstrap.Modal(document.getElementById('successModal'));
           successModal.show();

@@ -81,152 +81,154 @@
     margin-bottom: 15px;
   }
 </style>
-<div style="display: flex; height: 100vh">
-  <div id="map" style="width: 100vw; height: 100%; position: relative"></div>
-  <div id="measurement-window">
-    <div id="measurement-info">Total Length : 0.0 Km</div>
-  </div>
-
-  <div id="spinner">
-    <div class="spinner-border" role="status">
-      <span class="visually-hidden">Loading...</span>
+<body onload="initMap()">
+  <div style="display: flex; height: 100vh">
+    <div id="map" style="width: 100vw; height: 100%; position: relative"></div>
+    <div id="measurement-window">
+      <div id="measurement-info">Total Length : 0.0 Km</div>
     </div>
-  </div>
-
-  {{template "vessel-detail.sidebar" .}}
-
-  <div
-    class="modal fade"
-    id="filterModal"
-    tabindex="-1"
-    aria-labelledby="filterModal"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group mb-2">
-            <label for="start-date-time" style="font-weight: bold">From</label>
-            <input
-              type="datetime-local"
-              class="form-control"
-              id="start-date-time"
-              name="start-date-time" />
+  
+    <div id="spinner">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  
+    {{template "vessel-detail.sidebar" .}}
+  
+    <div
+      class="modal fade"
+      id="filterModal"
+      tabindex="-1"
+      aria-labelledby="filterModal"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="filterModal">Datetime Filter</h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"></button>
           </div>
-          <div class="form-group mb-2">
-            <label for="end-date-time" style="font-weight: bold">To</label>
-            <input
-              type="datetime-local"
-              class="form-control"
-              id="end-date-time"
-              name="end-date-time" />
+          <div class="modal-body">
+            <div class="form-group mb-2">
+              <label for="start-date-time" style="font-weight: bold">From</label>
+              <input
+                type="datetime-local"
+                class="form-control"
+                id="start-date-time"
+                name="start-date-time" />
+            </div>
+            <div class="form-group mb-2">
+              <label for="end-date-time" style="font-weight: bold">To</label>
+              <input
+                type="datetime-local"
+                class="form-control"
+                id="end-date-time"
+                name="end-date-time" />
+            </div>
+  
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal">
+              Close
+            </button>
+            <button id="submitFilter" type="button" class="btn btn-primary">
+              Save changes
+            </button>
           </div>
-
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal">
-            Close
-          </button>
-          <button id="submitFilter" type="button" class="btn btn-primary">
-            Save changes
-          </button>
         </div>
       </div>
     </div>
-  </div>
-
-  <div
-    class="d-flex justify-content-between w-100 align-items-start p-2 overlay-container"
-    style="
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: none;
-    ">
-    <div class="d-flex align-items-center" style="pointer-events: auto">
-      <div class="btn-group">
-        <div class="dropdown">
-          <button
-            class="btn btn-primary rounded-circle"
+  
+    <div
+      class="d-flex justify-content-between w-100 align-items-start p-2 overlay-container"
+      style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        pointer-events: none;
+      ">
+      <div class="d-flex align-items-center" style="pointer-events: auto">
+        <div class="btn-group">
+          <div class="dropdown">
+            <button
+              class="btn btn-primary rounded-circle"
+              style="
+                border: 0;
+                margin-right: 0.5rem;
+                background-color: white;
+                width: 50px;
+                height: 50px;
+              "
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <i class="fa-solid fa-bars" style="color: black"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  class="dropdown-item"
+                  data-bs-toggle="modal"
+                  data-bs-target="#vesselTable">Vessel</a>
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  data-bs-toggle="modal"
+                  data-bs-target="#mappingTable">Pipeline</a>
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  data-bs-toggle="modal"
+                  data-bs-target="#userTable">User</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+  
+        <div class="autoComplete_wrapper">
+          <input
+            id="vesselSearch"
             style="
-              border: 0;
-              margin-right: 0.5rem;
-              background-color: white;
-              width: 50px;
+              border-radius: 30px;
               height: 50px;
+              padding-left: 20px;
+              padding-right: 20px;
             "
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="fa-solid fa-bars" style="color: black"></i>
-          </button>
-          <ul class="dropdown-menu">
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#vesselTable">Vessel</a>
-            </li>
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#mappingTable">Pipeline</a>
-            </li>
-            <li>
-              <a
-                class="dropdown-item"
-                data-bs-toggle="modal"
-                data-bs-target="#userTable">User</a>
-            </li>
-          </ul>
+            type="search"
+            dir="ltr"
+            spellcheck="false"
+            autocorrect="off"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Search for vessel..." />
         </div>
-      </div>
-
-      <div class="autoComplete_wrapper">
-        <input
-          id="vesselSearch"
+  
+        <button
+          id="searchButton"
+          class="btn btn-primary ml-4 rounded-circle"
           style="
-            border-radius: 30px;
+            background-color: white;
+            border: 0;
+            margin-left: 1rem;
+            width: 50px;
             height: 50px;
-            padding-left: 20px;
-            padding-right: 20px;
-          "
-          type="search"
-          dir="ltr"
-          spellcheck="false"
-          autocorrect="off"
-          autocomplete="off"
-          autocapitalize="off"
-          placeholder="Search for vessel..." />
+          ">
+          <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
+        </button>
       </div>
-
-      <button
-        id="searchButton"
-        class="btn btn-primary ml-4 rounded-circle"
-        style="
-          background-color: white;
-          border: 0;
-          margin-left: 1rem;
-          width: 50px;
-          height: 50px;
-        ">
-        <i class="fa-solid fa-magnifying-glass" style="color: black"></i>
-      </button>
     </div>
   </div>
-</div>
+</body>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
