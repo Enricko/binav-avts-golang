@@ -70,7 +70,11 @@ func main() {
 	// Start Telnet connections in a separate goroutine
 	go telnetController.StartTelnetConnections()
 
-	r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
+	// r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
+	webSocketController := controllers.NewWebSocketController(telnetController)
+
+	// Set up the WebSocket route
+	r.GET("/ws", webSocketController.HandleWebSocket)
 
 	r.LoadHTMLGlob("templates/**/*")
 	routes.SetupRouter(r)

@@ -25,6 +25,11 @@ func SetupRouter(r *gin.Engine) {
 	r.POST("/validate-otp", userController.ValidateOTP)
 	r.POST("/reset-password", userController.ResetPassword)
 
+	// telnetController := controllers.NewTelnetController()
+	// webSocketController := controllers.NewWebSocketController(telnetController)
+
+	// r.GET("/ws", webSocketController.HandleWebSocket)
+
 	protected := r.Group("/")
 	protected.Use(middleware.IsLoggedIn())
 	{

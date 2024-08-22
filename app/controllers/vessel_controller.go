@@ -17,7 +17,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-
 )
 
 type VesselController struct {
@@ -500,7 +499,6 @@ func (r *VesselController) GetVesselRecords(c *gin.Context) {
 	c.Writer.Flush()
 }
 
-// Helper function to convert struct to JSON
 func toJSON(v interface{}) string {
 	b, _ := json.Marshal(v)
 	return string(b)

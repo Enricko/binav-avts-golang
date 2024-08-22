@@ -21,20 +21,28 @@ function connectWebSocket() {
 }
 
 function handleWebSocketMessage(event) {
-  const data = JSON.parse(event.data);
+  const message = JSON.parse(event.data);
+  if (message.type === "realtime_update") {
+    handleRealtimeVessel(message.payload);
+  } else {
+      console.log("Unknown message type:", message.type);
+  }
+}
+
+function handleRealtimeVessel(data){
   const newDevices = Object.keys(data);
 
   const sortedNewDevices = newDevices.sort();
   const sortedCurrentDevices = currentDevices.sort();
 
   if (sortedNewDevices.toString() !== sortedCurrentDevices.toString()) {
-    currentDevices = newDevices;
-    updateAutoComplete(currentDevices);
+      currentDevices = newDevices;
+      updateAutoComplete(currentDevices);
   }
 
   for (const device in data) {
-    dataDevices[device] = data[device];
-    updateMarkerIfNeeded(device, data[device]);
+      dataDevices[device] = data[device];
+      updateMarkerIfNeeded(device, data[device]);
   }
 }
 
