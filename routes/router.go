@@ -34,6 +34,8 @@ func SetupRouter(r *gin.Engine) {
 	protected.Use(middleware.IsLoggedIn())
 	{
 		protected.GET("/", mainController.Index)
+
+		protected.POST("/logout", userController.Logout)
 		protected.GET("/mappings", mappingController.GetMappings)
 		protected.GET("/mapping/data", mappingController.GetAllMapping)
 		protected.POST("/mapping/insert", mappingController.InsertMapping)
