@@ -1,207 +1,339 @@
+// DOM Elements
 const loginForm = document.getElementById("login-form");
+const forgotPassForm = document.getElementById("forgot-password-form");
+const otpForm = document.getElementById("otp-form");
+const resetPassForm = document.getElementById("reset-pass-form");
 const buttonLogin = document.getElementById("btn-login");
+const buttonForgot = document.getElementById("btn-forgot");
+const buttonSubmitOtp = document.getElementById("btn-submit-otp");
+const buttonResetPass = document.getElementById("btn-reset-pass");
 const titleAlert = document.getElementById("title-alert");
+const resendOtpButton = document.getElementById('resendOtpButton');
+const resendTimerSpan = document.getElementById('resendTimer');
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-    if (loginForm.checkValidity()) {
-      const form = new FormData(loginForm);
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.onmouseenter = Swal.stopTimer;
+    toast.onmouseleave = Swal.resumeTimer;
+  },
+});
 
-      const originalText = buttonLogin.textContent;
-      buttonLogin.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+// Variables
+let email = "";
+let otp = "";
+let resendTimer;
 
-      fetch("auth/login", {
-        method: "POST",
-        body: form,
-      })
-        .then(response => {
-          if (!response.ok) {
-              return response.json().then(err => { throw err; });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          buttonLogin.innerHTML = originalText;
-          localStorage.setItem("token", data.token);
 
-          window.location.href = "/?alert=Login successful&message=Login Successfull";
-            
-             // Example of saving JWT token
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          buttonLogin.innerHTML = originalText;
-          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-          titleAlert.innerHTML = `Invalid Email or password. Please try again.`;
-        errorModal.show();
-          
-        });
+// Helper Functions
+function showElement(id) {
+  document.getElementById(id).style.display = "block";
+}
+
+function hideElement(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+function showErrorToast(message) {
+  Toast.fire({
+      icon: 'error',
+      title: message,
+  });
+}
+
+function showSuccessToast(message) {
+  Toast.fire({
+      icon: 'success',
+      title: message,
+  });
+}
+
+
+function isFormDataEmpty(formData) {
+  for (let pair of formData.entries()) {
+    return false; // If there's at least one entry, the FormData is not empty
+  }
+  return true; // If we've gone through all entries and found none, the FormData is empty
+}
+
+// Form Submission Function
+async function submitForm(
+  formData,
+  url,
+  button,
+  successCallback,
+  errorCallback
+) {
+  // Log FormData contents
+  console.log("Form Data Contents:");
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
+
+  // Check if FormData is empty
+  if (isFormDataEmpty(formData)) {
+    console.log("FormData is empty");
+    errorCallback(new Error("Form is empty"));
+    return;
+  }
+
+  setLoadingState(button, true);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw data;
     }
 
+    successCallback(data);
+  } catch (error) {
+    console.error("Error:", error);
+    errorCallback(error);
+  } finally {
+    setLoadingState(button, false);
+  }
 }
-);
 
-const forgotPassForm = document.getElementById("forgot-password-form");
-const buttonForgot = document.getElementById("btn-forgot");
-let email;
-
-function showOtpForm() {
-    document.getElementById('forgotPasswordForm').style.display = 'none';
-    document.getElementById('OtpForm').style.display = 'block';
-    email = document.getElementById('forgotEmail').value;
-    document.getElementById('otpSubtitle').innerHTML = `We've sent a code to <strong>${email}</strong>`;
+// Add this new function for the resend timer
+function startResendTimer() {
+  let timeLeft = 30;
+  setLoadingState(resendOtpButton, false); // Reset loading state
+  resendOtpButton.disabled = true;
+  
+  resendTimer = setInterval(() => {
+      if (timeLeft <= 0) {
+          clearInterval(resendTimer);
+          resendOtpButton.disabled = false;
+          resendOtpButton.textContent = 'Resend OTP';
+      } else {
+          resendOtpButton.textContent = `Resend OTP in ${timeLeft} seconds`;
+          timeLeft--;
+      }
+  }, 1000);
 }
+
+// Modify the existing setLoadingState function
+function setLoadingState(button, isLoading) {
+  button.disabled = isLoading;
+  if (isLoading) {
+      button.dataset.originalText = button.textContent;
+      button.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div> Loading...';
+  } else {
+      button.textContent = button.dataset.originalText || button.textContent;
+  }
+}
+
+// Event Listeners
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const formData = new FormData(loginForm);
+  submitForm(
+    formData,
+    "auth/login",
+    buttonLogin,
+    (data) => {
+      localStorage.setItem("token", data.token);
+      window.location.href =
+        "/?alert=Login successful&message=Login Successful";
+    },
+    (error) =>
+      showErrorToast(
+        error.message || "Invalid Email or password. Please try again."
+      )
+  );
+});
 
 forgotPassForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  event.stopPropagation();
-    if (forgotPassForm.checkValidity()) {
-      const form = new FormData(forgotPassForm);
-
-      const originalText = buttonForgot.textContent;
-      buttonForgot.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
-
-      fetch("forgot-password", {
-        method: "POST",
-        body: form,
-      })
-        .then(response => {
-          if (!response.ok) {
-              return response.json().then(err => { throw err; });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          buttonForgot.innerHTML = originalText;
-          showOtpForm();
-          forgotPassForm.reset();
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          buttonForgot.innerHTML = originalText;
-          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-          titleAlert.innerHTML = `Error `;
-        errorModal.show();
-          
-        });
-    }
-
-}
-);
-
-const otpForm = document.getElementById("otp-form");
-const buttonSubmitOtp = document.getElementById("btn-submit-otp");
-let otp = "";
-
-function showResetPassForm() {
-    document.getElementById('OtpForm').style.display = 'none';
-    document.getElementById('ResetPassForm').style.display = 'block';
-}
+  email = document.getElementById("forgotEmail").value; // Store the email
+  const formData = new FormData(forgotPassForm);
+  submitForm(
+    formData,
+    "forgot-password",
+    buttonForgot,
+    () => {
+      showOtpForm(); // This will now start the resend timer
+      forgotPassForm.reset();
+      showSuccessToast("OTP sent successfully. Please check your email.");
+    },
+    (error) =>
+      showErrorToast(error.message || "Error sending OTP. Please try again.")
+  );
+});
 
 otpForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  event.stopPropagation();
-    if (otpForm.checkValidity()) {
-      
-
-            for (let i = 1; i <= 6; i++) {
-                const otpInput = document.getElementById("otp" + i);
-                otp += otpInput.value;
-            }
-      const form = new FormData(otpForm);
-      form.append('email',email);
-      form.append('otp',otp);
-
-      const originalText = buttonSubmitOtp.textContent;
-      buttonSubmitOtp.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
-
-      fetch("validate-otp", {
-        method: "POST",
-        body: form,
-      })
-        .then(response => {
-          if (!response.ok) {
-              return response.json().then(err => { throw err; });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          buttonSubmitOtp.innerHTML = originalText;
-          showResetPassForm();
-          otpForm.reset();
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          buttonSubmitOtp.innerHTML = originalText;
-          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-          titleAlert.innerHTML = `Invalid OTP`;
-        errorModal.show();
-          
-        });
-    }
-
-}
-);
-
-const resetPassForm = document.getElementById("reset-pass-form");
-const buttonResetPass = document.getElementById("btn-reset-pass");
-
-function showLoginForm() {
-  document.getElementById('ResetPassForm').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
-}
+  otp = Array.from(document.querySelectorAll(".otp-input"))
+    .map((input) => input.value)
+    .join("");
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("otp", otp);
+  submitForm(
+    formData,
+    "validate-otp",
+    buttonSubmitOtp,
+    () => {
+      showResetPassForm();
+      otpForm.reset();
+      showSuccessToast("OTP validated successfully. Please reset your password.");
+    },
+    (error) => showErrorToast(error.message || "Invalid OTP. Please try again.")
+  );
+});
 
 resetPassForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  event.stopPropagation();
-    if (resetPassForm.checkValidity()) {
-      
-      const form = new FormData(resetPassForm);
-      form.append('email',email);
-      form.append('otp',otp);
+  const formData = new FormData(resetPassForm);
+  formData.append("email", email);
+  formData.append("otp", otp);
+  submitForm(
+    formData,
+    "reset-password",
+    buttonResetPass,
+    () => {
+      showLoginForm();
+      showSuccessToast("Password reset successfully. Please login with your new password.");
+      resetPassForm.reset();
+      // Clear the stored email and OTP after successful password reset
+      email = "";
+      otp = "";
+    },
+    (error) =>
+      showErrorToast(
+        error.message || "Error resetting password. Please try again."
+      )
+  );
+});
 
-      const originalText = buttonResetPass.textContent;
-      buttonResetPass.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+resendOtpButton.addEventListener('click', async () => {
+  const formData = new FormData();
+  formData.append('email', email);
 
-      fetch("reset-password", {
-        method: "POST",
-        body: form,
-      })
-        .then(response => {
-          if (!response.ok) {
-              return response.json().then(err => { throw err; });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          buttonResetPass.innerHTML = originalText;
-          showLoginForm();
-          const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-          successModal.show();
-          resetPassForm.reset();
+  try {
+      setLoadingState(resendOtpButton, true);
+      const response = await fetch('forgot-password', {
+          method: 'POST',
+          body: formData
+      });
 
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          buttonResetPass.innerHTML = originalText;
-          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-          titleAlert.innerHTML = error.message;
-        errorModal.show();
-          
-        });
-    }
+      const data = await response.json();
 
+      if (!response.ok) {
+          throw data;
+      }
+
+      showSuccessToast('OTP resent successfully. Please check your email.');
+      startResendTimer(); // Restart the timer after successful resend
+  } catch (error) {
+      showErrorToast(error.message || 'Error resending OTP. Please try again.');
+      // Reset the button state immediately in case of error
+      setLoadingState(resendOtpButton, false);
+  }
+});
+
+// OTP Input Handling
+const otpInputs = document.querySelectorAll(".otp-input");
+
+otpInputs.forEach((input, index) => {
+  input.addEventListener("input", (e) => handleOtpInput(e, index));
+  input.addEventListener("keydown", (e) => handleOtpKeydown(e, index));
+  input.addEventListener("paste", handleOtpPaste);
+});
+
+function handleOtpInput(e, index) {
+  if (e.inputType === "insertFromPaste") {
+    e.preventDefault();
+    const pastedData = e.clipboardData
+      ? e.clipboardData.getData("text")
+      : window.clipboardData.getData("text");
+    fillOtpFromPaste(pastedData);
+  } else if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+    otpInputs[index + 1].focus();
+  }
 }
-);
 
+function handleOtpKeydown(e, index) {
+  if (e.key === "Backspace" && e.target.value === "" && index > 0) {
+    otpInputs[index - 1].focus();
+  }
+}
 
-const btnLogout = document.getElementById("btn-logout");
+function handleOtpPaste(e) {
+  e.preventDefault();
+  const pastedData = e.clipboardData
+    ? e.clipboardData.getData("text")
+    : window.clipboardData.getData("text");
+  fillOtpFromPaste(pastedData);
+}
 
-btnLogout.addEventListener("click", async (event) => {
-  localStorage.clear();
-  window.location.href = "/login";
-  console.log("success");
-  
-} );
+function fillOtpFromPaste(pastedData) {
+  const otpDigits = pastedData.replace(/\D/g, "").slice(0, 6).split("");
+  otpInputs.forEach((input, index) => {
+    input.value = otpDigits[index] || "";
+  });
+  if (otpDigits.length < 6) {
+    otpInputs[Math.min(otpDigits.length, 5)].focus();
+  }
+}
 
+// Navigation Functions
+function showOtpForm() {
+  hideElement("forgotPasswordForm");
+  showElement("OtpForm");
+  document.getElementById(
+    "otpSubtitle"
+  ).innerHTML = `We've sent a code to <strong>${email}</strong>`;
+  startResendTimer(); // Start the timer when showing the OTP form
+}
+
+function showResetPassForm() {
+  hideElement("OtpForm");
+  showElement("ResetPassForm");
+}
+
+function showForgotPassword() {
+  hideElement("loginForm");
+  showElement("forgotPasswordForm");
+  hideElement("OtpForm");
+}
+
+function showLoginForm() {
+  showElement("loginForm");
+  hideElement("forgotPasswordForm");
+  hideElement("OtpForm");
+  hideElement("ResetPassForm");
+}
+
+function showForgotPassForm() {
+  hideElement("OtpForm");
+  showElement("forgotPasswordForm");
+}
+
+// Password Toggle Functionality
+function setupPasswordToggle() {
+  const passwordInput = document.getElementById("password");
+  const toggleButton = document.getElementById("togglePassword");
+  const toggleIcon = document.getElementById("toggleIcon");
+
+  toggleButton.addEventListener("click", function () {
+    const type =
+      passwordInput.getAttribute("type") === "password" ? "text" : "password";
+    passwordInput.setAttribute("type", type);
+    toggleIcon.classList.toggle("bi-eye");
+    toggleIcon.classList.toggle("bi-eye-slash");
+  });
+}
+
+// Initialize
+document.addEventListener("DOMContentLoaded", setupPasswordToggle);
