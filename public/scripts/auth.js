@@ -69,23 +69,26 @@ async function submitForm(
   errorCallback
 ) {
   // Log FormData contents
-  console.log("Form Data Contents:");
-  for (let [key, value] of formData.entries()) {
-    console.log(key, value);
-  }
+  // console.log("Form Data Contents:");
+  // for (let [key, value] of formData.entries()) {
+  //   console.log(key, value);
+  // }
 
-  // Check if FormData is empty
-  if (isFormDataEmpty(formData)) {
-    console.log("FormData is empty");
-    errorCallback(new Error("Form is empty"));
-    return;
-  }
+  // // Check if FormData is empty
+  // if (isFormDataEmpty(formData)) {
+  //   console.log("FormData is empty");
+  //   errorCallback(new Error("Form is empty"));
+  //   return;
+  // }
 
   setLoadingState(button, true);
 
   try {
     const response = await fetch(url, {
       method: "POST",
+      headers: {
+        "X-CSRF-Token": getCsrfToken(),
+      },
       body: formData,
     });
 

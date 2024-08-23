@@ -55,10 +55,10 @@ func main() {
 	r.Use(sessions.Sessions("mysession", store))
 
 	excludedPaths := []string{
-		"/auth/login",
-		"/forgot-password",
-		"/reset-password",
-		"/validate-otp",
+		// "/auth/login",
+		// "/forgot-password",
+		// "/reset-password",
+		// "/validate-otp",
 		// Add more paths as needed
 	}
 

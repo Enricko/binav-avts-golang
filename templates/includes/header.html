@@ -10,6 +10,7 @@
     />
     <meta name="description" content />
     <meta name="author" content />
+    <meta name="csrf-token" content="{{ .csrfToken }}" />
     <title>Binav AVTS</title>
 
     <link rel="stylesheet" href="/public/style.css" />
@@ -176,6 +177,11 @@
           );
         }
       });
+      function getCsrfToken() {
+        return document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
+      }
     </script>
   </head>
   {{end}}

@@ -125,6 +125,7 @@
           <h5 class="fw-bold mb-4">Log in to your Account</h5>
           <br />
           <form id="login-form">
+            <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
             <div class="mb-3">
               <!-- <label for="email" class="form-label">Email address</label> -->
               <input
