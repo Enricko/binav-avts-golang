@@ -56,7 +56,7 @@ func main() {
 
 	excludedPaths := []string{
 		// Add more paths as needed
-	}
+	} 
 
 	// Use the NoCSRF middleware with the exclusion list
 	r.Use(middleware.NoCSRF(excludedPaths))
