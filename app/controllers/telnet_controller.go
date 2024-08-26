@@ -115,7 +115,7 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
+			time.Sleep(15 * time.Second)
 
 			var updatedServers []models.IPKapal
 			err := database.DB.Preload("Kapal").Find(&updatedServers).Error
