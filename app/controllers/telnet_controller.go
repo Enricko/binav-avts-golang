@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
+
 )
 
 type TelnetController struct {
@@ -199,7 +200,9 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 			default:
 				if err := r.connectAndRead(server, nmeaDataChan, waterDepthChan); err != nil {
 					// log.Printf("Error handling connection for %s: %v", server.CallSign, err)
-					r.updateStatus(server.CallSign, models.Disconnected)
+					if models.TypeIP(server.TypeIP) != "depth" {
+						r.updateStatus(server.CallSign, models.Disconnected)
+					}
 					// Immediately try to reconnect
 				}
 			}
