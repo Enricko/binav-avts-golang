@@ -63,7 +63,14 @@ function handleVesselRecordsCount(payload) {
 }
 
 function handleVesselRecordsBatch(records) {
-  const newRecords = records.map((record) => ({
+  if (vesselHistoryData.length >= totalVesselHistoryRecords) {
+    return; // Already have all the records we need
+  }
+
+  const remainingSpace = totalVesselHistoryRecords - vesselHistoryData.length;
+  const recordsToAdd = records.slice(0, remainingSpace);
+
+  const newRecords = recordsToAdd.map((record) => ({
     record,
     latlng: {
       lat: convertDMSToDecimal(record.latitude),
@@ -78,7 +85,7 @@ function handleVesselRecordsBatch(records) {
   document.getElementById("fetch_time").textContent = 
     `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
 
-  if (isProcessingComplete && vesselHistoryData.length <= totalVesselHistoryRecords) {
+  if (vesselHistoryData.length === totalVesselHistoryRecords) {
     processCompletedData();
   }
 }
