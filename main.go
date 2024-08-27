@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"golang-app/app/controllers"
 	"golang-app/app/middleware"
 	"golang-app/database"
 	"golang-app/routes"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -33,51 +39,125 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// Define a flag for setting the mode
+	mode := flag.String("mode", "debug", "Set the runtime mode (debug/release)")
+	flag.Parse()
+
+	// Load .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using existing environment variables")
 	}
 
+	// Check for MODE environment variable, override flag if present
+	if envMode := os.Getenv("GIN_MODE"); envMode != "" {
+		*mode = envMode
+	}
+
+	// Set Gin mode
+	switch *mode {
+	case "debug", "development":
+		gin.SetMode(gin.DebugMode)
+		log.Println("Running in Debug/Development mode")
+	case "release", "production":
+		gin.SetMode(gin.ReleaseMode)
+		log.Println("Running in Release/Production mode")
+	default:
+		log.Printf("Unknown mode: %s, defaulting to Debug mode", *mode)
+		gin.SetMode(gin.DebugMode)
+	}
+
+	// Initialize database
 	database.Init()
+	
+	defer database.DB.Close()
 
-	r := gin.Default()
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-	// r.Use(CORSMiddleware())
+	// Initialize router
+	r := gin.New()
 
-	store := cookie.NewStore([]byte("secret"))
+	// Use Logger and Recovery middleware
+	if gin.Mode() == gin.DebugMode {
+		r.Use(gin.Logger())
+	}
+	r.Use(gin.Recovery())
+
+	// CORS configuration
+	corsConfig := cors.DefaultConfig()
+	if gin.Mode() == gin.ReleaseMode {
+		corsConfig.AllowOrigins = []string{"https://yourdomain.com", "https://www.yourdomain.com"}
+	} else {
+		corsConfig.AllowAllOrigins = true
+	}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	corsConfig.ExposeHeaders = []string{"Content-Length"}
+	corsConfig.AllowCredentials = true
+	corsConfig.MaxAge = 12 * time.Hour
+	r.Use(cors.New(corsConfig))
+
+	// Session configuration
+	store := cookie.NewStore([]byte(os.Getenv("SESSION_SECRET")))
+	store.Options(sessions.Options{
+		HttpOnly: true,
+		Secure:   gin.Mode() == gin.ReleaseMode, // Secure in production
+		SameSite: http.SameSiteStrictMode,
+	})
 	r.Use(sessions.Sessions("mysession", store))
 
+	// CSRF protection
 	excludedPaths := []string{
-		// Add more paths as needed
-	} 
-
-	// Use the NoCSRF middleware with the exclusion list
+		// Add paths to exclude from CSRF protection
+	}
 	r.Use(middleware.NoCSRF(excludedPaths))
 
+	// Initialize controllers
 	telnetController := controllers.NewTelnetController()
-
-	// Start Telnet connections in a separate goroutine
-	go telnetController.StartTelnetConnections()
-
-	// r.GET("/ws/kapal", telnetController.KapalTelnetWebsocketHandler)
 	webSocketController := controllers.NewWebSocketController(telnetController)
 
-	// Set up the WebSocket route
-	r.GET("/ws", webSocketController.HandleWebSocket)
+	// Start Telnet connections
+	go func() {
+		telnetController.StartTelnetConnections()
+	}()
 
+	// Set up routes
+	r.GET("/ws", webSocketController.HandleWebSocket)
 	r.LoadHTMLGlob("templates/**/*")
 	routes.SetupRouter(r)
-
 	r.Static("/public", "./public")
 
-	r.Run("0.0.0.0:8080")
+	// Conditional debugging tools
+	if gin.Mode() == gin.DebugMode {
+		// Add development-specific routes or middleware here
+		r.GET("/debug/vars" /* ... */)
+	}
 
-	defer database.DB.Close()
+	// Server configuration
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	srv := &http.Server{
+		Addr:    "0.0.0.0:" + port,
+		Handler: r,
+	}
+
+	// Graceful shutdown
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }
