@@ -166,7 +166,8 @@ function resetVesselState() {
   if (btnDownloadCSV) {
     btnPlay.disabled = btnDownloadCSV.disabled = true;
   }
-  vesselPolylineHistory = [];
+  
+  clearPolyline();
   if (historyMarker) {
     historyMarker.setMap(null);
     historyMarker = null;

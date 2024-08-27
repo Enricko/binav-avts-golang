@@ -36,28 +36,42 @@ const modalInstance = new bootstrap.Modal(filterModal);
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
-  if (progressSlider) {
-    progressSlider.addEventListener("input", updateHistorybySlider);
-  }
-  if (btnPlay) btnPlay.addEventListener("click", togglePlayPause);
   if (btnLoad)
     btnLoad.addEventListener("click", () => {
-      loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
+        preventDoubleClick(btnLoad, () => {
+            loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
+        });
     });
-  if (submitFilter)
-    submitFilter.addEventListener("click", function (event) {
-      startEndDatetimeFilterForm();
-      modalInstance.hide();
+
+if (btnPlay)
+    btnPlay.addEventListener("click", () => {
+        preventDoubleClick(btnPlay, togglePlayPause);
     });
-  if (btnDownloadCSV)
+
+if (btnDownloadCSV)
     btnDownloadCSV.addEventListener("click", () => {
-      downloadCSV(
-        `${currentSelectedMarker}_record_${formatDateTime(
-          startDatetimeFilter
-        )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
-        vesselHistoryData.map((data) => data.record)
-      );
+        preventDoubleClick(btnDownloadCSV, () => {
+            downloadCSV(
+                `${currentSelectedMarker}_record_${formatDateTime(
+                    startDatetimeFilter
+                )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
+                vesselHistoryData.map((data) => data.record)
+            );
+        });
     });
+    if (submitFilter)
+      submitFilter.addEventListener("click", function (event) {
+        startEndDatetimeFilterForm();
+        modalInstance.hide();
+      });
+    const filterButton = document.querySelector('[data-bs-toggle="modal"][data-bs-target="#filterModal"]');
+    if (filterButton) {
+        filterButton.addEventListener("click", () => {
+            preventDoubleClick(filterButton, () => {
+                // The modal will be shown by Bootstrap, so we don't need to do anything here
+            });
+        });
+    }
 });
 
 $("#filterModal").on("hidden.bs.modal", function () {
@@ -85,17 +99,15 @@ function createPreviewButton(map) {
   return previewButton;
 }
 
-function initializeCompleteHistory(payload) {
-  loadingSpinner.style.display = "none";
-
+function initializeCompleteHistory() {
   btnPlay.disabled = btnDownloadCSV.disabled = totalVesselHistoryRecords === 0;
   progressSlider.value = 0;
   progressSlider.max = totalVesselHistoryRecords;
   animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
   currentAnimationIndex = 0;
 
-  console.log(totalVesselHistoryRecords);
-  console.log(vesselHistoryData);
+  // console.log(totalVesselHistoryRecords);
+  // console.log(vesselHistoryData);
 }
 
 function toggleVesselDetailSidebar() {
@@ -111,8 +123,23 @@ function toggleVesselDetailSidebar() {
   isPreviewActive = !isPreviewActive;
 }
 
+function clearPolyline() {
+  if(vesselPolylineHistory){
+    if (vesselPolylineHistory.length > 0) {
+    vesselPolylineHistory.forEach(polyline => polyline.setMap(null));
+      vesselPolylineHistory = [];
+    }
+  }
+}
+
 function displayVesselHistoryPolyline() {
-  if (vesselHistoryData.length === 0) return;
+  // clearPolyline();
+
+  if (vesselHistoryData.length === 0){
+    btnLoad.disabled = false;
+    loadingSpinner.style.display = "none";
+    return;
+  } 
 
   vesselPolylineHistory = [];
   vesselPolylineHistory.forEach((polyline) => polyline.setMap(null));
@@ -133,6 +160,10 @@ function displayVesselHistoryPolyline() {
   }
 
   map.setCenter(vesselHistoryData[vesselHistoryData.length - 1].latlng);
+
+  btnLoad.disabled = false;
+  loadingSpinner.style.display = "none";
+
 }
 
 function createPolylineSegment(path, color) {
@@ -237,6 +268,9 @@ function updatePlayPauseButton() {
 }
 
 function loadVesselHistoryData(datetimeFrom, datetimeTo) {
+  // Show loading spinner
+  loadingSpinner.style.display = "block";
+
   const message = {
       type: "vessel_records_request",
       payload: {
@@ -246,6 +280,7 @@ function loadVesselHistoryData(datetimeFrom, datetimeTo) {
       }
   };
   websocket.send(JSON.stringify(message));
+
 }
 
 function updateHistorybySlider() {

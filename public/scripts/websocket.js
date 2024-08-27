@@ -60,12 +60,15 @@ function handleRealtimeVessel(data) {
 }
 
 function handleVesselRecordsStart(payload) {
+  
+  clearPolyline();
   vesselHistoryData = [];
   isProcessingComplete = false;
   fetchStartTime = Date.now();
   document.getElementById("spinner").style.display = "block";
   document.getElementById("fetch_time").textContent = "Fetching...";
   vesselHistoryData.kapal = payload.kapal;
+  btnLoad.disabled = true;
   // console.log(ve);
 }
 
@@ -88,31 +91,36 @@ function handleVesselRecordsBatch(records) {
 
   vesselHistoryData.push(...newRecords);
 
-  document.getElementById("fetch_time").textContent = `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
+  document.getElementById(
+    "fetch_time"
+  ).textContent = `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
 
-  if (isProcessingComplete && vesselHistoryData.length <= totalVesselHistoryRecords) {
+  if (
+    isProcessingComplete &&
+    vesselHistoryData.length <= totalVesselHistoryRecords
+  ) {
     processCompletedData();
-}
+  }
 }
 
-function handleVesselRecordsComplete(payload) {
+function handleVesselRecordsComplete() {
   // console.log(`Finished receiving records. Processing time: ${payload.processing_time} ms`);
   isProcessingComplete = true;
   
   // Only process the data if we've received all expected records
   if (vesselHistoryData.length >= totalVesselHistoryRecords) {
-    processCompletedData(payload);
+    processCompletedData();
   } else {
-      console.log("Waiting for final batches...");
+    console.log("Waiting for final batches...");
   }
 }
 
-function processCompletedData(payload) {
+function processCompletedData() {
   const fetchEndTime = Date.now();
   const fetchDuration = fetchEndTime - fetchStartTime;
   displayFetchTime(fetchDuration);
 
-  initializeCompleteHistory(payload);
+  initializeCompleteHistory();
 
   displayVesselHistoryPolyline();
   initializeHistoryMarker();
@@ -122,13 +130,13 @@ function processCompletedData(payload) {
 function displayFetchTime(duration) {
   let displayText;
   if (duration < 1000) {
-      displayText = `${duration} ms`;
+    displayText = `${duration} ms`;
   } else if (duration < 60000) {
-      displayText = `${(duration / 1000).toFixed(2)} sec`;
+    displayText = `${(duration / 1000).toFixed(2)} sec`;
   } else {
-      const minutes = Math.floor(duration / 60000);
-      const seconds = ((duration % 60000) / 1000).toFixed(2);
-      displayText = `${minutes} min ${seconds} sec`;
+    const minutes = Math.floor(duration / 60000);
+    const seconds = ((duration % 60000) / 1000).toFixed(2);
+    displayText = `${minutes} min ${seconds} sec`;
   }
   document.getElementById("fetch_time").textContent = displayText;
 }
