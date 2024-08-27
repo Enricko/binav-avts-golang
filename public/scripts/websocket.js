@@ -98,8 +98,8 @@ async function processCompletedData() {
 
   initializeCompleteHistory();
   await displayVesselHistoryPolyline();
-  initializeHistoryMarker();
   updateHistoryTable(0);
+  // initializeHistoryMarker();
 }
 
 function displayFetchTime(duration) {
