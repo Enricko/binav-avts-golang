@@ -162,12 +162,12 @@ function getDataKapalMarker(device) {
   }
 }
 
-function resetVesselState() {
+async function resetVesselState() {
   if (btnDownloadCSV) {
     btnPlay.disabled = btnDownloadCSV.disabled = true;
   }
   
-  clearPolyline();
+  await clearPolylines();
   if (historyMarker) {
     historyMarker.setMap(null);
     historyMarker = null;

@@ -8,7 +8,7 @@ let vesselHistoryData = [];
 let vesselHistoryDatetime = [];
 let totalVesselHistoryRecords = 0;
 
-let vesselPolylineHistory;
+let vesselPolylineHistory = [];
 let isAnimationPlaying = false;
 let animationTimeoutID;
 let shouldStopAnimation = false;
@@ -38,40 +38,38 @@ const modalInstance = new bootstrap.Modal(filterModal);
 document.addEventListener("DOMContentLoaded", () => {
   if (btnLoad)
     btnLoad.addEventListener("click", () => {
-        preventDoubleClick(btnLoad, () => {
-            loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
-        });
+        // preventDoubleClick(btnLoad, () => {
+          // });
+          loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter);
     });
 
 if (btnPlay)
     btnPlay.addEventListener("click", () => {
-        preventDoubleClick(btnPlay, togglePlayPause);
+        togglePlayPause();
     });
 
 if (btnDownloadCSV)
     btnDownloadCSV.addEventListener("click", () => {
-        preventDoubleClick(btnDownloadCSV, () => {
             downloadCSV(
                 `${currentSelectedMarker}_record_${formatDateTime(
                     startDatetimeFilter
                 )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
                 vesselHistoryData.map((data) => data.record)
             );
-        });
     });
     if (submitFilter)
       submitFilter.addEventListener("click", function (event) {
         startEndDatetimeFilterForm();
         modalInstance.hide();
       });
-    const filterButton = document.querySelector('[data-bs-toggle="modal"][data-bs-target="#filterModal"]');
-    if (filterButton) {
-        filterButton.addEventListener("click", () => {
-            preventDoubleClick(filterButton, () => {
-                // The modal will be shown by Bootstrap, so we don't need to do anything here
-            });
-        });
-    }
+    // const filterButton = document.querySelector('[data-bs-toggle="modal"][data-bs-target="#filterModal"]');
+    // if (filterButton) {
+    //     filterButton.addEventListener("click", () => {
+    //         preventDoubleClick(filterButton, () => {
+    //             // The modal will be shown by Bootstrap, so we don't need to do anything here
+    //         });
+    //     });
+    // }
 });
 
 $("#filterModal").on("hidden.bs.modal", function () {
@@ -123,59 +121,70 @@ function toggleVesselDetailSidebar() {
   isPreviewActive = !isPreviewActive;
 }
 
-function clearPolyline() {
-  if(vesselPolylineHistory){
-    if (vesselPolylineHistory.length > 0) {
-    vesselPolylineHistory.forEach(polyline => polyline.setMap(null));
-      vesselPolylineHistory = [];
-    }
-  }
-}
+async function clearPolylines() {
+  const promises = vesselPolylineHistory.map(polyline => {
+    return new Promise(resolve => {
+      polyline.setMap(null);
+      resolve();
+    });
+  });
 
-function displayVesselHistoryPolyline() {
-  // clearPolyline();
-
-  if (vesselHistoryData.length === 0){
-    btnLoad.disabled = false;
-    loadingSpinner.style.display = "none";
-    return;
-  } 
-
+  await Promise.all(promises);
   vesselPolylineHistory = [];
-  vesselPolylineHistory.forEach((polyline) => polyline.setMap(null));
-
-  let currentSegment = [];
-  let currentColor = getPolylineColor(vesselHistoryData[0].status);
-
-  vesselHistoryData.forEach((data, index) => {
-    currentSegment.push(data.latlng);
-
-    createPolylineSegment(currentSegment, currentColor);
-    currentSegment = [data.latlng];
-    currentColor = getPolylineColor(data.status);
-  });
-
-  if (currentSegment.length > 0) {
-    createPolylineSegment(currentSegment, currentColor);
-  }
-
-  map.setCenter(vesselHistoryData[vesselHistoryData.length - 1].latlng);
-
-  btnLoad.disabled = false;
-  loadingSpinner.style.display = "none";
-
 }
 
-function createPolylineSegment(path, color) {
-  const polyline = new google.maps.Polyline({
-    path: path,
-    geodesic: true,
-    strokeColor: color,
-    strokeOpacity: 1.0,
-    strokeWeight: 2,
+async function displayVesselHistoryPolyline() {
+  if (vesselHistoryData.length === 0) {
+    btnLoad.disabled = false;
+    document.getElementById("spinner").style.display = "none";
+    return;
+  }
+
+  try {
+    await clearPolylines();
+
+    let currentSegment = [];
+    let currentColor = getPolylineColor(vesselHistoryData[0].status);
+
+    for (let index = 0; index < vesselHistoryData.length; index++) {
+      const data = vesselHistoryData[index];
+      currentSegment.push(data.latlng);
+
+      if (index === vesselHistoryData.length - 1 || data.status !== vesselHistoryData[index + 1].status) {
+        await createPolylineSegment(currentSegment, currentColor);
+        currentSegment = [data.latlng];
+        currentColor = index < vesselHistoryData.length - 1 ? getPolylineColor(vesselHistoryData[index + 1].status) : currentColor;
+      }
+
+      // Optionally, add a small delay to prevent UI freezing for large datasets
+      if (index % 100 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    map.setCenter(vesselHistoryData[vesselHistoryData.length - 1].latlng);
+  } catch (error) {
+    console.error("Error displaying vessel history polyline:", error);
+  } finally {
+    btnLoad.disabled = false;
+    document.getElementById("spinner").style.display = "none";
+  }
+}
+
+
+async function createPolylineSegment(path, color) {
+  return new Promise(resolve => {
+    const polyline = new google.maps.Polyline({
+      path: path,
+      geodesic: true,
+      strokeColor: color,
+      strokeOpacity: 1.0,
+      strokeWeight: 2,
+    });
+    polyline.setMap(map);
+    vesselPolylineHistory.push(polyline);
+    resolve();
   });
-  polyline.setMap(map);
-  vesselPolylineHistory.push(polyline);
 }
 
 function getPolylineColor(telnetStatus) {

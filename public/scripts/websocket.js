@@ -59,9 +59,9 @@ function handleRealtimeVessel(data) {
   }
 }
 
-function handleVesselRecordsStart(payload) {
+async function handleVesselRecordsStart(payload) {
   
-  clearPolyline();
+  await clearPolylines();
   vesselHistoryData = [];
   isProcessingComplete = false;
   fetchStartTime = Date.now();
@@ -115,14 +115,14 @@ function handleVesselRecordsComplete() {
   }
 }
 
-function processCompletedData() {
+async function processCompletedData() {
   const fetchEndTime = Date.now();
   const fetchDuration = fetchEndTime - fetchStartTime;
   displayFetchTime(fetchDuration);
 
   initializeCompleteHistory();
 
-  displayVesselHistoryPolyline();
+  await displayVesselHistoryPolyline();
   initializeHistoryMarker();
   updateHistoryTable(0);
 }
