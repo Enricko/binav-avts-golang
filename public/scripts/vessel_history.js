@@ -36,6 +36,9 @@ const modalInstance = new bootstrap.Modal(filterModal);
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
+  if (progressSlider) {
+    progressSlider.addEventListener("input", updateHistorybySlider);
+  }
   if (btnLoad)
     btnLoad.addEventListener("click", () => {
         // preventDoubleClick(btnLoad, () => {
@@ -466,6 +469,54 @@ function downloadCSV(filename, data) {
       });
       const url = URL.createObjectURL(blob);
 
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      btnDownloadCSV.disabled = false;
+      loadingSpinner.style.display = "none";
+    }
+  }
+
+  processNextChunk();
+}
+
+function downloadCSV(filename, data) {
+  btnDownloadCSV.disabled = true;
+  loadingSpinner.style.display = "block";
+  const headers = ["time", "latitude", "longitude", "heading_degree", "speed_in_knots", "gps_quality_indicator", "water_depth"];
+  const headerMapping = {
+    time: "created_at", latitude: "latitude", longitude: "longitude", heading_degree: "heading_degree",
+    speed_in_knots: "speed_in_knots", gps_quality_indicator: "gps_quality_indicator", water_depth: "water_depth",
+  };
+  const csvRows = [headers.join(",")];
+  let index = 0;
+
+  function processNextChunk() {
+    const chunkSize = 1000;
+    for (let i = 0; i < chunkSize && index < data.length; i++, index++) {
+      const row = data[index];
+      const values = headers.map((header) => {
+        let value = row[headerMapping[header]];
+        if (header === "water_depth" && typeof value === "number") value = formatWaterDepthNumber(value);
+        if (header === "latitude" || header === "longitude") value = value.replace(/Â°/g, "°").replace(/"/g, '""');
+        if (header === "heading_degree") value = value + vesselHistoryData.kapal.calibration;
+        if (header === "time") value = formatDateTimeDisplay(value);
+        return value !== undefined ? value : "";
+      });
+      csvRows.push(values.join(","));
+    }
+    if (index < data.length) {
+      setTimeout(processNextChunk, 0);
+    } else {
+      const csvString = csvRows.join("\n");
+      const bom = "\uFEFF";
+      const blob = new Blob([bom + csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
