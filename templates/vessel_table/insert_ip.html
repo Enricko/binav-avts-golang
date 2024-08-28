@@ -1,0 +1,104 @@
+{{define "insertIp"}}
+<div
+  class="modal fade"
+  id="insertIp"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="insertIpLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Insert IP  <span id="ipTitle"></span></h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-target="#ipTable"
+          data-bs-toggle="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body ">
+        <form
+          id="formInsertIp"
+          class="needs-validation"
+          enctype="multipart/form-data"
+          novalidate
+        >
+          <input type="hidden" name="_csrf" value="{{ .csrfToken }}" />
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="ip" class="form-label">IP</label>
+              <input
+                type="text"
+                class="form-control"
+                id="ip"
+                name="ip"
+                required
+              />
+              <div class="invalid-feedback">Please provide a IP.</div>
+            </div>
+            <div class="col-md-6">
+              <label for="port" class="form-label">PORT</label>
+              <input
+                type="text"
+                class="form-control"
+                id="port"
+                name="port"
+                required
+              />
+              <div class="invalid-feedback">Please provide a PORT.</div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="recordStatus" class="form-label">Type IP</label>
+            <select class="form-select" id="recordStatus" name="record_status" required>
+              <option value="true">NMEA</option>
+              <option value="false">Water Depth</option>
+            </select>
+            <div class="invalid-feedback">Please select a Type IP.</div>
+          </div>
+          <div class="d-flex justify-content-end">
+
+              <button type="submit" id="submitIpButton" class="btn btn-primary ">Submit</button>
+          </div>
+        </form>
+
+        <hr>
+        <div class="row">
+            <div class="col">
+              <div class="table-responsive">
+                <table
+                  id="ip-table"
+                  class="table table-striped table-hover table-bordered"
+                >
+                  <thead class="table-dark">
+                    <tr>
+                      <th>IP</th>
+                      <th>PORT</th>
+                      <th>Type IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Table content will be dynamically populated by DataTables -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-target="#vesselTable"
+          data-bs-toggle="modal"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

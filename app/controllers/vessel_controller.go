@@ -499,6 +499,39 @@ func (r *VesselController) GetVesselRecords(c *gin.Context) {
 	c.Writer.Flush()
 }
 
+type IpType string
+
+const (
+	NMEA       IpType = "nmea"
+	WATERDEPTH IpType = "water_depth"
+)
+
+func (r *VesselController) InsertIpPort(c *gin.Context) {
+	var input struct {
+		CallSign string `form:"call_sign" json:"call_sign" binding:"required"`
+		Type     IpType `form:"type" json:"type" binding:"required"`
+		IP       string `form:"ip" json:"ip" binding:"required"`
+		Port     uint16 `form:"port" json:"port" binding:"required"`
+	}
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind data"})
+		return
+	}
+	ipPort := models.IPKapal{
+		CallSign: input.CallSign,
+		TypeIP:   models.TypeIP(input.Type),
+		IP:       input.IP,
+		Port:     input.Port,
+	}
+	if err := database.DB.Create(&ipPort).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Ip created successfully", "data": ipPort})
+
+}
+
 func toJSON(v interface{}) string {
 	b, _ := json.Marshal(v)
 	return string(b)

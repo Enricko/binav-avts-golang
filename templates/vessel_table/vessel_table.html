@@ -1,5 +1,6 @@
 {{define "vesselTable" }} {{template "insertVessel" .}} {{template
-"updateVessel" .}}
+"updateVessel" .}} {{template
+  "insertIp" .}}
 <div
   class="modal fade"
   id="vesselTable"
@@ -57,6 +58,7 @@
                       <th>History Store per Sec</th>
                       <th>Min Knot per Gas</th>
                       <th>Max Knot per Gas</th>
+                      <th>IP & PORT</th>
                       <th>Record Status</th>
                       <th>Action</th>
                     </tr>
@@ -129,6 +131,23 @@
       { data: "minimum_knot_per_liter_gasoline", className: "text-center" },
       { data: "maximum_knot_per_liter_gasoline", className: "text-center" },
       {
+        data: "ip",
+        className: "text-center",
+        width: "10%",
+        render: function (data, type, row, meta) {
+          return `
+                  <div class="container">
+                  <div class="row justify-content-md-center">
+                  <div class="col-auto mb-1">
+                  <button class="btn btn-primary btn-xs" id="insert_ip" data-bs-toggle="modal" data-bs-target="#insertIp" onclick="insertIp('${row.call_sign}')"><i class="fa-solid fa-tower-broadcast"></i></button>
+                  </div>
+
+                  </div>
+                  </div>
+                  `;
+        },
+      },
+      {
         data: "record_status",
         className: "text-center",
         render: function (data) {
@@ -180,6 +199,28 @@
         });
       });
   }
+
+  function insertIp(callSign) {
+    fetch(`/vessel/${callSign}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        updateTitle(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        Swal.fire({
+          title: "Error",
+          text: "Failed to fetch vessel data",
+          icon: "error",
+        });
+      });
+  }
+
   function deleteVessel(callSign) {
     const swalConfig = {
       backdrop: false,
@@ -282,6 +323,13 @@
           "error"
         );
       });
+  }
+
+  function updateTitle(vesselData){
+    const form = document.getElementById('formInsertIp');
+    form.reset();
+    document.getElementById("ipTitle").innerHTML =
+      vesselData.call_sign;
   }
 
   function populateUpdateForm(vesselData) {
