@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"golang-app/app/controllers"
 	"golang-app/app/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter(r *gin.Engine) {
@@ -14,6 +14,7 @@ func SetupRouter(r *gin.Engine) {
 	mappingController := controllers.NewMappingController()
 	vesselController := controllers.NewVesselController()
 	otpController := controllers.NewOtpController()
+	IPVesselController := controllers.NewIPVesselController()
 
 	// r.Use(middleware.UserAuthMiddleware())
 
@@ -31,7 +32,7 @@ func SetupRouter(r *gin.Engine) {
 	// r.GET("/ws", webSocketController.HandleWebSocket)
 
 	protected := r.Group("/")
-	protected.Use(middleware.UserAuthMiddleware(),middleware.IsLoggedIn())
+	protected.Use(middleware.UserAuthMiddleware(), middleware.IsLoggedIn())
 	{
 		protected.GET("/", mainController.Index)
 
@@ -56,7 +57,17 @@ func SetupRouter(r *gin.Engine) {
 		protected.POST("/vessel/delete/:call_sign", vesselController.DeleteVessel)
 
 		protected.GET("/vessel_records/:call_sign", vesselController.GetVesselRecords)
+
+		// protected.GET("/vessel_ip/:call_sign", IPVesselController.GetIPVessels)
+		// protected.POST("/vessel_ip/insert/:call_sign", IPVesselController.InsertIPVessel)
+		// protected.PUT("/vessel_ip/update/:id", IPVesselController.UpdateIPVessel)
+		// protected.POST("/vessel_ip/delete/:id", IPVesselController.DeleteIPVessel)
 	}
+	
+	r.GET("/vessel_ip/:call_sign", IPVesselController.GetIPVessels)
+	r.POST("/vessel_ip/insert/:call_sign", IPVesselController.InsertIPVessel)
+	r.PUT("/vessel_ip/update/:id", IPVesselController.UpdateIPVessel)
+	r.POST("/vessel_ip/delete/:id", IPVesselController.DeleteIPVessel)
 
 	r.POST("/user/sendOtp", otpController.InsertOtp)
 

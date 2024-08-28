@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"golang-app/app/controllers"
-	"golang-app/app/middleware"
-	"golang-app/database"
-	"golang-app/routes"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +16,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
+	"golang-app/app/controllers"
+	"golang-app/app/middleware"
+	"golang-app/database"
+	"golang-app/routes"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -105,6 +105,7 @@ func main() {
 
 	// CSRF protection
 	excludedPaths := []string{
+		"/vessel_ip",
 		// Add paths to exclude from CSRF protection
 	}
 	r.Use(middleware.NoCSRF(excludedPaths))

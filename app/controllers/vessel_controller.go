@@ -3,8 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"golang-app/app/models"
-	"golang-app/database"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"golang-app/app/models"
+	"golang-app/database"
 )
 
 type VesselController struct {
@@ -439,109 +439,76 @@ func (r *VesselController) DeleteVessel(c *gin.Context) {
 }
 
 func (r *VesselController) GetVesselRecords(c *gin.Context) {
-    callSign := c.Param("call_sign")
-    
-    // Parse start and end datetime from query parameters
-    start := c.DefaultQuery("start", time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05"))
-    end := c.DefaultQuery("end", time.Now().Format("2006-01-02 15:04:05"))
+	callSign := c.Param("call_sign")
 
-    var kapal models.Kapal
-    if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
-        if gorm.ErrRecordNotFound == err {
-            c.JSON(http.StatusNotFound, gin.H{"error": "Kapal not found"})
-        } else {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        }
-        return
-    }
+	// Parse start and end datetime from query parameters
+	start := c.DefaultQuery("start", time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05"))
+	end := c.DefaultQuery("end", time.Now().Format("2006-01-02 15:04:05"))
 
-    var totalRecords int64
-    if err := database.DB.Model(&models.VesselRecord{}).
-        Where("call_sign = ? AND created_at BETWEEN ? AND ?", callSign, start, end).
-        Count(&totalRecords).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    // Set up streaming response
-    c.Header("Content-Type", "application/json")
-    c.Header("Transfer-Encoding", "chunked")
-
-    // Start the JSON response
-    c.Writer.Write([]byte(fmt.Sprintf(`{"call_sign":"%s","kapal":%s,"total_record":%d,"records":[`,
-        callSign, toJSON(kapal), totalRecords)))
-
-    // Stream records using a cursor
-    const batchSize = 1000
-    lastID := uint(0)
-    isFirstRecord := true
-
-    for {
-        var records []models.VesselRecord
-        err := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ? AND id > ?", callSign, start, end, lastID).
-            Order("id ASC").
-            Limit(batchSize).
-            Find(&records).Error
-        if err != nil {
-            log.Printf("Error fetching records: %v", err)
-            break
-        }
-
-        if len(records) == 0 {
-            break
-        }
-
-        for _, record := range records {
-            if !isFirstRecord {
-                c.Writer.Write([]byte(","))
-            }
-            c.Writer.Write([]byte(toJSON(record)))
-            isFirstRecord = false
-        }
-        c.Writer.Flush()
-
-        lastID = uint(records[len(records)-1].IdVesselRecord)
-        if len(records) < batchSize {
-            break
-        }
-    }
-
-    // Close the JSON response
-    c.Writer.Write([]byte("]}"))
-    c.Writer.Flush()
-}
-
-type IpType string
-
-const (
-	NMEA       IpType = "nmea"
-	WATERDEPTH IpType = "water_depth"
-)
-
-func (r *VesselController) InsertIpPort(c *gin.Context) {
-	var input struct {
-		CallSign string `form:"call_sign" json:"call_sign" binding:"required"`
-		Type     IpType `form:"type" json:"type" binding:"required"`
-		IP       string `form:"ip" json:"ip" binding:"required"`
-		Port     uint16 `form:"port" json:"port" binding:"required"`
-	}
-	if err := c.ShouldBind(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind data"})
-		return
-	}
-	ipPort := models.IPKapal{
-		CallSign: input.CallSign,
-		TypeIP:   models.TypeIP(input.Type),
-		IP:       input.IP,
-		Port:     input.Port,
-	}
-	if err := database.DB.Create(&ipPort).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	var kapal models.Kapal
+	if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Kapal not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Ip created successfully", "data": ipPort})
+	var totalRecords int64
+	if err := database.DB.Model(&models.VesselRecord{}).
+		Where("call_sign = ? AND created_at BETWEEN ? AND ?", callSign, start, end).
+		Count(&totalRecords).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
+	// Set up streaming response
+	c.Header("Content-Type", "application/json")
+	c.Header("Transfer-Encoding", "chunked")
+
+	// Start the JSON response
+	c.Writer.Write([]byte(fmt.Sprintf(`{"call_sign":"%s","kapal":%s,"total_record":%d,"records":[`,
+		callSign, toJSON(kapal), totalRecords)))
+
+	// Stream records using a cursor
+	const batchSize = 1000
+	lastID := uint(0)
+	isFirstRecord := true
+
+	for {
+		var records []models.VesselRecord
+		err := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ? AND id > ?", callSign, start, end, lastID).
+			Order("id ASC").
+			Limit(batchSize).
+			Find(&records).Error
+		if err != nil {
+			log.Printf("Error fetching records: %v", err)
+			break
+		}
+
+		if len(records) == 0 {
+			break
+		}
+
+		for _, record := range records {
+			if !isFirstRecord {
+				c.Writer.Write([]byte(","))
+			}
+			c.Writer.Write([]byte(toJSON(record)))
+			isFirstRecord = false
+		}
+		c.Writer.Flush()
+
+		lastID = uint(records[len(records)-1].IdVesselRecord)
+		if len(records) < batchSize {
+			break
+		}
+	}
+
+	// Close the JSON response
+	c.Writer.Write([]byte("]}"))
+	c.Writer.Flush()
 }
 
 func toJSON(v interface{}) string {
