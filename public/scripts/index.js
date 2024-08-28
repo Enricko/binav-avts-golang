@@ -113,3 +113,14 @@ function startToEndDatetimeFilterForm() {
   startDatetimeFilter = formatToISO(startDateTime);
   endDatetimeFilter = formatToISO(endDateTime);
 }
+
+function preventDoubleClick(button, action, delay = 1000) {
+  if (button.disabled) return;
+  
+  button.disabled = true;
+  action();
+  
+  setTimeout(() => {
+      button.disabled = false;
+  }, delay);
+}

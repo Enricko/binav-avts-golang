@@ -206,45 +206,59 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 		Payload: map[string]int64{"total_records": totalRecords},
 	}
 
-	// Create a channel for batches and a done channel
-	batchChan := make(chan []models.VesselRecord)
-	doneChan := make(chan struct{})
-
-	// Start a goroutine to send batches
-	go func() {
-		defer close(doneChan)
-		const batchSize = 1000
-		var offset int64 = 0
-		for offset < totalRecords {
-			var records []models.VesselRecord
-			if err := query.Offset(int(offset)).Limit(batchSize).Find(&records).Error; err != nil {
-				recordsChan <- WebSocketMessage{
-					Type:    "error",
-					Payload: map[string]string{"error": err.Error()},
-				}
-				return
-			}
-			batchChan <- records
-			offset += int64(len(records))
-		}
-	}()
-
-	// Send batches as they come in
-	go func() {
-		for batch := range batchChan {
-			recordsChan <- WebSocketMessage{
-				Type:    "vessel_records_batch",
-				Payload: batch,
-			}
-		}
-	}()
-
-	// Wait for all batches to be sent
-	<-doneChan
-	close(batchChan)
-
+	const batchSize = 1000
+	var offset int64 = 0
 	
-	// time.Sleep(1 * time.Second)
+	// Create a worker pool
+	workerCount := 5
+	jobs := make(chan []models.VesselRecord, workerCount)
+	results := make(chan WebSocketMessage, workerCount)
+	var wg sync.WaitGroup
+
+	// Start worker goroutines
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for records := range jobs {
+				results <- WebSocketMessage{
+					Type:    "vessel_records_batch",
+					Payload: records,
+				}
+			}
+		}()
+	}
+
+	// Start a goroutine to close the results channel when all workers are done
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Start a goroutine to send results to the recordsChan
+	go func() {
+		for result := range results {
+			recordsChan <- result
+			time.Sleep(100 * time.Millisecond) // Basic rate limiting
+		}
+	}()
+
+	// Fetch and process records in batches
+	for offset < totalRecords {
+		var records []models.VesselRecord
+		if err := query.Offset(int(offset)).Limit(batchSize).Find(&records).Error; err != nil {
+			recordsChan <- WebSocketMessage{
+				Type:    "error",
+				Payload: map[string]string{"error": err.Error()},
+			}
+			close(jobs)
+			return
+		}
+		jobs <- records
+		offset += int64(len(records))
+	}
+
+	close(jobs)
 
 	processingTime := time.Since(startTime).Milliseconds()
 

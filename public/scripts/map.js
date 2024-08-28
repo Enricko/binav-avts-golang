@@ -53,6 +53,8 @@ function toggleRuler() {
   const measurementWindow = document.getElementById("measurement-window");
   measurementWindow.style.display = isRulerOn ? "block" : "none";
 
+  console.log(isRulerOn);
+
   if (isRulerOn) {
     poly = new google.maps.Polyline({
       strokeColor: "#000000",
@@ -102,7 +104,7 @@ function initMap() {
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(rulerButton);
 
   const previewButton = createPreviewButton(map);
-  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(previewButton);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(previewButton);
 
   updateKMZLayers();
   setInterval(updateKMZLayers, 5 * 60 * 1000); // Update every 5 minutes

@@ -76,37 +76,32 @@
         <div
           id="loginCarousel"
           class="carousel slide h-100"
-          data-bs-ride="carousel"
-        >
+          data-bs-ride="carousel">
           <div class="carousel-inner">
             <div class="carousel-item active">
               <img
                 src="/public/assets/intro1.jpg"
                 class="d-block w-100"
-                alt="Intro 1"
-              />
+                alt="Intro 1" />
             </div>
             <div class="carousel-item">
               <img
                 src="/public/assets/intro2.jpg"
                 class="d-block w-100"
-                alt="Intro 2"
-              />
+                alt="Intro 2" />
             </div>
             <div class="carousel-item">
               <img
                 src="/public/assets/intro3.jpg"
                 class="d-block w-100"
-                alt="Intro 3"
-              />
+                alt="Intro 3" />
             </div>
           </div>
           <button
             class="carousel-control-prev"
             type="button"
             data-bs-target="#loginCarousel"
-            data-bs-slide="prev"
-          >
+            data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
           </button>
@@ -114,8 +109,7 @@
             class="carousel-control-next"
             type="button"
             data-bs-target="#loginCarousel"
-            data-bs-slide="next"
-          >
+            data-bs-slide="next">
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Next</span>
           </button>
@@ -126,12 +120,12 @@
           <img
             src="/public/assets/logo_transparent.png"
             alt="Logo"
-            style="width: 100px; margin-bottom: 1rem"
-          />
+            style="width: 100px; margin-bottom: 1rem" />
           <h5 class="fw-bold">Hi, Welcome to Binav AVTS</h5>
           <h5 class="fw-bold mb-4">Log in to your Account</h5>
           <br />
           <form id="login-form">
+            <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
             <div class="mb-3">
               <!-- <label for="email" class="form-label">Email address</label> -->
               <input
@@ -141,8 +135,7 @@
                 name="email"
                 aria-describedby="emailHelp"
                 required
-                placeholder="Email"
-              />
+                placeholder="Email" />
             </div>
             <div class="mb-3">
               <!-- <label for="password" class="form-label">Password</label> -->
@@ -153,13 +146,11 @@
                   name="password"
                   id="password"
                   required
-                  placeholder="Password"
-                />
+                  placeholder="Password" />
                 <button
                   class="btn btn-outline-secondary"
                   type="button"
-                  id="togglePassword"
-                >
+                  id="togglePassword">
                   <i class="bi bi-eye" id="toggleIcon"></i>
                 </button>
               </div>
@@ -168,8 +159,7 @@
               <button
                 type="button"
                 class="btn btn-link p-0"
-                onclick="showForgotPassword()"
-              >
+                onclick="showForgotPassword()">
                 Forgot Password?
               </button>
             </div>
@@ -184,17 +174,14 @@
             type="button"
             class="btn p-0 me-3 mb-4"
             onclick="showLoginForm()"
-            aria-label="Go back to login"
-          >
+            aria-label="Go back to login">
             <div
               class="circular-button"
-              style="background-color: #0e286c; border: #0e286c"
-            >
+              style="background-color: #0e286c; border: #0e286c">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
                 <path
                   fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
-                />
+                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
               </svg>
             </div>
           </button>
@@ -212,14 +199,12 @@
                 class="form-control"
                 id="forgotEmail"
                 required
-                placeholder="Email Address"
-              />
+                placeholder="Email Address" />
             </div>
             <button
               id="btn-forgot"
               type="submit"
-              class="btn btn-primary w-100 mb-3"
-            >
+              class="btn btn-primary w-100 mb-3">
               Send OTP Code
             </button>
             <!-- <button type="button" class="btn btn-link w-100" onclick="showLoginForm()">Back to Login</button> -->
@@ -231,17 +216,14 @@
             type="button"
             class="btn p-0 me-3 mb-4"
             onclick="showForgotPassForm()"
-            aria-label="Go back to login"
-          >
+            aria-label="Go back to login">
             <div
               class="circular-button"
-              style="background-color: #0e286c; border: #0e286c"
-            >
+              style="background-color: #0e286c; border: #0e286c">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
                 <path
                   fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
-                />
+                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
               </svg>
             </div>
           </button>
@@ -249,68 +231,25 @@
           <p id="otpSubtitle" class="mb-3">We've sent a code to your Email</p>
           <form id="otp-form">
             <div class="d-flex justify-content-center mb-4">
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp1"
-                oninput="moveToNext(this, 'otp2')"
-                onkeydown="moveToPrevious(event, this, null)"
-                required
-              />
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp2"
-                oninput="moveToNext(this, 'otp3')"
-                onkeydown="moveToPrevious(event, this, 'otp1')"
-                required
-              />
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp3"
-                oninput="moveToNext(this, 'otp4')"
-                onkeydown="moveToPrevious(event, this, 'otp2')"
-                required
-              />
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp4"
-                oninput="moveToNext(this, 'otp5')"
-                onkeydown="moveToPrevious(event, this, 'otp3')"
-                required
-              />
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp5"
-                oninput="moveToNext(this, 'otp6')"
-                onkeydown="moveToPrevious(event, this, 'otp4')"
-                required
-              />
-              <input
-                type="text"
-                class="form-control otp-input"
-                maxlength="1"
-                id="otp6"
-                onkeydown="moveToPrevious(event, this, 'otp5')"
-                required
-              />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp1" required />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp2" required />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp3" required />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp4" required />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp5" required />
+              <input type="text" class="form-control otp-input" maxlength="1" id="otp6" required />
             </div>
             <button
               id="btn-submit-otp"
               type="submit"
-              class="btn btn-primary w-100 mb-3"
-            >
+              class="btn btn-primary w-100 mb-3">
               Submit
             </button>
           </form>
+          <div class="text-center">
+            <button id="resendOtpButton" class="btn btn-link" disabled>
+              Resend OTP in <span id="resendTimer">30</span> seconds
+            </button>
+          </div>
         </div>
 
         <div id="ResetPassForm" style="display: none">
@@ -318,17 +257,14 @@
             type="button"
             class="btn p-0 me-3 mb-4"
             onclick="showLoginForm()"
-            aria-label="Go back to login"
-          >
+            aria-label="Go back to login">
             <div
               class="circular-button"
-              style="background-color: #0e286c; border: #0e286c"
-            >
+              style="background-color: #0e286c; border: #0e286c">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
                 <path
                   fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
-                />
+                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
               </svg>
             </div>
           </button>
@@ -345,8 +281,7 @@
                 id="new_password"
                 name="new_password"
                 required
-                placeholder="New Password"
-              />
+                placeholder="New Password" />
             </div>
             <div class="mb-3">
               <label for="password" class="form-label">Confirm Password</label>
@@ -356,14 +291,12 @@
                 id="confirmation_password"
                 name="confirmation_password"
                 required
-                placeholder="Confirm your Password"
-              />
+                placeholder="Confirm your Password" />
             </div>
             <button
               id="btn-reset-pass"
               type="submit"
-              class="btn btn-primary w-100 mb-3"
-            >
+              class="btn btn-primary w-100 mb-3">
               Submit
             </button>
           </form>
@@ -377,8 +310,7 @@
     id="errorModal"
     tabindex="-1"
     aria-labelledby="errorModalLabel"
-    aria-hidden="true"
-  >
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -387,8 +319,7 @@
             type="button"
             class="btn-close"
             data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+            aria-label="Close"></button>
         </div>
         <div class="modal-body" id="title-alert">
           Invalid Email or password. Please try again.
@@ -397,8 +328,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            data-bs-dismiss="modal"
-          >
+            data-bs-dismiss="modal">
             Close
           </button>
         </div>
@@ -411,8 +341,7 @@
     id="successModal"
     tabindex="-1"
     aria-labelledby="errorModalLabel"
-    aria-hidden="true"
-  >
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -421,8 +350,7 @@
             type="button"
             class="btn-close"
             data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+            aria-label="Close"></button>
         </div>
         <div class="modal-body" id="title-alert">
           Your Password has been updated successfully
@@ -431,8 +359,7 @@
           <button
             type="button"
             class="btn btn-secondary"
-            data-bs-dismiss="modal"
-          >
+            data-bs-dismiss="modal">
             Close
           </button>
         </div>
@@ -440,86 +367,6 @@
     </div>
   </div>
 </body>
-
-<script>
-  function showForgotPassword() {
-    document.getElementById("loginForm").style.display = "none";
-    document.getElementById("forgotPasswordForm").style.display = "block";
-  }
-
-  function showLoginForm() {
-    document.getElementById("loginForm").style.display = "block";
-    document.getElementById("forgotPasswordForm").style.display = "none";
-  }
-
-  function showForgotPassForm() {
-    document.getElementById("OtpForm").style.display = "none";
-    document.getElementById("forgotPasswordForm").style.display = "block";
-  }
-
-  // function handleSubmit() {
-  //   event.preventDefault();
-  //     document.getElementById('forgotPasswordForm').style.display = 'none';
-  //     document.getElementById('OtpForm').style.display = 'block';
-  //     const email = document.getElementById('forgotEmail').value;
-  //     document.getElementById('otpSubtitle').innerHTML = `We've sent a code to <strong>${email}</strong>`;
-  // }
-  // document.getElementById('forgot-password-form').addEventListener('submit', handleSubmit);
-
-  document
-    .getElementById("login-form")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
-      // Add your login logic here
-    });
-
-  document
-    .getElementById("forgot-password-form")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
-      // Add your forgot password logic here
-    });
-
-  const togglePassword = document.querySelector("#togglePassword");
-  const password = document.querySelector("#password");
-  const toggleIcon = document.querySelector("#toggleIcon");
-
-  togglePassword.addEventListener("click", function () {
-    // Toggle the type attribute
-    const type =
-      password.getAttribute("type") === "password" ? "text" : "password";
-    password.setAttribute("type", type);
-
-    // Toggle the icon
-    toggleIcon.classList.toggle("bi-eye");
-    toggleIcon.classList.toggle("bi-eye-slash");
-  });
-
-  function moveToNext(current, nextFieldID) {
-    if (current.value.length >= 1) {
-      document.getElementById(nextFieldID).focus();
-    }
-  }
-  function moveToPrevious(event, currentElement, previousFieldID) {
-    if (
-      event.key === "Backspace" &&
-      currentElement.value === "" &&
-      previousFieldID
-    ) {
-      document.getElementById(previousFieldID).focus();
-    }
-  }
-
-  document.getElementById("otpForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    let otp = "";
-    for (let i = 1; i <= 6; i++) {
-      otp += document.getElementById("otp" + i).value;
-    }
-    alert("OTP Entered: " + otp);
-    // Here you can send the OTP value to your server for verification
-  });
-</script>
 
 <script src="/public/scripts/auth.js"></script>
 

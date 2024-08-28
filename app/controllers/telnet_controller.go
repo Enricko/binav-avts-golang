@@ -38,8 +38,6 @@ func NewTelnetController() *TelnetController {
 	}
 }
 
-
-
 type GpsQuality string
 
 const (
@@ -83,7 +81,7 @@ func (r *TelnetController) StartTelnetConnections() {
 		// wg.Add(1)
 		var vesselRecord models.VesselRecord
 
-		if err := database.DB.Preload("Kapal").Where("call_sign = ?", server.CallSign).Order("series_id desc").First(&vesselRecord).Error; err != nil {
+		if err := database.DB.Preload("Kapal").Where("call_sign = ?", server.CallSign).Last(&vesselRecord).Error; err != nil {
 			log.Printf("Error reading from %s: %v", server.CallSign, err)
 		} else {
 			nmea := NMEAData{
@@ -117,7 +115,7 @@ func (r *TelnetController) StartTelnetConnections() {
 
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
+			time.Sleep(15 * time.Second)
 
 			var updatedServers []models.IPKapal
 			err := database.DB.Preload("Kapal").Find(&updatedServers).Error
@@ -202,7 +200,9 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 			default:
 				if err := r.connectAndRead(server, nmeaDataChan, waterDepthChan); err != nil {
 					// log.Printf("Error handling connection for %s: %v", server.CallSign, err)
-					r.updateStatus(server.CallSign, models.Disconnected)
+					if models.TypeIP(server.TypeIP) != "depth" {
+						r.updateStatus(server.CallSign, models.Disconnected)
+					}
 					// Immediately try to reconnect
 				}
 			}
@@ -374,7 +374,7 @@ func (r *TelnetController) updateStatus(callSign string, status models.TelnetSta
 		log.Printf("kapal not found in dataMap")
 	}
 	historyPerSecond := kapal.(KapalData).Kapal.HistoryPerSecond
-	disconnectThreshold := time.Duration(float64(historyPerSecond) * 1.5) * time.Second
+	disconnectThreshold := time.Duration(float64(historyPerSecond)*1.5) * time.Second
 	// Update in-memory data
 	if data, ok := r.DataMap.Load(callSign); ok {
 		nmeaData := data.(NMEAData)
@@ -385,15 +385,15 @@ func (r *TelnetController) updateStatus(callSign string, status models.TelnetSta
 
 	// Update in database
 	var vesselRecord models.VesselRecord
-	result := database.DB.Where("call_sign = ?", callSign).Order("created_at DESC").First(&vesselRecord)
+	result := database.DB.Where("call_sign = ?", callSign).Last(&vesselRecord)
 	if result.Error == nil {
 		vesselRecord.TelnetStatus = status
-		if time.Since(vesselRecord.CreatedAt) > disconnectThreshold &&  string(status) == "Disconnected"{
+		if time.Since(vesselRecord.CreatedAt) > disconnectThreshold && string(status) == "Disconnected" {
 			if err := database.DB.Save(&vesselRecord).Error; err != nil {
 				log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
 			}
 		}
-		if string(status) != "Disconnected"{
+		if string(status) != "Disconnected" {
 			if err := database.DB.Save(&vesselRecord).Error; err != nil {
 				log.Printf("Error updating telnet status in database for %s: %v", callSign, err)
 			}
@@ -497,7 +497,7 @@ func (r *TelnetController) updateKapalDataMap() {
 
 func (r *TelnetController) createOrUpdateCoordinate(callSign string, lastCoordinateInsertTime *time.Time) error {
 	var lastRecord models.VesselRecord
-	result := database.DB.Where("call_sign = ?", callSign).Order("created_at desc").First(&lastRecord)
+	result := database.DB.Where("call_sign = ?", callSign).Last(&lastRecord)
 
 	data, _ := r.DataMap.Load(callSign)
 	nmeaData := data.(NMEAData)

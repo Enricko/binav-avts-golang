@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -52,13 +53,16 @@ func generateRandomString(length int) (string, error) {
 }
 
 type UserController struct {
-	// Dependent services
+	tokenBlacklist     map[string]time.Time
+	tokenBlacklistLock sync.RWMutex
 }
 
 func NewUserController() *UserController {
-	return &UserController{
-		// Inject services
+	controller := &UserController{
+		tokenBlacklist: make(map[string]time.Time),
 	}
+	go controller.cleanupBlacklist()
+	return controller
 }
 
 type Claims struct {
@@ -241,15 +245,15 @@ func (r *UserController) Login(c *gin.Context) {
 	}
 
 	// Set token in cookie
-    c.SetCookie(
-        "token",
-        tokenString,
-        expirationHours * 3600, // convert hours to seconds
-        "/",
-        "",
-        false,
-        true,
-    )
+	c.SetCookie(
+		"token",
+		tokenString,
+		expirationHours*3600, // convert hours to seconds
+		"/",
+		"",
+		false,
+		true,
+	)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
@@ -391,6 +395,50 @@ func (r *UserController) ResetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}
+
+func (r *UserController) Logout(c *gin.Context) {
+	// Get token from cookie
+	tokenString, err := c.Cookie("token")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "No token provided"})
+		return
+	}
+
+	// Parse the token
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+
+	// Add the token to the blacklist
+	expirationTime := time.Unix(claims.ExpiresAt, 0)
+	r.tokenBlacklistLock.Lock()
+	r.tokenBlacklist[tokenString] = expirationTime
+	r.tokenBlacklistLock.Unlock()
+
+	// Clear the cookie
+	c.SetCookie("token", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User logged out successfully"})
+}
+
+func (r *UserController) cleanupBlacklist() {
+	for {
+		time.Sleep(1 * time.Hour) // Run cleanup every hour
+		now := time.Now()
+		r.tokenBlacklistLock.Lock()
+		for token, expiry := range r.tokenBlacklist {
+			if now.After(expiry) {
+				delete(r.tokenBlacklist, token)
+			}
+		}
+		r.tokenBlacklistLock.Unlock()
+	}
 }
 
 // Helper function to validate user level (unchanged)

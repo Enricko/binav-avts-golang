@@ -17,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 )
 
 type VesselController struct {
@@ -438,65 +439,76 @@ func (r *VesselController) DeleteVessel(c *gin.Context) {
 }
 
 func (r *VesselController) GetVesselRecords(c *gin.Context) {
-	callSign := c.Param("call_sign")
-	var kapal models.Kapal
+    callSign := c.Param("call_sign")
+    
+    // Parse start and end datetime from query parameters
+    start := c.DefaultQuery("start", time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05"))
+    end := c.DefaultQuery("end", time.Now().Format("2006-01-02 15:04:05"))
 
-	// Parse start and end datetime from query parameters
-	start := c.DefaultQuery("start", time.Now().AddDate(0, 0, -3).Format("2006-01-02 15:04:05"))
-	end := c.DefaultQuery("end", time.Now().Format("2006-01-02 15:04:05"))
+    var kapal models.Kapal
+    if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
+        if gorm.ErrRecordNotFound == err {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Kapal not found"})
+        } else {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        }
+        return
+    }
 
-	// Find the Kapal with the given call sign
-	if err := database.DB.Where("call_sign = ?", callSign).First(&kapal).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Kapal not found"})
-		return
-	}
+    var totalRecords int64
+    if err := database.DB.Model(&models.VesselRecord{}).
+        Where("call_sign = ? AND created_at BETWEEN ? AND ?", callSign, start, end).
+        Count(&totalRecords).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-	// Initialize the query for fetching records
-	query := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ?", callSign, start, end)
+    // Set up streaming response
+    c.Header("Content-Type", "application/json")
+    c.Header("Transfer-Encoding", "chunked")
 
-	// Count total records
-	var totalRecords int64
-	if err := query.Model(&models.VesselRecord{}).Count(&totalRecords).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+    // Start the JSON response
+    c.Writer.Write([]byte(fmt.Sprintf(`{"call_sign":"%s","kapal":%s,"total_record":%d,"records":[`,
+        callSign, toJSON(kapal), totalRecords)))
 
-	// Set up streaming response
-	c.Header("Content-Type", "application/json")
-	c.Header("Transfer-Encoding", "chunked")
+    // Stream records using a cursor
+    const batchSize = 1000
+    lastID := uint(0)
+    isFirstRecord := true
 
-	// Start the JSON response
-	c.Writer.Write([]byte(fmt.Sprintf(`{"call_sign":"%s","kapal":%s,"total_record":%d,"records":[`,
-		callSign, toJSON(kapal), totalRecords)))
+    for {
+        var records []models.VesselRecord
+        err := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ? AND id > ?", callSign, start, end, lastID).
+            Order("id ASC").
+            Limit(batchSize).
+            Find(&records).Error
+        if err != nil {
+            log.Printf("Error fetching records: %v", err)
+            break
+        }
 
-	// Stream records
-	rows, err := query.Model(&models.VesselRecord{}).Rows()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer rows.Close()
+        if len(records) == 0 {
+            break
+        }
 
-	isFirstRecord := true
-	for rows.Next() {
-		var record models.VesselRecord
-		if err := database.DB.ScanRows(rows, &record); err != nil {
-			// Log the error and continue
-			log.Printf("Error scanning row: %v", err)
-			continue
-		}
+        for _, record := range records {
+            if !isFirstRecord {
+                c.Writer.Write([]byte(","))
+            }
+            c.Writer.Write([]byte(toJSON(record)))
+            isFirstRecord = false
+        }
+        c.Writer.Flush()
 
-		if !isFirstRecord {
-			c.Writer.Write([]byte(","))
-		}
-		c.Writer.Write([]byte(toJSON(record)))
-		c.Writer.Flush()
-		isFirstRecord = false
-	}
+        lastID = uint(records[len(records)-1].IdVesselRecord)
+        if len(records) < batchSize {
+            break
+        }
+    }
 
-	// Close the JSON response
-	c.Writer.Write([]byte("]}"))
-	c.Writer.Flush()
+    // Close the JSON response
+    c.Writer.Write([]byte("]}"))
+    c.Writer.Flush()
 }
 
 type IpType string

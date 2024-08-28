@@ -10,6 +10,7 @@
     />
     <meta name="description" content />
     <meta name="author" content />
+    <meta name="csrf-token" content="{{ .csrfToken }}" />
     <title>Binav AVTS</title>
 
     <link rel="stylesheet" href="/public/style.css" />
@@ -41,6 +42,7 @@
       href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.02.min.css"
     />
     <script src="/public/sbadmin/js/jquery-3.7.1.min.js"></script>
+    <script src="/public/libs/swalfire/sweetalert2.all.min.js"></script>
 
     <style>
       #map {
@@ -146,7 +148,7 @@
           }
           const Toast = Swal.mixin({
             toast: true,
-            position: "bottom-end",
+            position: "top-end",
             showConfirmButton: false,
             timer: 3000,
             timerProgressBar: true,
@@ -175,7 +177,11 @@
           );
         }
       });
+      function getCsrfToken() {
+        return document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
+      }
     </script>
   </head>
   {{end}}
-</html>

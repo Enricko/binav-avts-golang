@@ -48,6 +48,12 @@ class BaseVesselOverlay extends google.maps.OverlayView {
         zIndex: '999'
       });
     }
+
+    // if (this.nameLabel) {
+    //   const scale = this.getScale();
+    //   this.nameLabel.style.fontSize = `${Math.max(8 * scale, 6)}px`;  // Minimum font size of 8px
+    //   this.nameLabel.style.bottom = `-${Math.max(13 * scale, 10)}px`;  // Adjust bottom margin
+    // }
   }
 
   getScale() {
@@ -85,6 +91,24 @@ class VesselOverlay extends BaseVesselOverlay {
       this.div.addEventListener("mouseover", () => this.showInfoWindow());
       this.div.addEventListener("mouseout", () => this.hideInfoWindow());
       this.div.addEventListener("dblclick", (e) => this.onDblClick(e));
+
+      
+      // // Create and add the name label
+      // this.nameLabel = document.createElement("div");
+      // Object.assign(this.nameLabel.style, {
+      //   position: "absolute",
+      //   bottom: "-20px",  // Position below the image
+      //   left: "0",
+      //   width: "100%",
+      //   textAlign: "center",
+      //   color: "white",
+      //   fontSize: "12px",
+      //   fontWeight: "bold",
+      //   textShadow: "1px 1px 2px black",
+      //   pointerEvents: "none"  // Allows clicks to pass through to the map
+      // });
+      // this.div.appendChild(this.nameLabel);
+      // this.updateNameLabel();
     }
   }
 
@@ -96,6 +120,12 @@ class VesselOverlay extends BaseVesselOverlay {
       }
     });
   }
+  
+  // updateNameLabel() {
+  //   if (this.nameLabel) {
+  //     this.nameLabel.textContent = this.device;
+  //   }
+  // }
 
   update(device, position, top, left, width, height, rotationAngle, imageMap, infoContent, status) {
     this.device = device;
@@ -108,6 +138,7 @@ class VesselOverlay extends BaseVesselOverlay {
     this.imageMap = imageMap;
 
     this.updateImage();
+    // this.updateNameLabel();
     this.draw();
   }
 
