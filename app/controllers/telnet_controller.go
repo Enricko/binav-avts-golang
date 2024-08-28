@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"golang-app/app/models"
-	"golang-app/database"
 	"log"
 	"net"
 	"net/http"
@@ -19,6 +17,8 @@ import (
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
 
+	"golang-app/app/models"
+	"golang-app/database"
 )
 
 type TelnetController struct {
@@ -65,6 +65,14 @@ type NMEAData struct {
 type KapalData struct {
 	Kapal models.Kapal `json:"kapal"`
 	NMEA  NMEAData     `json:"nmea"`
+}
+
+type ConnectionError struct {
+    Err error
+}
+
+func (e ConnectionError) Error() string {
+    return fmt.Sprintf("connection error: %v", e.Err)
 }
 
 func (r *TelnetController) StartTelnetConnections() {
@@ -178,8 +186,12 @@ func (r *TelnetController) stopAndRemoveConnection(id uint) {
 func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *sync.WaitGroup, stopChan chan struct{}) {
 	defer wg.Done()
 
-	r.ConnMap.Store(server.IdIpKapal, stopChan)
-	defer r.ConnMap.Delete(server.IdIpKapal)
+    r.ConnMap.Store(server.IdIpKapal, stopChan)
+    defer r.ConnMap.Delete(server.IdIpKapal)
+
+    backoff := time.Second
+    maxBackoff := 5 * time.Minute	
+    connectionEstablished := false
 
 	stopTelnet := make(chan struct{})
 	defer close(stopTelnet)
@@ -188,44 +200,52 @@ func (r *TelnetController) handleTelnetConnection(server models.IPKapal, wg *syn
 	waterDepthChan := make(chan float64)
 	go r.updateDataMap(server.CallSign, nmeaDataChan, waterDepthChan)
 
-	go func() {
-		defer func() {
-			r.ConnMap.Delete(server.IdIpKapal)
-			log.Printf("Stopped telnet connection for %s", server.CallSign)
-		}()
-		for {
-			select {
-			case <-stopTelnet:
-				return
-			default:
-				if err := r.connectAndRead(server, nmeaDataChan, waterDepthChan); err != nil {
-					// log.Printf("Error handling connection for %s: %v", server.CallSign, err)
-					if models.TypeIP(server.TypeIP) != "depth" {
-						r.updateStatus(server.CallSign, models.Disconnected)
-					}
-					// Immediately try to reconnect
-				}
-			}
-		}
-	}()
+    for {
+        select {
+        case <-stopChan:
+            r.DataMap.Delete(server.CallSign)
+            log.Printf("Telnet connection stopped for server ID: %d, CallSign: %s, Port:%d", server.IdIpKapal, server.CallSign, server.Port)
+            return
+        default:
+            err := r.connectAndRead(server, nmeaDataChan, waterDepthChan)
+            if err != nil {
+                 // Check if it's a connection error
+				 if _, isConnErr := err.(ConnectionError); isConnErr {
+                    // It's a connection error, don't update status
+                    log.Printf("Failed to establish connection for %s: %v", server.CallSign, err)
+                } else if connectionEstablished && models.TypeIP(server.TypeIP) != "depth" {
+                    // It's not a connection error and we had a connection before
+                    r.updateStatus(server.CallSign, models.Disconnected)
+                }
 
-	for {
-		select {
-		case <-stopChan:
-			r.DataMap.Delete(server.CallSign)
-			log.Printf("asdasdTelnet connection stopped for server ID: %d, CallSign: %s, Port:%a", server.IdIpKapal, server.CallSign, server.Port)
-			close(stopTelnet)
-			return
-		}
-	}
+                // Implement exponential backoff
+                time.Sleep(backoff)
+                backoff *= 2
+                if backoff > maxBackoff {
+                    backoff = maxBackoff
+                }
+            } else {
+                // Connection was successful
+                connectionEstablished = true
+                // Reset backoff on successful connection
+                backoff = time.Second
+            }
+        }
+    }
 }
 
 func (r *TelnetController) connectAndRead(server models.IPKapal, nmeaDataChan chan<- NMEAData, waterDepthChan chan<- float64) error {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port))
-	if err != nil {
-		return fmt.Errorf("error connecting: %w", err)
-	}
-	defer conn.Close()
+	// Set a timeout for the connection attempt
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", server.IP, server.Port), 10*time.Second)
+    if err != nil {
+        return ConnectionError{Err: fmt.Errorf("failed to establish connection: %w", err)}
+    }
+    defer conn.Close()
+
+    // Set a deadline for the connection
+    if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
+        return ConnectionError{Err: fmt.Errorf("error setting connection deadline: %w", err)}
+    }
 
 	reader := bufio.NewReader(conn)
 
@@ -233,14 +253,18 @@ func (r *TelnetController) connectAndRead(server models.IPKapal, nmeaDataChan ch
 
 	for {
 
-		if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
-			return fmt.Errorf("error setting read deadline: %w", err)
-		}
+        // Reset the read deadline for each iteration
+        if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+            return fmt.Errorf("error setting read deadline: %w", err)
+        }
 
-		line, err := r.readLine(reader, server.TypeIP)
-		if err != nil {
-			return fmt.Errorf("error reading: %w", err)
-		}
+        line, err := r.readLine(reader, server.TypeIP)
+        if err != nil {
+            if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+                return fmt.Errorf("read timeout: %w", err)
+            }
+            return fmt.Errorf("error reading: %w", err)
+        }
 
 		sentences := strings.Split(strings.TrimSpace(line), "\n")
 
