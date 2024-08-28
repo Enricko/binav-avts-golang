@@ -15,7 +15,7 @@ func SetupRouter(r *gin.Engine) {
 	vesselController := controllers.NewVesselController()
 	otpController := controllers.NewOtpController()
 
-	r.Use(middleware.UserAuthMiddleware())
+	// r.Use(middleware.UserAuthMiddleware())
 
 	r.GET("/login", middleware.AlreadyLoggedIn(), mainController.Login)
 
@@ -31,7 +31,7 @@ func SetupRouter(r *gin.Engine) {
 	// r.GET("/ws", webSocketController.HandleWebSocket)
 
 	protected := r.Group("/")
-	protected.Use(middleware.IsLoggedIn())
+	protected.Use(middleware.UserAuthMiddleware(),middleware.IsLoggedIn())
 	{
 		protected.GET("/", mainController.Index)
 
