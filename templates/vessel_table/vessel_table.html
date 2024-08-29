@@ -1,14 +1,13 @@
 {{define "vesselTable" }} {{template "insertVessel" .}} {{template
 "updateVessel" .}} {{template
-  "insertIp" .}}
+"insertIp" .}}
 <div
   class="modal fade"
   id="vesselTable"
   tabindex="-1"
   role="dialog"
   aria-labelledby="vesselTableLabel"
-  aria-hidden="true"
->
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -17,8 +16,7 @@
           type="button"
           class="btn-close btn-close-white"
           data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
+          aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
         <div class="container-fluid py-3">
@@ -28,8 +26,7 @@
                 class="btn btn-success"
                 id="tambah_data"
                 data-bs-toggle="modal"
-                data-bs-target="#insertVessel"
-              >
+                data-bs-target="#insertVessel">
                 <i class="fas fa-plus-circle me-2"></i>Add New Vessel
               </button>
             </div>
@@ -39,8 +36,7 @@
               <div class="table-responsive">
                 <table
                   id="vessel-table"
-                  class="table table-striped table-hover table-bordered"
-                >
+                  class="table table-striped table-hover table-bordered">
                   <thead class="table-dark">
                     <tr>
                       <th>Call Sign</th>
@@ -328,8 +324,8 @@
   function updateTitle(vesselData){
     const form = document.getElementById('formInsertIp');
     form.reset();
-    document.getElementById("ipTitle").innerHTML =
-      vesselData.call_sign;
+    document.getElementById("ipTitle").innerHTML = vesselData.call_sign;
+    initDataTableIpVessel(vesselData.call_sign);
   }
 
   function populateUpdateForm(vesselData) {

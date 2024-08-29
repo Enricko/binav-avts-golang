@@ -123,45 +123,11 @@
 </style>
 
 <script>
-  $(document).ready(function () {
-    const callSign = document.getElementById("ipTitle").value;
-    // $('#ip-table').DataTable({
-    //   ajax: {
-    //     url: `/vessel_ip/${callSign}`,
-    //     dataSrc: '', // Adjust this if your API returns data in a nested object
-    //     error: function (xhr, error, thrown) {
-    //       console.error('Ajax error:', error);
-    //       console.log('XHR:', xhr);
-    //       console.log('Thrown:', thrown);
-    //     }
-    //   },
-    //   columns: [
-    //     { data: "ip", className: "text-center" },
-    //     { data: "port", className: "text-center" },
-    //     { data: "type_ip", className: "text-center" },
-    //     {
-    //       data: "aksi",
-    //       className: "text-center",
-    //       width: "10%",
-    //       render: function (data, type, row, meta) {
-    //         return `
-    //           <div class="container">
-    //             <div class="row justify-content-md-center">
-    //               <div class="col-auto mb-1">
-    //                 <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateVessel"><i class="fas fa-pencil"></i></button>
-    //               </div>
-    //               <div class="col-auto mb-1">
-    //                 <button class="btn btn-danger btn-xs" id="delete_data"><i class="fas fa-trash-alt"></i></button>
-    //               </div>
-    //             </div>
-    //           </div>
-    //         `;
-    //       },
-    //     },
-    //   ]
-    // });
+  let ipCallSignSelected;
 
-    initializeDataTable("insertIp", "ip-table", `/vessel_ip/${callSign}`, [
+  function initDataTableIpVessel(callSign){
+    ipCallSignSelected = callSign;
+    initializeDataTable("insertIp", "ip-table", `/vessel_ip/${ipCallSignSelected}`, [
       { data: "ip", className: "text-center" },
       { data: "port", className: "text-center" },
       { data: "type_ip", className: "text-center" },
@@ -186,11 +152,10 @@
         },
       },
     ]);
-  });
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.querySelector("formInsertIp");
-    const callSign = document.getElementById("ipTitle").value;
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -198,7 +163,7 @@
       if (form.checkValidity()) {
         const formData = new FormData(form);
 
-        fetch(`/vessel_ip/insert/${callSign}`, {
+        fetch(`/vessel_ip/insert/${ipCallSignSelected}`, {
           method: "POST",
           body: formData,
         })
