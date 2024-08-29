@@ -5,6 +5,8 @@ const WEBSOCKET_RECONNECT_DELAY = 5000; // 5 seconds
 let websocket;
 let isProcessingComplete = false;
 let fetchStartTime;
+let receivedBatches = new Set();
+let expectedBatchNumber = 1;
 
 // WebSocket functions
 function connectWebSocket() {
@@ -55,6 +57,10 @@ async function handleVesselRecordsStart(payload) {
   document.getElementById("fetch_time").textContent = "Fetching...";
   vesselHistoryData.kapal = payload.kapal;
   btnLoad.disabled = true;
+  
+  // Reset batch processing
+  receivedBatches.clear();
+  expectedBatchNumber = 1;
 }
 
 function handleVesselRecordsCount(payload) {
@@ -62,30 +68,43 @@ function handleVesselRecordsCount(payload) {
   document.getElementById("total_records").textContent = totalVesselHistoryRecords;
 }
 
-function handleVesselRecordsBatch(records) {
-  if (vesselHistoryData.length >= totalVesselHistoryRecords) {
-    return; // Already have all the records we need
+function handleVesselRecordsBatch(payload) {
+  const { batch_number, records } = payload;
+  
+  // Store the batch
+  receivedBatches.add(batch_number);
+
+  // Process batches in order
+  while (receivedBatches.has(expectedBatchNumber)) {
+    const batchToProcess = expectedBatchNumber;
+    expectedBatchNumber++;
+
+    if (vesselHistoryData.length >= totalVesselHistoryRecords) {
+      return; // Already have all the records we need
+    }
+
+    const remainingSpace = totalVesselHistoryRecords - vesselHistoryData.length;
+    const recordsToAdd = records.slice(0, remainingSpace);
+
+    const newRecords = recordsToAdd.map((record) => ({
+      record,
+      latlng: {
+        lat: convertDMSToDecimal(record.latitude),
+        lng: convertDMSToDecimal(record.longitude),
+      },
+      dateTime: record.created_at,
+      status: record.telnet_status,
+    }));
+
+    vesselHistoryData.push(...newRecords);
+
+    document.getElementById("fetch_time").textContent = 
+      `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
+
+    console.log(`Processed batch ${batchToProcess}`);
   }
 
-  const remainingSpace = totalVesselHistoryRecords - vesselHistoryData.length;
-  const recordsToAdd = records.slice(0, remainingSpace);
-
-  const newRecords = recordsToAdd.map((record) => ({
-    record,
-    latlng: {
-      lat: convertDMSToDecimal(record.latitude),
-      lng: convertDMSToDecimal(record.longitude),
-    },
-    dateTime: record.created_at,
-    status: record.telnet_status,
-  }));
-
-  vesselHistoryData.push(...newRecords);
-
-  document.getElementById("fetch_time").textContent = 
-    `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
-
-  if (vesselHistoryData.length === totalVesselHistoryRecords) {
+  if (vesselHistoryData.length === totalVesselHistoryRecords && isProcessingComplete) {
     processCompletedData();
   }
 }
@@ -102,6 +121,9 @@ async function processCompletedData() {
   const fetchEndTime = Date.now();
   const fetchDuration = fetchEndTime - fetchStartTime;
   displayFetchTime(fetchDuration);
+
+  // Sort the entire dataset by id_vessel_record
+  vesselHistoryData.sort((a, b) => a.record.id_vessel_record - b.record.id_vessel_record);
 
   initializeCompleteHistory();
   await displayVesselHistoryPolyline();

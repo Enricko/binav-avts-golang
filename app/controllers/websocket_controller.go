@@ -2,16 +2,17 @@ package controllers
 
 import (
 	"encoding/json"
-	"golang-app/app/models"
-	"golang-app/database"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
+	"golang-app/app/models"
+	"golang-app/database"
 )
 
 var upgrader = websocket.Upgrader{
@@ -208,10 +209,13 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 
 	const batchSize = 1000
 	var offset int64 = 0
-	
+
 	// Create a worker pool
 	workerCount := 5
-	jobs := make(chan []models.VesselRecord, workerCount)
+	jobs := make(chan struct {
+		batchNumber int
+		records     []models.VesselRecord
+	}, workerCount)
 	results := make(chan WebSocketMessage, workerCount)
 	var wg sync.WaitGroup
 
@@ -220,10 +224,18 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for records := range jobs {
+			for job := range jobs {
+				// Sort the records by id_vessel_record
+				sort.Slice(job.records, func(i, j int) bool {
+					return job.records[i].IdVesselRecord < job.records[j].IdVesselRecord
+				})
+
 				results <- WebSocketMessage{
-					Type:    "vessel_records_batch",
-					Payload: records,
+					Type: "vessel_records_batch",
+					Payload: map[string]interface{}{
+						"batch_number": job.batchNumber,
+						"records":      job.records,
+					},
 				}
 			}
 		}()
@@ -244,6 +256,7 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 	}()
 
 	// Fetch and process records in batches
+	batchNumber := 1
 	for offset < totalRecords {
 		var records []models.VesselRecord
 		if err := query.Offset(int(offset)).Limit(batchSize).Find(&records).Error; err != nil {
@@ -254,8 +267,12 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 			close(jobs)
 			return
 		}
-		jobs <- records
+		jobs <- struct {
+			batchNumber int
+			records     []models.VesselRecord
+		}{batchNumber, records}
 		offset += int64(len(records))
+		batchNumber++
 	}
 
 	close(jobs)
