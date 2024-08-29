@@ -124,45 +124,50 @@
 <script>
   let ipCallSignSelected;
 
-  function initDataTableIpVessel(callSign){
+  function initDataTableIpVessel(callSign) {
+    // dataTableMap["ip-table"].dataTable.ajax.reload();
     ipCallSignSelected = callSign;
-    initializeDataTable("insertIp", "ip-table", `/vessel_ip/${ipCallSignSelected}`, [
-      { data: "ip", className: "text-center" },
-      { data: "port", className: "text-center" },
-      { data: "type_ip", className: "text-center" },
-      {
-        data: "aksi",
-        className: "text-center",
-        width: "10%",
-        render: function (data, type, row, meta) {
-          return `
+    initializeDataTable(
+      "insertIp",
+      "ip-table",
+      `/vessel_ip/${ipCallSignSelected}`,
+      [
+        { data: "ip", className: "text-center" },
+        { data: "port", className: "text-center" },
+        { data: "type_ip", className: "text-center" },
+        {
+          data: "aksi",
+          className: "text-center",
+          width: "10%",
+          render: function (data, type, row, meta) {
+            return `
                   <div class="container">
                   <div class="row justify-content-md-center">
                           <div class="col-auto mb-1">
-                              <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateVessel" onclick="#"><i class="fas fa-pencil"></i></button>
+                              <button class="btn btn-warning btn-xs" id="edit_data" onclick="editIp(${row.id_ip_kapal},${row.ip},${row.port},${row.type_ip})"><i class="fas fa-pencil"></i></button>
                           </div>
                   
                           <div class="col-auto mb-1">
-                        <button class="btn btn-danger btn-xs " id="delete_data" onclick="#"><i class="fas fa-trash-alt"></i></button>
+                        <button class="btn btn-danger btn-xs " onclick="deleteIp(${row.id_ip_kapal},'${row.call_sign}')"><i class="fas fa-trash-alt"></i></button>
                         </div>
                   </div>
                   </div>
                   `;
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("formInsertIp");
-    form.addEventListener("submit",  async (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       event.stopPropagation();
 
       if (form.checkValidity()) {
         const formData = new FormData(form);
         console.log(formData);
-        
 
         fetch(`/vessel_ip/insert/${ipCallSignSelected}`, {
           method: "POST",
@@ -200,6 +205,243 @@
       this.classList.add("was-validated");
     });
   });
+
+  function deleteIp(ipId, callSign) {
+    const swalConfig = {
+      backdrop: false,
+      target: document.getElementById("insertIp"),
+      customClass: { container: "my-swal" },
+    };
+
+    const showAlert = (title, text, icon) => {
+      return Swal.fire({ title, text, icon, ...swalConfig });
+    };
+
+    Swal.fire({
+      title: "Are you sure you want to delete this IP?",
+      html: `
+          <div style="text-align: left; color: #333;">
+            <p style="color: #d9534f; font-weight: bold; font-size: 1.1em;">Warning: This action is irreversible!</p>
+            <p>You are about to permanently delete:</p>
+            <ul style="color: #0056b3;">
+                <li>This IP</li>
+            </ul>
+            <p>To confirm, please type the Call Sign:</p>
+            <p style="font-weight: bold; color: #d9534f;">"${callSign}"</p>
+          </div>
+        `,
+      icon: "error", // Changed to error icon for danger
+      input: "text",
+      inputAttributes: {
+        autocapitalize: "off",
+        autocomplete: "off",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc3545",
+      cancelButtonText: "Cancel",
+      cancelButtonColor: "#6c757d",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      ...swalConfig,
+      didOpen: () => {
+        const input = Swal.getInput();
+        input.focus();
+        input.addEventListener("paste", (e) => {
+          e.preventDefault();
+          Swal.showValidationMessage(
+            "Pasting is not allowed. Please type the name manually."
+          );
+        });
+      },
+      preConfirm: async (inputValue) => {
+        console.log(inputValue);
+
+        if (inputValue !== callSign) {
+          Swal.showValidationMessage("The confirmation name does not match");
+          return false;
+        }
+        try {
+          const formData = new URLSearchParams({
+            confirmation: inputValue,
+          });
+          const response = await fetch(`/vessel_ip/delete/${ipId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-Token": getCsrfToken(),
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to delete IP");
+          }
+
+          return await response.json();
+        } catch (error) {
+          Swal.showValidationMessage(`Request failed: ${error}`);
+        }
+      },
+    })
+      .then((result) => {
+        if (result.isConfirmed) {
+          if (result.value.message === "IP Vessel deleted successfully") {
+            dataTableMap["ip-table"].dataTable.ajax.reload();
+            showAlert("Deleted!", "The IP has been deleted.", "success");
+          } else {
+            showAlert(
+              "Deletion Failed!",
+              result.value.message || "Failed to delete IP.",
+              "error"
+            );
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error in delete IP:", error);
+        showAlert(
+          "Error",
+          error.message || "An unexpected error occurred",
+          "error"
+        );
+      });
+  }
+
+  function editIp(ipId,ip,port,type) {
+    console.log(ip);
+    console.log(port);
+    console.log(type);
+    
+    const swalConfig = {
+      backdrop: false,
+      target: document.getElementById("insertIp"),
+      customClass: { container: "my-swal" },
+    };
+
+    const showAlert = (title, text, icon) => {
+      return Swal.fire({ title, text, icon, ...swalConfig });
+    };
+
+    Swal.fire({
+      // title: "Are you sure you want to delete this IP?",
+      html: `
+          <div class="d-flex ">
+            <div class="p-2 flex-fill ">
+              <label for="ip" class="form-label">IP</label>
+              <input
+                type="text"
+                class="form-control"
+                value="${ip}"
+                id="editIp"
+                name="ip"
+                required
+              />
+            </div>
+            <div class="p-2 flex-fill ">
+              <label for="port" class="form-label">PORT</label>
+              <input
+                type="text"
+                class="form-control"
+                value="${port}"
+                id="editPort"
+                name="port"
+                required
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="type_ip" class="form-label">Type IP</label>
+            <select class="form-select" value="${type}" id="editType" name="type" required>
+              <option value="nmea">NMEA</option>
+              <option value="water_depth">Water Depth</option>
+            </select>
+          </div>
+        `,
+      inputAttributes: {
+        autocapitalize: "off",
+        autocomplete: "off",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Update",
+      confirmButtonColor: "#0d6efd",
+      cancelButtonText: "Cancel",
+      cancelButtonColor: "#6c757d",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      ...swalConfig,
+      // didOpen: () => {
+      //   const input = Swal.getInput();
+      //   input.focus();
+      //   input.addEventListener("paste", (e) => {
+      //     e.preventDefault();
+      //     Swal.showValidationMessage(
+      //       "Pasting is not allowed. Please type the name manually."
+      //     );
+      //   });
+      // },
+      preConfirm: async () => {
+        const ip = document.getElementById("editIp").value;
+        const port = document.getElementById("editPort").value;
+        const type = document.getElementById("editType").value;
+
+        if (!ip || !port || !type) {
+          Swal.showValidationMessage("Please fill in all fields");
+          return false;
+        }
+
+        try {
+          const formData = new URLSearchParams({
+            ip: ip,
+            port: port,
+            type: type
+          });
+          console.log(formData.toString());
+          
+          const response = await fetch(`/vessel_ip/update/${ipId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-Token": getCsrfToken(),
+            },
+            body: formData,
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to Update IP");
+          }
+
+          return await response.json();
+          
+        } catch (error) {
+          Swal.showValidationMessage(`Request failed: ${error}`);
+        }
+
+      },
+    }).then((result) => {
+        if (result.isConfirmed) {
+          if (result.value.message === "IP Vessel updated successfully") {
+            dataTableMap["ip-table"].dataTable.ajax.reload();
+            showAlert("Updated!", "The IP has been updated.", "success");
+          } else {
+            showAlert(
+              "Update Failed!",
+              result.value.message || "Failed to Update IP.",
+              "error"
+            );
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error in update IP:", error);
+        showAlert(
+          "Error",
+          error.message || "An unexpected error occurred",
+          "error"
+        );
+      });
+  }
 </script>
 
 {{end}}

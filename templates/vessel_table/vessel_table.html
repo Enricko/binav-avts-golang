@@ -324,6 +324,7 @@
   function updateTitle(vesselData){
     const form = document.getElementById('formInsertIp');
     form.reset();
+    
     document.getElementById("ipTitle").innerHTML = vesselData.call_sign;
     initDataTableIpVessel(vesselData.call_sign);
   }
