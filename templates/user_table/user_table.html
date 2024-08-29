@@ -153,7 +153,7 @@
           fetch(`/user/delete/${userId}`, {
             method: "DELETE",
             headers: {
-              "X-CSRF-Token": `{{ .csrfToken }}`,
+              "X-CSRF-Token": getCsrfToken(),
               "Content-Type": "application/json",
             },
           })

@@ -8,7 +8,6 @@
       </div>
       <div class="modal-body">
         <form id="formInsertUser" class="needs-validation" novalidate autocomplete="off">
-          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
           <div class="row g-3 mb-3">
             <div class="col-md-12">
               <label for="name" class="form-label">Name</label>
@@ -67,7 +66,10 @@
             
             fetch('/user/insert', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                  "X-CSRF-Token": getCsrfToken(),
+                },
             })
             .then(response => {
               if (!response.ok) {

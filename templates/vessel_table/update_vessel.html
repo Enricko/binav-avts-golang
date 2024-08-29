@@ -9,7 +9,6 @@
             </div>
             <div class="modal-body">
                 <form id="formUpdateVessel" class="needs-validation" enctype="multipart/form-data" novalidate>
-                    <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
                     <input type="hidden" id="updateVesselId" name="id">
                     <div class="row g-3 mb-3">
                         <!-- <div class="col-md-6"> -->
@@ -166,6 +165,9 @@
             fetch(`/vessel/update/${vesselId}`, {
                 method: 'PUT',
                 body: formData,
+                headers: {
+                    "X-CSRF-Token": getCsrfToken(),
+                },
             })
             .then(response => {
                 if (!response.ok) {

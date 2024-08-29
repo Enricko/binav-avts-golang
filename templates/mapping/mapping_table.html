@@ -6,8 +6,7 @@
   tabindex="-1"
   role="dialog"
   aria-labelledby="mappingTableLabel"
-  aria-hidden="true"
->
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -16,8 +15,7 @@
           type="button"
           class="btn-close btn-close-white"
           data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
+          aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
         <div class="container-fluid py-3">
@@ -27,8 +25,7 @@
                 class="btn btn-success"
                 id="tambah_data"
                 data-bs-toggle="modal"
-                data-bs-target="#insertMapping"
-              >
+                data-bs-target="#insertMapping">
                 <i class="fas fa-plus-circle me-2"></i>Add New Pipeline
               </button>
             </div>
@@ -38,8 +35,7 @@
               <div class="table-responsive">
                 <table
                   id="mapping-table"
-                  class="table table-striped table-hover table-bordered"
-                >
+                  class="table table-striped table-hover table-bordered">
                   <thead class="table-dark">
                     <tr>
                       <th>ID</th>
@@ -203,7 +199,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              "X-CSRF-Token": "{{ .csrfToken }}",
+              "X-CSRF-Token": getCsrfToken(),
             },
             body: formData,
           });

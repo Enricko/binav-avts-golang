@@ -83,7 +83,7 @@ func main() {
 	// CORS configuration
 	corsConfig := cors.DefaultConfig()
 	if gin.Mode() == gin.ReleaseMode {
-		corsConfig.AllowOrigins = []string{"https://yourdomain.com", "https://www.yourdomain.com"}
+		corsConfig.AllowOrigins = []string{"https://binav-avts.id", "https://www.binav-avts.id"}
 	} else {
 		corsConfig.AllowAllOrigins = true
 	}
@@ -95,7 +95,7 @@ func main() {
 	r.Use(cors.New(corsConfig))
 
 	// Session configuration
-	store := cookie.NewStore([]byte(os.Getenv("SESSION_SECRET")))
+	store := cookie.NewStore([]byte(os.Getenv("SECRET_KEY")))
 	store.Options(sessions.Options{
 		HttpOnly: true,
 		Secure:   gin.Mode() == gin.ReleaseMode, // Secure in production

@@ -22,7 +22,7 @@ func NoCSRF(excludedPaths []string) gin.HandlerFunc {
 
 		// Apply CSRF protection for all other routes
 		csrf.Middleware(csrf.Options{
-			Secret: os.Getenv("SECRET"),
+			Secret: os.Getenv("SECRET_KEY"),
 			ErrorFunc: func(c *gin.Context) {
 				c.String(http.StatusBadRequest, "CSRF token mismatch")
 				c.Abort()

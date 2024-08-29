@@ -1,26 +1,56 @@
 {{define "updateMapping"}}
-<div class="modal fade" id="updateMapping" tabindex="-1" aria-labelledby="updateMappingLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="updateMapping"
+  tabindex="-1"
+  aria-labelledby="updateMappingLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="updateMappingLabel">Update Mapping <span id="updateMappingNameTitle"></span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="updateMappingLabel">
+          Update Mapping <span id="updateMappingNameTitle"></span>
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <form id="updateMappingForm">
-          <input type="hidden" id="updateMappingId" name="id">
-          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
+          <input type="hidden" id="updateMappingId" name="id" />
           <div class="mb-3">
             <label for="updateMappingName" class="form-label">Name</label>
-            <input type="text" class="form-control" id="updateMappingName" name="name" required>
+            <input
+              type="text"
+              class="form-control"
+              id="updateMappingName"
+              name="name"
+              required
+            />
           </div>
           <div class="mb-3">
             <label for="updateMappingFile" class="form-label">File</label>
-            <input type="file" class="form-control" id="updateMappingFile" name="file" accept=".kml,.kmz">
+            <input
+              type="file"
+              class="form-control"
+              id="updateMappingFile"
+              name="file"
+              accept=".kml,.kmz"
+            />
           </div>
           <div class="mb-3">
             <label for="updateMappingStatus" class="form-label">Status</label>
-            <select class="form-select" id="updateMappingStatus" name="status" required autocomplete="off">
+            <select
+              class="form-select"
+              id="updateMappingStatus"
+              name="status"
+              required
+              autocomplete="off"
+            >
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
@@ -29,96 +59,109 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="updateMappingSubmit">Update</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" id="updateMappingSubmit">
+          Update
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('updateMappingForm');
-    const updateButton = document.getElementById('updateMappingSubmit');
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("updateMappingForm");
+    const updateButton = document.getElementById("updateMappingSubmit");
 
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        if (this.checkValidity()) {
-            const formData = new FormData(this);
-            const mappingId = formData.get('id');
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
 
-            // Add status as a boolean
-            formData.set('status', formData.get('status') === 'true');
+      if (this.checkValidity()) {
+        const formData = new FormData(this);
+        const mappingId = formData.get("id");
 
-            fetch(`/mapping/update/${mappingId}`, {
-                method: 'PUT',
-                body: formData,
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Mapping updated:', data);
-                dataTableMap["mapping-table"].dataTable.ajax.reload();
-                const updateMappingModal = document.getElementById('updateMapping');
-                const modalInstance = bootstrap.Modal.getInstance(updateMappingModal);
-                modalInstance.hide();
+        // Add status as a boolean
+        formData.set("status", formData.get("status") === "true");
 
-                const mappingTableModal = document.getElementById('mappingTable');
-                const mappingTableModalInstance = new bootstrap.Modal(mappingTableModal);
-                mappingTableModalInstance.show();
+        fetch(`/mapping/update/${mappingId}`, {
+          method: "PUT",
+          body: formData,
+          headers: {
+            "X-CSRF-Token": getCsrfToken(),
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((err) => {
+                throw err;
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Mapping updated:", data);
+            dataTableMap["mapping-table"].dataTable.ajax.reload();
+            const updateMappingModal = document.getElementById("updateMapping");
+            const modalInstance =
+              bootstrap.Modal.getInstance(updateMappingModal);
+            modalInstance.hide();
 
-                form.reset();
-                form.classList.remove('was-validated');
-                Swal.fire({
-                    title: 'Success',
-                    text: data.message || 'Mapping updated successfully',
-                    icon: 'success',
-                });
-            })
-            .catch(error => {
-                console.error('Error updating mapping:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'An error occurred while updating the mapping',
-                    icon: 'error',
-                });
+            const mappingTableModal = document.getElementById("mappingTable");
+            const mappingTableModalInstance = new bootstrap.Modal(
+              mappingTableModal
+            );
+            mappingTableModalInstance.show();
+
+            form.reset();
+            form.classList.remove("was-validated");
+            Swal.fire({
+              title: "Success",
+              text: data.message || "Mapping updated successfully",
+              icon: "success",
             });
-        }
-        
-        this.classList.add('was-validated');
+          })
+          .catch((error) => {
+            console.error("Error updating mapping:", error);
+            Swal.fire({
+              title: "Error",
+              text:
+                error.message || "An error occurred while updating the mapping",
+              icon: "error",
+            });
+          });
+      }
+
+      this.classList.add("was-validated");
     });
 
     // Trigger form submission when the update button is clicked
-    updateButton.addEventListener('click', function() {
-        form.requestSubmit();
+    updateButton.addEventListener("click", function () {
+      form.requestSubmit();
     });
 
     // File input change event handler
-    const fileInput = document.getElementById('updateMappingFile');
-    fileInput.addEventListener('change', function() {
-        const fileName = this.value.split('\\').pop();
-        const label = this.nextElementSibling;
-        if (label && label.classList.contains('custom-file-label')) {
-            label.textContent = fileName;
-        }
+    const fileInput = document.getElementById("updateMappingFile");
+    fileInput.addEventListener("change", function () {
+      const fileName = this.value.split("\\").pop();
+      const label = this.nextElementSibling;
+      if (label && label.classList.contains("custom-file-label")) {
+        label.textContent = fileName;
+      }
     });
 
     // Reset form when modal is hidden
-    const updateMappingModal = document.getElementById('updateMapping');
-    updateMappingModal.addEventListener('hidden.bs.modal', function () {
-        form.reset();
-        form.classList.remove('was-validated');
-        const fileLabel = document.querySelector('.custom-file-label');
-        if (fileLabel) {
-            fileLabel.textContent = 'Choose file';
-        }
+    const updateMappingModal = document.getElementById("updateMapping");
+    updateMappingModal.addEventListener("hidden.bs.modal", function () {
+      form.reset();
+      form.classList.remove("was-validated");
+      const fileLabel = document.querySelector(".custom-file-label");
+      if (fileLabel) {
+        fileLabel.textContent = "Choose file";
+      }
     });
-});
+  });
 </script>
 {{end}}

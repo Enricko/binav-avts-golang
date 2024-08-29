@@ -1,23 +1,52 @@
 {{define "insertVessel"}}
-<div class="modal fade" id="insertVessel" tabindex="-1" role="dialog" aria-labelledby="insertVesselLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="insertVessel"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="insertVesselLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">Insert New Vessel</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-target="#vesselTable" data-bs-toggle="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-target="#vesselTable"
+          data-bs-toggle="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <form id="formInsertVessel" class="needs-validation" enctype="multipart/form-data" novalidate>
-          <input type="hidden" name="_csrf" value="{{ .csrfToken }}">
+        <form
+          id="formInsertVessel"
+          class="needs-validation"
+          enctype="multipart/form-data"
+          novalidate
+        >
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label for="callSign" class="form-label">Call Sign</label>
-              <input type="text" class="form-control" id="callSign" name="call_sign" required>
+              <input
+                type="text"
+                class="form-control"
+                id="callSign"
+                name="call_sign"
+                required
+              />
               <div class="invalid-feedback">Please provide a call sign.</div>
             </div>
             <div class="col-md-6">
               <label for="flag" class="form-label">Flag</label>
-              <input type="text" class="form-control" id="flag" name="flag" required>
+              <input
+                type="text"
+                class="form-control"
+                id="flag"
+                name="flag"
+                required
+              />
               <div class="invalid-feedback">Please provide a flag.</div>
             </div>
           </div>
@@ -25,93 +54,216 @@
           <div class="row g-3 mb-3">
             <div class="col-md-4">
               <label for="kelas" class="form-label">Class</label>
-              <input type="text" class="form-control" id="kelas" name="kelas" required>
+              <input
+                type="text"
+                class="form-control"
+                id="kelas"
+                name="kelas"
+                required
+              />
               <div class="invalid-feedback">Please provide a class.</div>
             </div>
             <div class="col-md-4">
               <label for="builder" class="form-label">Builder</label>
-              <input type="text" class="form-control" id="builder" name="builder" required>
+              <input
+                type="text"
+                class="form-control"
+                id="builder"
+                name="builder"
+                required
+              />
               <div class="invalid-feedback">Please provide a builder.</div>
             </div>
             <div class="col-md-4">
               <label for="yearBuilt" class="form-label">Year Built</label>
-              <input type="number" class="form-control" id="yearBuilt" name="year_built" min="1800" max="{{.CurrentYear}}" required>
+              <input
+                type="number"
+                class="form-control"
+                id="yearBuilt"
+                name="year_built"
+                min="1800"
+                max="{{.CurrentYear}}"
+                required
+              />
               <div class="invalid-feedback">Please provide a valid year.</div>
             </div>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-md-6">
-              <label for="headingDirection" class="form-label">Heading Direction</label>
-              <input type="number" class="form-control" id="headingDirection" name="heading_direction" required>
-              <div class="invalid-feedback">Please provide a valid direction.</div>
+              <label for="headingDirection" class="form-label"
+                >Heading Direction</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="headingDirection"
+                name="heading_direction"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid direction.
+              </div>
             </div>
             <div class="col-md-6">
               <label for="calibration" class="form-label">Calibration</label>
-              <input type="number" class="form-control" id="calibration" name="calibration" required>
-              <div class="invalid-feedback">Please provide a calibration value.</div>
+              <input
+                type="number"
+                class="form-control"
+                id="calibration"
+                name="calibration"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a calibration value.
+              </div>
             </div>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-md-3">
               <label for="widthM" class="form-label">Width (m)</label>
-              <input type="number" class="form-control" id="widthM" name="width_m" min="0" required>
+              <input
+                type="number"
+                class="form-control"
+                id="widthM"
+                name="width_m"
+                min="0"
+                required
+              />
               <div class="invalid-feedback">Please provide a valid width.</div>
             </div>
             <div class="col-md-3">
               <label for="height" class="form-label">Height (m)</label>
-              <input type="number" class="form-control" id="height" name="height_m" min="0" required>
+              <input
+                type="number"
+                class="form-control"
+                id="height"
+                name="height_m"
+                min="0"
+                required
+              />
               <div class="invalid-feedback">Please provide a valid height.</div>
             </div>
             <div class="col-md-3">
               <label for="topRange" class="form-label">Top Range</label>
-              <input type="number" class="form-control" id="topRange" name="top_range" min="0" required>
-              <div class="invalid-feedback">Please provide a valid top range.</div>
+              <input
+                type="number"
+                class="form-control"
+                id="topRange"
+                name="top_range"
+                min="0"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid top range.
+              </div>
             </div>
             <div class="col-md-3">
               <label for="leftRange" class="form-label">Left Range</label>
-              <input type="number" class="form-control" id="leftRange" name="left_range" min="0" required>
-              <div class="invalid-feedback">Please provide a valid left range.</div>
+              <input
+                type="number"
+                class="form-control"
+                id="leftRange"
+                name="left_range"
+                min="0"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid left range.
+              </div>
             </div>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-md-4">
-              <label for="historyPerSecond" class="form-label">History Per Second</label>
-              <input type="number" class="form-control" id="historyPerSecond" name="history_per_second" min="1" value="1" required>
-              <div class="invalid-feedback">Please provide a valid value (minimum 1).</div>
+              <label for="historyPerSecond" class="form-label"
+                >History Per Second</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="historyPerSecond"
+                name="history_per_second"
+                min="1"
+                value="1"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid value (minimum 1).
+              </div>
             </div>
             <div class="col-md-4">
-              <label for="minimumKnotPerLiterGasoline" class="form-label">Min Knot/Liter Gasoline</label>
-              <input type="number" class="form-control" id="minimumKnotPerLiterGasoline" name="minimum_knot_per_liter_gasoline" min="0" step="0.01"
-                required>
-              <div class="invalid-feedback">Please provide a valid minimum knot per liter.</div>
+              <label for="minimumKnotPerLiterGasoline" class="form-label"
+                >Min Knot/Liter Gasoline</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="minimumKnotPerLiterGasoline"
+                name="minimum_knot_per_liter_gasoline"
+                min="0"
+                step="0.01"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid minimum knot per liter.
+              </div>
             </div>
             <div class="col-md-4">
-              <label for="maximumKnotPerLiterGasoline" class="form-label">Max Knot/Liter Gasoline</label>
-              <input type="number" class="form-control" id="maximumKnotPerLiterGasoline" name="maximum_knot_per_liter_gasoline" min="0" step="0.01"
-                required>
-              <div class="invalid-feedback">Please provide a valid maximum knot per liter.</div>
+              <label for="maximumKnotPerLiterGasoline" class="form-label"
+                >Max Knot/Liter Gasoline</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="maximumKnotPerLiterGasoline"
+                name="maximum_knot_per_liter_gasoline"
+                min="0"
+                step="0.01"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid maximum knot per liter.
+              </div>
             </div>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label for="imageMap" class="form-label">Image Map</label>
-              <input type="file" class="form-control" id="imageMap" name="image_map" accept="image/*" required>
+              <input
+                type="file"
+                class="form-control"
+                id="imageMap"
+                name="image_map"
+                accept="image/*"
+                required
+              />
               <div class="invalid-feedback">Please provide an image map.</div>
             </div>
             <div class="col-md-6">
               <label for="image" class="form-label">Vessel Image</label>
-              <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+              <input
+                type="file"
+                class="form-control"
+                id="image"
+                name="image"
+                accept="image/*"
+                required
+              />
               <div class="invalid-feedback">Please provide a vessel image.</div>
             </div>
           </div>
 
           <div class="mb-3">
             <label for="recordStatus" class="form-label">Record Status</label>
-            <select class="form-select" id="recordStatus" name="record_status" required>
+            <select
+              class="form-select"
+              id="recordStatus"
+              name="record_status"
+              required
+            >
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
@@ -120,113 +272,143 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-target="#vesselTable" data-bs-toggle="modal">Cancel</button>
-        <button type="submit" id="submitVesselButton" class="btn btn-primary">Submit</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-target="#vesselTable"
+          data-bs-toggle="modal"
+        >
+          Cancel
+        </button>
+        <button type="submit" id="submitVesselButton" class="btn btn-primary">
+          Submit
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('formInsertVessel');
-    const submitButton = document.getElementById('submitVesselButton');
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("formInsertVessel");
+    const submitButton = document.getElementById("submitVesselButton");
 
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        if (this.checkValidity()) {
-            const formData = new FormData(this);
-        
-            // Ensure all number fields are sent, even if they're 0
-            ['year_built', 'heading_direction', 'calibration', 'width_m', 'height_m', 'top_range', 'left_range', 'history_per_second'].forEach(function(field) {
-                const value = formData.get(field);
-                if (value === "") {
-                    formData.set(field, "0");
-                }
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (this.checkValidity()) {
+        const formData = new FormData(this);
+
+        // Ensure all number fields are sent, even if they're 0
+        [
+          "year_built",
+          "heading_direction",
+          "calibration",
+          "width_m",
+          "height_m",
+          "top_range",
+          "left_range",
+          "history_per_second",
+        ].forEach(function (field) {
+          const value = formData.get(field);
+          if (value === "") {
+            formData.set(field, "0");
+          }
+        });
+        // Inside the form submit event listener
+        [
+          "minimum_knot_per_liter_gasoline",
+          "maximum_knot_per_liter_gasoline",
+        ].forEach(function (field) {
+          const value = formData.get(field);
+          if (value === "") {
+            formData.set(field, "0");
+          } else {
+            formData.set(field, parseFloat(value).toString());
+          }
+        });
+
+        // Add status as a boolean
+        formData.set("record_status", formData.get("record_status") === "true");
+
+        fetch("/vessel/insert", {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-CSRF-Token": getCsrfToken(),
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((err) => {
+                throw err;
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Vessel created:", data);
+            dataTableMap["vessel-table"].dataTable.ajax.reload();
+            const insertVesselModal = document.getElementById("insertVessel");
+            const modalInstance =
+              bootstrap.Modal.getInstance(insertVesselModal);
+            modalInstance.hide();
+
+            const vesselTableModal = document.getElementById("vesselTable");
+            const vesselTableModalInstance = new bootstrap.Modal(
+              vesselTableModal
+            );
+            vesselTableModalInstance.show();
+
+            form.reset();
+            form.classList.remove("was-validated");
+            Swal.fire({
+              title: "Success",
+              text: data.message || "Vessel created successfully",
+              icon: "success",
             });
-            // Inside the form submit event listener
-            ['minimum_knot_per_liter_gasoline', 'maximum_knot_per_liter_gasoline'].forEach(function(field) {
-                const value = formData.get(field);
-                if (value === "") {
-                    formData.set(field, "0");
-                } else {
-                    formData.set(field, parseFloat(value).toString());
-                }
+          })
+          .catch((error) => {
+            console.error("Error creating vessel:", error);
+            Swal.fire({
+              title: "Error",
+              text:
+                error.message || "An error occurred while creating the vessel",
+              icon: "error",
             });
+          });
+      }
 
-            // Add status as a boolean
-            formData.set('record_status', formData.get('record_status') === 'true');
-
-            fetch('/vessel/insert', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-              if (!response.ok) {
-                  return response.json().then(err => { throw err; });
-              }
-              return response.json();
-            })
-            .then(data => {
-                console.log('Vessel created:', data);
-                dataTableMap["vessel-table"].dataTable.ajax.reload();
-                const insertVesselModal = document.getElementById('insertVessel');
-                const modalInstance = bootstrap.Modal.getInstance(insertVesselModal);
-                modalInstance.hide();
-
-                const vesselTableModal = document.getElementById('vesselTable');
-                const vesselTableModalInstance = new bootstrap.Modal(vesselTableModal);
-                vesselTableModalInstance.show();
-
-                form.reset();
-                form.classList.remove('was-validated');
-                Swal.fire({
-                    title: 'Success',
-                    text: data.message || 'Vessel created successfully',
-                    icon: 'success',
-                });
-            })
-            .catch(error => {
-                console.error('Error creating vessel:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'An error occurred while creating the vessel',
-                    icon: 'error',
-                });
-            });
-        }
-        
-        this.classList.add('was-validated');
+      this.classList.add("was-validated");
     });
 
     // Trigger form submission when the submit button is clicked
-    submitButton.addEventListener('click', function() {
-        form.requestSubmit();
+    submitButton.addEventListener("click", function () {
+      form.requestSubmit();
     });
 
     // File input change event handlers
-    ['imageMap', 'image'].forEach(function(inputId) {
-        const input = document.getElementById(inputId);
-        input.addEventListener('change', function() {
-            const fileName = this.value.split('\\').pop();
-            const label = this.nextElementSibling;
-            if (label && label.classList.contains('custom-file-label')) {
-                label.textContent = fileName;
-            }
-        });
+    ["imageMap", "image"].forEach(function (inputId) {
+      const input = document.getElementById(inputId);
+      input.addEventListener("change", function () {
+        const fileName = this.value.split("\\").pop();
+        const label = this.nextElementSibling;
+        if (label && label.classList.contains("custom-file-label")) {
+          label.textContent = fileName;
+        }
+      });
     });
 
     // Reset form when modal is hidden
-    const insertVesselModal = document.getElementById('insertVessel');
-    insertVesselModal.addEventListener('hidden.bs.modal', function () {
-        form.reset();
-        form.classList.remove('was-validated');
-        document.querySelectorAll('.custom-file-label').forEach(label => {
-            label.textContent = 'Choose file';
-        });
+    const insertVesselModal = document.getElementById("insertVessel");
+    insertVesselModal.addEventListener("hidden.bs.modal", function () {
+      form.reset();
+      form.classList.remove("was-validated");
+      document.querySelectorAll(".custom-file-label").forEach((label) => {
+        label.textContent = "Choose file";
+      });
     });
-});
+  });
 </script>
 {{end}}
