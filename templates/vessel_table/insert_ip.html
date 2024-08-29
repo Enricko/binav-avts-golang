@@ -154,13 +154,15 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    const form = document.querySelector("formInsertIp");
-    form.addEventListener("submit", function (event) {
+    const form = document.getElementById("formInsertIp");
+    form.addEventListener("submit",  async (event) => {
       event.preventDefault();
       event.stopPropagation();
 
       if (form.checkValidity()) {
         const formData = new FormData(form);
+        console.log(formData);
+        
 
         fetch(`/vessel_ip/insert/${ipCallSignSelected}`, {
           method: "POST",
