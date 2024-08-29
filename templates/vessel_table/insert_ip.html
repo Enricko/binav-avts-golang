@@ -10,7 +10,7 @@
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Insert IP  <span id="ipTitle"></span></h5>
+        <h5 class="modal-title">Insert IP <span id="ipTitle"></span></h5>
         <button
           type="button"
           class="btn-close btn-close-white"
@@ -19,7 +19,7 @@
           aria-label="Close"
         ></button>
       </div>
-      <div class="modal-body ">
+      <div class="modal-body">
         <form
           id="formInsertIp"
           class="needs-validation"
@@ -52,41 +52,43 @@
             </div>
           </div>
           <div class="mb-3">
-            <label for="recordStatus" class="form-label">Type IP</label>
-            <select class="form-select" id="recordStatus" name="record_status" required>
-              <option value="true">NMEA</option>
-              <option value="false">Water Depth</option>
+            <label for="type_ip" class="form-label">Type IP</label>
+            <select class="form-select" id="type_ip" name="type" required>
+              <option value="nmea">NMEA</option>
+              <option value="water_depth">Water Depth</option>
             </select>
             <div class="invalid-feedback">Please select a Type IP.</div>
           </div>
           <div class="d-flex justify-content-end">
-
-              <button type="submit" id="submitIpButton" class="btn btn-primary ">Submit</button>
+            <button type="submit" id="submitIpButton" class="btn btn-primary">
+              Submit
+            </button>
           </div>
         </form>
 
-        <hr>
+        <hr />
         <div class="row">
-            <div class="col">
-              <div class="table-responsive">
-                <table
-                  id="ip-table"
-                  class="table table-striped table-hover table-bordered"
-                >
-                  <thead class="table-dark">
-                    <tr>
-                      <th>IP</th>
-                      <th>PORT</th>
-                      <th>Type IP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Table content will be dynamically populated by DataTables -->
-                  </tbody>
-                </table>
-              </div>
+          <div class="col">
+            <div class="table-responsive">
+              <table
+                id="ip-table"
+                class="table table-striped table-hover table-bordered"
+              >
+                <thead class="table-dark">
+                  <tr>
+                    <th>IP</th>
+                    <th>PORT</th>
+                    <th>Type IP</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Table content will be dynamically populated by DataTables -->
+                </tbody>
+              </table>
             </div>
           </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button
@@ -101,4 +103,137 @@
     </div>
   </div>
 </div>
+
+<style>
+  #ip-table th,
+  #ip-table td {
+    white-space: nowrap;
+  }
+  #ip-table {
+    font-size: 0.9rem;
+  }
+  .modal-xl {
+    max-width: 95%;
+  }
+  @media (max-width: 768px) {
+    #ip-table {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<script>
+  $(document).ready(function () {
+    const callSign = document.getElementById("ipTitle").value;
+    // $('#ip-table').DataTable({
+    //   ajax: {
+    //     url: `/vessel_ip/${callSign}`,
+    //     dataSrc: '', // Adjust this if your API returns data in a nested object
+    //     error: function (xhr, error, thrown) {
+    //       console.error('Ajax error:', error);
+    //       console.log('XHR:', xhr);
+    //       console.log('Thrown:', thrown);
+    //     }
+    //   },
+    //   columns: [
+    //     { data: "ip", className: "text-center" },
+    //     { data: "port", className: "text-center" },
+    //     { data: "type_ip", className: "text-center" },
+    //     {
+    //       data: "aksi",
+    //       className: "text-center",
+    //       width: "10%",
+    //       render: function (data, type, row, meta) {
+    //         return `
+    //           <div class="container">
+    //             <div class="row justify-content-md-center">
+    //               <div class="col-auto mb-1">
+    //                 <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateVessel"><i class="fas fa-pencil"></i></button>
+    //               </div>
+    //               <div class="col-auto mb-1">
+    //                 <button class="btn btn-danger btn-xs" id="delete_data"><i class="fas fa-trash-alt"></i></button>
+    //               </div>
+    //             </div>
+    //           </div>
+    //         `;
+    //       },
+    //     },
+    //   ]
+    // });
+
+    initializeDataTable("insertIp", "ip-table", `/vessel_ip/${callSign}`, [
+      { data: "ip", className: "text-center" },
+      { data: "port", className: "text-center" },
+      { data: "type_ip", className: "text-center" },
+      {
+        data: "aksi",
+        className: "text-center",
+        width: "10%",
+        render: function (data, type, row, meta) {
+          return `
+                  <div class="container">
+                  <div class="row justify-content-md-center">
+                          <div class="col-auto mb-1">
+                              <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateVessel" onclick="#"><i class="fas fa-pencil"></i></button>
+                          </div>
+                  
+                          <div class="col-auto mb-1">
+                        <button class="btn btn-danger btn-xs " id="delete_data" onclick="#"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                  </div>
+                  </div>
+                  `;
+        },
+      },
+    ]);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("formInsertIp");
+    const callSign = document.getElementById("ipTitle").value;
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (form.checkValidity()) {
+        const formData = new FormData(form);
+
+        fetch(`/vessel_ip/insert/${callSign}`, {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((err) => {
+                throw err;
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Ip created:", data);
+            dataTableMap["ip-table"].dataTable.ajax.reload();
+
+            form.reset();
+            form.classList.remove("was-validated");
+            Swal.fire({
+              title: "Success",
+              text: data.message || "Ip created successfully",
+              icon: "success",
+            });
+          })
+          .catch((error) => {
+            console.error("Error creating Ip:", error);
+            Swal.fire({
+              title: "Error",
+              text: error.message || "An error occurred while creating the IP",
+              icon: "error",
+            });
+          });
+      }
+      this.classList.add("was-validated");
+    });
+  });
+</script>
+
 {{end}}
