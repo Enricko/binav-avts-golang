@@ -79,15 +79,15 @@
     <div id="measurement-window">
       <div id="measurement-info">Total Length : 0.0 Km</div>
     </div>
-  
+
     <div id="spinner">
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
-  
+
     {{template "vessel-detail.sidebar" .}}
-  
+
     <div
       class="modal fade"
       id="filterModal"
@@ -121,7 +121,7 @@
                 id="end-date-time"
                 name="end-date-time" />
             </div>
-  
+
             <button
               type="button"
               class="btn btn-secondary"
@@ -135,7 +135,7 @@
         </div>
       </div>
     </div>
-  
+
     <div
       class="d-flex justify-content-between w-100 align-items-start p-2 overlay-container"
       style="
@@ -148,6 +148,7 @@
         pointer-events: none;
       ">
       <div class="d-flex align-items-center" style="pointer-events: auto">
+        {{if .permissions.canUseAdminTools}}
         <div class="btn-group">
           <div class="dropdown">
             <button
@@ -186,7 +187,7 @@
             </ul>
           </div>
         </div>
-  
+        {{end}}
         <div class="autoComplete_wrapper">
           <input
             id="vesselSearch"
@@ -204,7 +205,7 @@
             autocapitalize="off"
             placeholder="Search for vessel..." />
         </div>
-  
+
         <button
           id="searchButton"
           class="btn btn-primary ml-4 rounded-circle"
