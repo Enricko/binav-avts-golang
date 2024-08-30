@@ -5,8 +5,7 @@
   tabindex="-1"
   role="dialog"
   aria-labelledby="insertIpLabel"
-  aria-hidden="true"
->
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -16,16 +15,14 @@
           class="btn-close btn-close-white"
           data-bs-target="#ipTable"
           data-bs-toggle="modal"
-          aria-label="Close"
-        ></button>
+          aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form
           id="formInsertIp"
           class="needs-validation"
           enctype="multipart/form-data"
-          novalidate
-        >
+          novalidate>
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label for="ip" class="form-label">IP</label>
@@ -34,8 +31,7 @@
                 class="form-control"
                 id="ip"
                 name="ip"
-                required
-              />
+                required />
               <div class="invalid-feedback">Please provide a IP.</div>
             </div>
             <div class="col-md-6">
@@ -45,8 +41,7 @@
                 class="form-control"
                 id="port"
                 name="port"
-                required
-              />
+                required />
               <div class="invalid-feedback">Please provide a PORT.</div>
             </div>
           </div>
@@ -71,8 +66,7 @@
             <div class="table-responsive">
               <table
                 id="ip-table"
-                class="table table-striped table-hover table-bordered"
-              >
+                class="table table-striped table-hover table-bordered">
                 <thead class="table-dark">
                   <tr>
                     <th>IP</th>
@@ -94,8 +88,7 @@
           type="button"
           class="btn btn-secondary"
           data-bs-target="#vesselTable"
-          data-bs-toggle="modal"
-        >
+          data-bs-toggle="modal">
           Cancel
         </button>
       </div>
@@ -184,7 +177,6 @@
           .then((data) => {
             console.log("Ip created:", data);
             dataTableMap["ip-table"].dataTable.ajax.reload();
-
             form.reset();
             form.classList.remove("was-validated");
             Swal.fire({
