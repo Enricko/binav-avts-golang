@@ -96,7 +96,7 @@
             <div class="container">
                 <div class="row justify-content-md-center">
                     <div class="col-auto mb-1">
-                        <button class="btn btn-primary btn-xs" id="send_email" onclick="sendEmail()"><i class="fa-regular fa-envelope"></i></button>
+                        <button class="btn btn-primary btn-xs" id="send_email" onclick="sendEmail('${row.name}','${row.email}')"><i class="fa-regular fa-envelope"></i></button>
                     </div>
                 </div>
             </div>
@@ -109,10 +109,10 @@
     ]);
   });
 
-  function sendEmail() {
+  function sendEmail(name,email) {
     const formData = new FormData();
-    formData.append("name", "rizky");
-    formData.append("email", "fadillarizky294@gmail.com");
+    formData.append("name", name);
+    formData.append("email", email);
     Swal.fire({
   title: 'Loading...',
   html: 'Please wait',
