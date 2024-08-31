@@ -20,7 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-
 )
 
 func hashPassword(password string) (string, error) {
@@ -189,12 +188,41 @@ func (r *UserController) InsertUser(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"message": "Email already exists"})
 			return
 		}
+
 		// Handle other potential errors
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
 		return
 	}
+	if err := helper.SendEmail(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send email"})
+		return
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully", "data": user})
+}
+
+func (r *UserController) SendEmailConfirmation(c *gin.Context) {
+	var input struct {
+		Name     string       `form:"name" json:"name" binding:"required"`
+		Email    string       `form:"email" json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to bind data", "error": err.Error()})
+		return
+	}
+
+	user := models.User{
+		Name:     input.Name,
+		Email:    input.Email,
+	}
+
+	if err := helper.SendEmail(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send email"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Email Sending successfully", "data": user})
 }
 
 func (r *UserController) Login(c *gin.Context) {

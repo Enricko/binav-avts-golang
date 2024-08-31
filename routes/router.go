@@ -49,6 +49,7 @@ func SetupRouter(r *gin.Engine) {
 
 		protected.GET("/user/data", userController.GetUsers)
 		protected.POST("/user/insert", userController.InsertUser)
+		protected.POST("/user/send_email", userController.SendEmailConfirmation)
 
 		protected.GET("/vessel/data", vesselController.GetVessel)
 		protected.GET("/vessel/:call_sign", vesselController.GetVesselByCallSign)

@@ -45,6 +45,7 @@
                       <th>Name</th>
                       <th>Email</th>
                       <th>Level</th>
+                      <th>Aksi</th>
                       <!-- <th>Action</th> -->
                     </tr>
                   </thead>
@@ -86,27 +87,72 @@
       { data: "name", className: "text-center" },
       { data: "email", className: "text-center" },
       { data: "level", className: "text-center" },
-      // {
-      //   data: "aksi",
-      //   className: "text-center",
-      //   width: "10%",
-      //   render: function (data, type, row, meta) {
-      //     return `
-      //       <div class="container">
-      //           <div class="row justify-content-md-center">
-      //               <div class="col-auto mb-1">
-      //                   <button class="btn btn-danger btn-xs" id="delete_data" onclick="deleteUser('${row.id_user}')"><i class="fas fa-trash-alt"></i></button>
-      //               </div>
-      //           </div>
-      //       </div>
-      //       `;
-      //     // <div class="col-auto mb-1">
-      //     //     <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateUser" onclick="editUser('${row.id_user}')"><i class="fas fa-pencil"></i></button>
-      //     // </div>
-      //   },
-      // },
+      {
+        data: "aksi",
+        className: "text-center",
+        width: "10%",
+        render: function (data, type, row, meta) {
+          return `
+            <div class="container">
+                <div class="row justify-content-md-center">
+                    <div class="col-auto mb-1">
+                        <button class="btn btn-primary btn-xs" id="send_email" onclick="sendEmail()"><i class="fa-regular fa-envelope"></i></button>
+                    </div>
+                </div>
+            </div>
+            `;
+          // <div class="col-auto mb-1">
+          //     <button class="btn btn-warning btn-xs" id="edit_data" data-bs-toggle="modal" data-bs-target="#updateUser" onclick="editUser('${row.id_user}')"><i class="fas fa-pencil"></i></button>
+          // </div>
+        },
+      },
     ]);
   });
+
+  function sendEmail() {
+    const formData = new FormData();
+    formData.append("name", "rizky");
+    formData.append("email", "fadillarizky294@gmail.com");
+    Swal.fire({
+  title: 'Loading...',
+  html: 'Please wait',
+  allowOutsideClick: false,
+  showConfirmButton: false,
+  willOpen: () => {
+    Swal.showLoading();
+  },
+});
+    fetch("/user/send_email", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "X-CSRF-Token": getCsrfToken(),
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        Swal.close();
+        Swal.fire({
+          title: "Success",
+          text: data.message || "Email Sending successfully",
+          icon: "success",
+        });
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        Swal.close();
+        Swal.fire({
+          title: "Error",
+          text: "Failed to fetch user data",
+          icon: "error",
+        });
+      });
+  }
 
   function editUser(userId) {
     fetch(`/user/${userId}`)
@@ -192,9 +238,9 @@
       });
   }
 
-//   function populateUpdateForm(userData) {
-//     // Implement this function to populate the update form with user data
-//     // You'll need to create the update form and its fields
-//   }
+  //   function populateUpdateForm(userData) {
+  //     // Implement this function to populate the update form with user data
+  //     // You'll need to create the update form and its fields
+  //   }
 </script>
 {{end}}
