@@ -4,13 +4,12 @@ let dataTableMap = {};
 // Function to initialize or reload DataTable
 function initializeDataTable(modalId, tableId, ajaxUrl, columns) {
   $(`#${modalId}`).on("shown.bs.modal", function () {
-    let dataTable;
-
-    if ($.fn.DataTable.isDataTable(`#${tableId}`)) {
-      dataTable = $(`#${tableId}`).DataTable();
-      dataTable.ajax.reload(null, false);
+    if (dataTableMap[tableId]) {
+      // If DataTable instance exists, update its ajax URL and reload
+      dataTableMap[tableId].dataTable.ajax.url(ajaxUrl).load();
     } else {
-      dataTable = $(`#${tableId}`).DataTable({
+      // If DataTable instance doesn't exist, initialize it
+      let dataTable = $(`#${tableId}`).DataTable({
         ajax: ajaxUrl,
         processing: true,
         serverSide: true,
@@ -22,17 +21,19 @@ function initializeDataTable(modalId, tableId, ajaxUrl, columns) {
         ],
         columns: columns,
       });
+
+      // Reload the table data every 60 seconds
+      let reloadInterval = setInterval(() => {
+        dataTable.ajax.reload(null, false);
+      }, 60000);
+
+      dataTableMap[tableId] = { dataTable, reloadInterval };
     }
-
-    // Reload the table data every 60 seconds
-    let reloadInterval = setInterval(() => {
-      dataTable.ajax.reload(null, false);
-    }, 60000);
-
-    dataTableMap[tableId] = { dataTable, reloadInterval };
   });
 
   $(`#${modalId}`).on("hidden.bs.modal", function () {
-    clearInterval(dataTableMap[tableId].reloadInterval);
+    if (dataTableMap[tableId]) {
+      clearInterval(dataTableMap[tableId].reloadInterval);
+    }
   });
 }

@@ -3,6 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"golang-app/app/models"
+	"golang-app/database"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"golang-app/app/models"
-	"golang-app/database"
 )
 
 type VesselController struct {
@@ -134,7 +134,6 @@ func (r *VesselController) InsertVessel(c *gin.Context) {
 		return
 	}
 
-	// Validate that all required fields are present
 	if input.YearBuilt == nil || input.HeadingDirection == nil || input.Calibration == nil ||
 		input.WidthM == nil || input.Height == nil || input.TopRange == nil || input.LeftRange == nil ||
 		input.HistoryPerSecond == nil || input.MinimumKnotPerLiterGasoline == nil || input.MaximumKnotPerLiterGasoline == nil {
@@ -142,21 +141,18 @@ func (r *VesselController) InsertVessel(c *gin.Context) {
 		return
 	}
 
-	// Handle image_map upload
 	imageMapFile, err := c.FormFile("image_map")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload image map"})
 		return
 	}
 
-	// Handle image upload
 	imageFile, err := c.FormFile("image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload vessel image"})
 		return
 	}
 
-	// Create directory if it doesn't exist
 	dir := "public/upload/assets/image/vessel"
 	dir2 := "public/upload/assets/image/vessel_map"
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -168,7 +164,6 @@ func (r *VesselController) InsertVessel(c *gin.Context) {
 		return
 	}
 
-	// Save the image map file with a unique name
 	imageMapFilename := time.Now().Format("2006-01-02 15_04_05") + input.CallSign + filepath.Ext(imageMapFile.Filename)
 	imageMapPath := filepath.Join(dir2, imageMapFilename)
 	if err := c.SaveUploadedFile(imageMapFile, imageMapPath); err != nil {
@@ -176,13 +171,33 @@ func (r *VesselController) InsertVessel(c *gin.Context) {
 		return
 	}
 
-	// Save the vessel image file with a unique name
 	imageFilename := time.Now().Format("2006-01-02 15_04_05") + input.CallSign + filepath.Ext(imageFile.Filename)
 	imagePath := filepath.Join(dir, imageFilename)
 	if err := c.SaveUploadedFile(imageFile, imagePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save vessel image"})
 		return
 	}
+
+	tx := database.DB.Begin()
+
+	// var vesselRecord models.Kapal
+	// if err := tx.Where("call_sign = ?", input.CallSign).First(&vesselRecord).Error; err != nil {
+	// 	if err == gorm.ErrRecordNotFound {
+	// 		vesselRecord = models.Kapal{
+	// 			CallSign: input.CallSign,
+	// 			// Add other necessary fields for VesselRecord
+	// 		}
+	// 		if err := tx.Create(&vesselRecord).Error; err != nil {
+	// 			tx.Rollback()
+	// 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create vessel record", "error": err.Error()})
+	// 			return
+	// 		}
+	// 	} else {
+	// 		tx.Rollback()
+	// 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error checking vessel record", "error": err.Error()})
+	// 		return
+	// 	}
+	// }
 
 	vessel := models.Kapal{
 		CallSign:                    input.CallSign,
@@ -204,8 +219,14 @@ func (r *VesselController) InsertVessel(c *gin.Context) {
 		RecordStatus:                input.RecordStatus,
 	}
 
-	if err := database.DB.Create(&vessel).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	if err := tx.Create(&vessel).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create vessel", "error": err.Error()})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction", "error": err.Error()})
 		return
 	}
 
