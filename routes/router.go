@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"golang-app/app/controllers"
 	"golang-app/app/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter(r *gin.Engine) {
@@ -64,7 +64,7 @@ func SetupRouter(r *gin.Engine) {
 		// protected.PUT("/vessel_ip/update/:id", IPVesselController.UpdateIPVessel)
 		// protected.POST("/vessel_ip/delete/:id", IPVesselController.DeleteIPVessel)
 	}
-	
+
 	r.GET("/vessel_ip/:call_sign", IPVesselController.GetIPVessels)
 	r.POST("/vessel_ip/insert/:call_sign", IPVesselController.InsertIPVessel)
 	r.PUT("/vessel_ip/update/:id", IPVesselController.UpdateIPVessel)

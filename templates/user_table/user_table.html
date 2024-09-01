@@ -109,19 +109,25 @@
     ]);
   });
 
-  function sendEmail(name,email) {
+  function sendEmail(name, email) {
     const formData = new FormData();
     formData.append("name", name);
     formData.append("email", email);
+
+    // Show loading modal
     Swal.fire({
-  title: 'Loading...',
-  html: 'Please wait',
-  allowOutsideClick: false,
-  showConfirmButton: false,
-  willOpen: () => {
-    Swal.showLoading();
-  },
-});
+      title: "Sending Email...",
+      html: "Please wait",
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    // Log user details (consider removing in production)
+    console.log("Sending email to:", name, email);
+
     fetch("/user/send_email", {
       method: "POST",
       body: formData,
@@ -131,27 +137,25 @@
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
       })
       .then((data) => {
-        Swal.close();
         Swal.fire({
           title: "Success",
-          text: data.message || "Email Sending successfully",
+          text: data.message || "Email sent successfully",
           icon: "success",
         });
       })
       .catch((error) => {
-        console.error("Error:", error);
-        Swal.close();
+        console.error("Error sending email:", error);
         Swal.fire({
           title: "Error",
-          text: "Failed to fetch user data",
+          text: "Failed to send email. Please try again later.",
           icon: "error",
         });
-      });
+      })
   }
 
   function editUser(userId) {

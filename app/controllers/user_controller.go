@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
 )
 
 func hashPassword(password string) (string, error) {
@@ -203,8 +204,8 @@ func (r *UserController) InsertUser(c *gin.Context) {
 
 func (r *UserController) SendEmailConfirmation(c *gin.Context) {
 	var input struct {
-		Name     string       `form:"name" json:"name" binding:"required"`
-		Email    string       `form:"email" json:"email" binding:"required,email"`
+		Name  string `form:"name" json:"name" binding:"required"`
+		Email string `form:"email" json:"email" binding:"required,email"`
 	}
 
 	if err := c.ShouldBind(&input); err != nil {
@@ -213,12 +214,14 @@ func (r *UserController) SendEmailConfirmation(c *gin.Context) {
 	}
 
 	user := models.User{
-		Name:     input.Name,
-		Email:    input.Email,
+		Name:  input.Name,
+		Email: input.Email,
 	}
+	fmt.Println(input)
+	fmt.Println(user)
 
 	if err := helper.SendEmail(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send email"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send email","error": err.Error()})
 		return
 	}
 
