@@ -9,6 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"golang-app/app/controllers"
+	"golang-app/app/middleware"
+	"golang-app/database"
+	"golang-app/routes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -16,10 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	"golang-app/app/controllers"
-	"golang-app/app/middleware"
-	"golang-app/database"
-	"golang-app/routes"
 )
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -162,3 +162,4 @@ func main() {
 
 	log.Println("Server exiting")
 }
+
