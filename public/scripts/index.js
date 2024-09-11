@@ -31,12 +31,13 @@ function formatDateTime(input) {
     month: "2-digit",
     year: "numeric",
     hour12: false,
-    timeZone: "Asia/Jakarta",
+    timeZone: "UTC",
   };
 
   const formattedDate = date.toLocaleString("en-GB", options).replace(",", "");
-  return formattedDate.replace(/\//g, "-");
+  return formattedDate.replace(/\//g, "-") + " UTC";
 }
+
 function formatDateTimeDisplay(input) {
   const date = new Date(input);
 
@@ -48,43 +49,40 @@ function formatDateTimeDisplay(input) {
     month: "2-digit",
     year: "numeric",
     hour12: false,
-    timeZone: "Asia/Jakarta",
+    timeZone: "UTC",
   };
 
   const formattedDate = date.toLocaleString("en-GB", options).replace(",", "");
-  return formattedDate;
+  return formattedDate + " UTC";
 }
 
 const formatDate = (date) => {
   const pad = (num) => String(num).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const seconds = pad(date.getSeconds());
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  const year = date.getUTCFullYear();
+  const month = pad(date.getUTCMonth() + 1);
+  const day = pad(date.getUTCDate());
+  const hours = pad(date.getUTCHours());
+  const minutes = pad(date.getUTCMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-// Format the date for the start time with 00:00:00
 const formatDateWithMidnight = (date) => {
   const pad = (num) => String(num).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  return `${year}-${month}-${day} 00:00:00`;
+  const year = date.getUTCFullYear();
+  const month = pad(date.getUTCMonth() + 1);
+  const day = pad(date.getUTCDate());
+  return `${year}-${month}-${day}T00:00`;
 };
 
 function startToEndDatetimeFilterForm() {
-  // Get current date and time
+  // Get current date and time in UTC
   const now = new Date();
 
-  // Set default end date to now
-  const endDateTime = now;
+  // Set default end date to now in UTC
+  const endDateTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes()));
 
-  // Set default start date to 3 days ago with time 00:00:00
-  const startDateTime = new Date(now);
-  startDateTime.setDate(startDateTime.getDate() - 3);
+  // Set default start date to 3 days ago with time 00:00:00 UTC
+  const startDateTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 3, 0, 0, 0));
 
   // Try to set input values if elements exist
   const startDateTimeInput = document.getElementById("start-date-time");
@@ -103,11 +101,11 @@ function startToEndDatetimeFilterForm() {
   const filterHistoryEnd = document.getElementById("filter_history_end");
 
   if (filterHistoryStart) {
-    filterHistoryStart.textContent = formatDateWithMidnight(startDateTime);
+    filterHistoryStart.textContent = formatDateForDisplay(startDateTime);
   }
 
   if (filterHistoryEnd) {
-    filterHistoryEnd.textContent = formatDate(endDateTime);
+    filterHistoryEnd.textContent = formatDateForDisplay(endDateTime);
   }
 
   startDatetimeFilter = formatToISO(startDateTime);

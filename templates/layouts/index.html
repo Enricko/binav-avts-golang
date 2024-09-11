@@ -106,30 +106,32 @@
           </div>
           <div class="modal-body">
             <div class="form-group mb-2">
-              <label for="start-date-time" style="font-weight: bold">From</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                id="start-date-time"
-                name="start-date-time" />
+                <label for="start-date-time" style="font-weight: bold">From (UTC)</label>
+                <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="start-date-time"
+                    name="start-date-time" />
+                <small class="form-text text-muted" id="start-date-time-utc"></small>
             </div>
             <div class="form-group mb-2">
-              <label for="end-date-time" style="font-weight: bold">To</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                id="end-date-time"
-                name="end-date-time" />
+                <label for="end-date-time" style="font-weight: bold">To (UTC)</label>
+                <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="end-date-time"
+                    name="end-date-time" />
+                <small class="form-text text-muted" id="end-date-time-utc"></small>
             </div>
-
+        
             <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal">
-              Close
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">
+                Close
             </button>
             <button id="submitFilter" type="button" class="btn btn-primary">
-              Save changes
+                Save changes
             </button>
           </div>
         </div>

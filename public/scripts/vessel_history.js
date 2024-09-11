@@ -19,7 +19,7 @@ const modalInstance = new bootstrap.Modal(filterModal);
 
 document.addEventListener("DOMContentLoaded", () => {
   if (progressSlider) progressSlider.addEventListener("input", updateHistorybySlider);
-  if (btnLoad) btnLoad.addEventListener("click", () => loadVesselHistoryData(document.getElementById("filter_history_start").textContent, document.getElementById("filter_history_end").textContent));
+  if (btnLoad) btnLoad.addEventListener("click", () => loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter));
   if (btnPlay) btnPlay.addEventListener("click", togglePlayPause);
   if (btnDownloadCSV) btnDownloadCSV.addEventListener("click", () => {
     downloadCSV(
@@ -55,6 +55,7 @@ function initializeCompleteHistory() {
   progressSlider.max = totalVesselHistoryRecords;
   animationFrameDuration = ANIMATION_DURATION / totalVesselHistoryRecords;
   currentAnimationIndex = 0;
+  toggleCameraLock(false);
 }
 
 function toggleVesselDetailSidebar() {
@@ -275,25 +276,37 @@ function filterByDateRange(data, startDate, endDate) {
   });
 }
 
-function formatToISO(dateString) {
-  const date = new Date(dateString);
-  const offset = date.getTimezoneOffset();
-  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
-  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
-  const sign = offset > 0 ? "-" : "+";
-  return date.toISOString().slice(0, 19) + sign + offsetHours + ":" + offsetMinutes;
+function formatToISO(date) {
+  return date.toISOString();
 }
 
 function startEndDatetimeFilterForm() {
-  const start = new Date(startDateTimeInput.value);
-  const end = new Date(endDateTimeInput.value);
+  // Parse input values as UTC dates
+  const start = parseInputToUTC(startDateTimeInput.value);
+  const end = parseInputToUTC(endDateTimeInput.value);
+
+  // Format dates to ISO strings in UTC
   startDatetimeFilter = formatToISO(start);
   endDatetimeFilter = formatToISO(end);
-  document.getElementById("filter_history_start").textContent = formatDateWithMidnight(start);
-  document.getElementById("filter_history_end").textContent = formatDate(end);
-  if (endDatetimeFilter <= startDatetimeFilter) {
+
+  // Update UI elements with formatted UTC dates
+  document.getElementById("filter_history_start").textContent = formatDateForDisplay(start);
+  document.getElementById("filter_history_end").textContent = formatDateForDisplay(end);
+
+  // Compare UTC timestamps
+  if (end.getTime() <= start.getTime()) {
     alert("End date and time must be after start date and time.");
   }
+}
+
+function parseInputToUTC(inputValue) {
+  // Ensure the input is treated as UTC
+  return new Date(inputValue + 'Z');
+}
+
+function formatDateForDisplay(date) {
+  // Format the UTC date for display, keeping it in UTC
+  return date.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 }
 
 function downloadCSV(filename, data) {
