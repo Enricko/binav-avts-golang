@@ -303,7 +303,8 @@ function getBaseURL() {
 }
 
 function loadKMZLayer(id, filePath) {
-  const kmzUrl = `${getBaseURL()}public/upload/assets/image/mapping/${filePath}`;
+  const kmzUrl = `https://binav-avts.id/public/upload/assets/image/mapping/20240911_063740_Option_2.kmz`;
+  // const kmzUrl = `${getBaseURL()}public/upload/assets/image/mapping/${filePath}`;
   const kmzLayer = new google.maps.KmlLayer({
     url: kmzUrl,
     map,
