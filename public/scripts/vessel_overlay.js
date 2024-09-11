@@ -83,8 +83,7 @@ class VesselOverlay extends BaseVesselOverlay {
     this.infoContent = infoContent;
     this.status = status;
     this.infoWindow = null;
-    this.previousPosition = position;
-    this.targetPosition = position;
+    this.animationInProgress = false;
   }
 
   onAdd() {
@@ -105,43 +104,58 @@ class VesselOverlay extends BaseVesselOverlay {
     });
   }
 
-  update(device, position, top, left, width, height, rotationAngle, imageMap, infoContent, status) {
+  update(device, newPosition, top, left, width, height, newRotationAngle, imageMap, infoContent, status) {
+    if (this.animationInProgress) {
+      cancelAnimationFrame(this.animationFrame);
+    }
+
+    const oldPosition = this.position;
+    const oldRotationAngle = this.rotationAngle;
     this.device = device;
-    this.previousPosition = this.position || position;
-    this.targetPosition = position;
     this.infoContent = infoContent;
     this.status = status;
     this.offsetFromCenter = { x: left, y: top };
     this.vesselDimensions = { width, height };
-    this.rotationAngle = rotationAngle;
     this.imageMap = imageMap;
 
     this.updateImage();
-    this.startAnimation();
+    this.animateMovementAndRotation(oldPosition, newPosition, oldRotationAngle, newRotationAngle);
   }
 
-  startAnimation() {
-    const duration = 250; // duration in ms
-    const start = performance.now();
+  animateMovementAndRotation(startPosition, endPosition, startAngle, endAngle) {
+    const startTime = performance.now();
+    const duration = 1000; // Animation duration in milliseconds
 
-    const animate = (time) => {
-      const elapsed = time - start;
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const lat = this.previousPosition.lat + (this.targetPosition.lat - this.previousPosition.lat) * progress;
-      const lng = this.previousPosition.lng + (this.targetPosition.lng - this.previousPosition.lng) * progress;
-      this.position = { lat, lng };
+
+      // Interpolate position
+      const currentLat = startPosition.lat + (endPosition.lat - startPosition.lat) * progress;
+      const currentLng = startPosition.lng + (endPosition.lng - startPosition.lng) * progress;
+      this.position = {lat :currentLat, lng: currentLng};
+
+      // Interpolate rotation
+      this.rotationAngle = startAngle + (endAngle - startAngle) * progress;
 
       this.draw();
+      this.updateRotation();
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        this.animationInProgress = true;
+        this.animationFrame = requestAnimationFrame(animate);
       } else {
-        this.position = this.targetPosition;
-        this.draw();
+        this.animationInProgress = false;
       }
     };
 
-    requestAnimationFrame(animate);
+    this.animationFrame = requestAnimationFrame(animate);
+  }
+
+  updateRotation() {
+    if (this.div && this.div.firstChild) {
+      this.div.firstChild.style.transform = `rotate(${this.rotationAngle}deg)`;
+    }
   }
 
   showInfoWindow() {
@@ -182,6 +196,8 @@ class VesselOverlay extends BaseVesselOverlay {
     this.map.setCenter(this.position);
   }
 }
+
+
 class VesselOverlayHistory extends BaseVesselOverlay {
   constructor(map, position, top, left, width, height, rotationAngle, imageMap) {
     super(map, position, top, left, width, height, rotationAngle, imageMap);

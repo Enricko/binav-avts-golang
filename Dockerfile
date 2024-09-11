@@ -1,27 +1,63 @@
-FROM golang:1.22-alpine
+# Start from the official Golang image
+FROM golang:1.22-alpine AS builder
 
-# Install tzdata to handle time zones
-RUN apk add --no-cache tzdata
+# Install necessary build tools
+RUN apk add --no-cache gcc musl-dev
 
-# Set the time zone to Asia/Jakarta (UTC+7)
-ENV TZ=Asia/Jakarta
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go application source code
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+
+# Download all dependencies
+RUN go mod download
+
+# Copy the source code into the container
 COPY . .
 
-# Copy SSL certificates
-COPY certs/fullchain.pem /etc/letsencrypt/live/binav-avts.id/fullchain.pem
-COPY certs/privkey.pem /etc/letsencrypt/live/binav-avts.id/privkey.pem
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
 
-# Install dependencies and build the application
-RUN go mod download
-RUN go build -o main .
+# Start a new stage from scratch
+FROM alpine:latest  
 
-# Expose ports for HTTP and HTTPS
+# Install necessary packages and set timezone
+RUN apk --no-cache add ca-certificates mysql-client tzdata && \
+    cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
+    echo "Asia/Jakarta" > /etc/timezone && \
+    apk del tzdata
+
+WORKDIR /app
+
+# Copy the pre-built binary file from the previous stage
+COPY --from=builder /app/main .
+
+# Explicitly copy SSL certificates
+COPY certs/fullchain.pem /app/certs/fullchain.pem
+COPY certs/privkey.pem /app/certs/privkey.pem
+
+# Copy any other necessary files (like templates or static assets)
+COPY templates templates/
+COPY public public/
+
+# Copy the .env file
+COPY .env .
+
+# Create a startup script
+RUN echo '#!/bin/sh' > start.sh && \
+    echo 'while true; do' >> start.sh && \
+    echo '    ./main' >> start.sh && \
+    echo '    echo "Application crashed with exit code $?. Respawning.." >&2' >> start.sh && \
+    echo '    sleep 1' >> start.sh && \
+    echo 'done' >> start.sh && \
+    chmod +x start.sh
+
+# Expose the port the app runs on
 EXPOSE 443
 
-# Run the Go application
-CMD ["./main"]
+# Set the environment variable for the time zone
+ENV TZ=Asia/Jakarta
+
+# Command to run the startup script
+CMD ["./start.sh"]

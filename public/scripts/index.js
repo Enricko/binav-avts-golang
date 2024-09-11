@@ -31,7 +31,6 @@ function formatDateTime(input) {
     month: "2-digit",
     year: "numeric",
     hour12: false,
-    timeZone: "Asia/Jakarta",
   };
 
   const formattedDate = date.toLocaleString("en-GB", options).replace(",", "");
