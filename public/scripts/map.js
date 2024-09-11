@@ -311,7 +311,7 @@ function loadKMZLayer(id, filePath) {
     map,
     preserveViewport: true,
     zIndex: 1,
-    clickable: false
+    clickable: false  
   });
 
   kmzLayer.addListener("status_changed", () => {
