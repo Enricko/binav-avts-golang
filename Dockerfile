@@ -22,12 +22,6 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
 # Start a new stage from scratch
 FROM alpine:latest  
 
-# Install necessary packages and set timezone
-RUN apk --no-cache add ca-certificates mysql-client tzdata && \
-    cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
-    echo "Asia/Jakarta" > /etc/timezone && \
-    apk del tzdata
-
 WORKDIR /app
 
 # Copy the pre-built binary file from the previous stage
