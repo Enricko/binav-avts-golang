@@ -83,6 +83,8 @@ class VesselOverlay extends BaseVesselOverlay {
     this.infoContent = infoContent;
     this.status = status;
     this.infoWindow = null;
+    this.previousPosition = position;
+    this.targetPosition = position;
   }
 
   onAdd() {
@@ -91,24 +93,6 @@ class VesselOverlay extends BaseVesselOverlay {
       this.div.addEventListener("mouseover", () => this.showInfoWindow());
       this.div.addEventListener("mouseout", () => this.hideInfoWindow());
       this.div.addEventListener("dblclick", (e) => this.onDblClick(e));
-
-      
-      // // Create and add the name label
-      // this.nameLabel = document.createElement("div");
-      // Object.assign(this.nameLabel.style, {
-      //   position: "absolute",
-      //   bottom: "-20px",  // Position below the image
-      //   left: "0",
-      //   width: "100%",
-      //   textAlign: "center",
-      //   color: "white",
-      //   fontSize: "12px",
-      //   fontWeight: "bold",
-      //   textShadow: "1px 1px 2px black",
-      //   pointerEvents: "none"  // Allows clicks to pass through to the map
-      // });
-      // this.div.appendChild(this.nameLabel);
-      // this.updateNameLabel();
     }
   }
 
@@ -120,16 +104,11 @@ class VesselOverlay extends BaseVesselOverlay {
       }
     });
   }
-  
-  // updateNameLabel() {
-  //   if (this.nameLabel) {
-  //     this.nameLabel.textContent = this.device;
-  //   }
-  // }
 
   update(device, position, top, left, width, height, rotationAngle, imageMap, infoContent, status) {
     this.device = device;
-    this.position = position;
+    this.previousPosition = this.position || position;
+    this.targetPosition = position;
     this.infoContent = infoContent;
     this.status = status;
     this.offsetFromCenter = { x: left, y: top };
@@ -138,8 +117,31 @@ class VesselOverlay extends BaseVesselOverlay {
     this.imageMap = imageMap;
 
     this.updateImage();
-    // this.updateNameLabel();
-    this.draw();
+    this.startAnimation();
+  }
+
+  startAnimation() {
+    const duration = 250; // duration in ms
+    const start = performance.now();
+
+    const animate = (time) => {
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const lat = this.previousPosition.lat + (this.targetPosition.lat - this.previousPosition.lat) * progress;
+      const lng = this.previousPosition.lng + (this.targetPosition.lng - this.previousPosition.lng) * progress;
+      this.position = { lat, lng };
+
+      this.draw();
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        this.position = this.targetPosition;
+        this.draw();
+      }
+    };
+
+    requestAnimationFrame(animate);
   }
 
   showInfoWindow() {
@@ -180,7 +182,6 @@ class VesselOverlay extends BaseVesselOverlay {
     this.map.setCenter(this.position);
   }
 }
-
 class VesselOverlayHistory extends BaseVesselOverlay {
   constructor(map, position, top, left, width, height, rotationAngle, imageMap) {
     super(map, position, top, left, width, height, rotationAngle, imageMap);
