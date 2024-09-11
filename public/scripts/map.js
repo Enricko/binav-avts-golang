@@ -63,14 +63,14 @@ function toggleRuler() {
       strokeWeight: 3,
       map: map,
       clickable: false,
-      zIndex: 999999, // Set a high zIndex for the polyline
+      zIndex: 1000000000, // Increased z-index
     });
     clickListener = map.addListener("click", addRulerPoint);
     mouseMoveListener = map.addListener("mousemove", updateCursorMarker);
     cursorMarker = new google.maps.Marker({
       map: map,
       icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5 },
-      zIndex: 999998, // Just below the polyline
+      zIndex: 9999999999, // High z-index for cursor marker
       clickable: false,
     });
 
@@ -221,11 +221,12 @@ function displayDistanceLabel(position, distance) {
     icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0 },
     label: {
       text: labelText,
-      color: "white", // Text color
+      color: "white",
       fontSize: "12px",
       fontWeight: "bold",
       className: "distance-label-clicked",
     },
+    zIndex: 999998, // High z-index for distance markers
   });
 
   distanceMarkers.push(marker);
@@ -309,6 +310,8 @@ function loadKMZLayer(id, filePath) {
     url: kmzUrl,
     map,
     preserveViewport: true,
+    zIndex: 1,
+    clickable: false
   });
 
   kmzLayer.addListener("status_changed", () => {
