@@ -15,6 +15,11 @@
     padding: 5px 10px;
     font-size: 14px;
   }
+  #lock-camera-btn {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    width: 100%;
+  }
   </style>
 <div id="detail-vessel" style="display: none">
   <div id="resizer">
@@ -27,6 +32,12 @@
         </button>
         <h4>Detail Vessel</h4>
       </div>
+
+      <!-- Add the Lock Camera button here -->
+      <button id="lock-camera-btn" class="btn btn-primary">
+        <i class="fas fa-lock"></i> Lock Camera
+      </button>
+
       <div class="vessel-info">
         <h5>General Information</h5>
         <img id="vessel-image" class="vessel-image" src alt="Vessel Image" />
@@ -128,12 +139,16 @@
 </div>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const detailVessel= document.getElementById('detail-vessel');
+    const detailVessel = document.getElementById('detail-vessel');
     const sidebarCloseBtn = document.getElementById('sidebar-close');
+    const lockCameraBtn = document.getElementById('lock-camera-btn');
   
     sidebarCloseBtn.addEventListener('click', function() {
-      // Assuming you have a function to hide the sidebar
       toggleVesselDetailSidebar();
+    });
+
+    lockCameraBtn.addEventListener('click', function() {
+      toggleCameraLock(!isCameraLocked);
     });
   });
   </script>

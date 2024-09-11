@@ -22,6 +22,17 @@ import (
 
 )
 
+var jakartaLocation *time.Location
+
+func init() {
+    var err error
+    jakartaLocation, err = time.LoadLocation("Asia/Jakarta")
+    if err != nil {
+        panic(err)
+    }
+    time.Local = jakartaLocation
+}
+
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")

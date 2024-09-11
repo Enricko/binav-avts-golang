@@ -47,6 +47,7 @@ function createProfileButton(map) {
   profileButton.title = "Profile Button";
   return profileButton;
 }
+
 function toggleRuler() {
   isRulerOn = !isRulerOn;
 
@@ -89,13 +90,21 @@ function toggleRuler() {
 }
 
 function initMap() {
+  // Load saved position from sessionStorage
+  const savedPosition = JSON.parse(sessionStorage.getItem('mapPosition'));
+  const center = savedPosition ? savedPosition.center : { lat: -1.0574568371666666, lng: 117.35121627983332 };
+  const zoom = savedPosition ? savedPosition.zoom : initialZoom;
+
   map = new google.maps.Map(document.getElementById("map"), {
-    zoom: initialZoom,
-    center: { lat: -1.0574568371666666, lng: 117.35121627983332 },
+    zoom: zoom,
+    center: center,
     disableDefaultUI: true,
     zoomControl: true,
     scaleControl: true,
   });
+
+  // Add listener to save position when the map becomes idle
+  map.addListener('idle', saveMapPosition);
 
   const profileButton = createProfileButton(map);
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(profileButton);
@@ -111,6 +120,16 @@ function initMap() {
   
   connectWebSocket();
   onSearchVessel();
+}
+
+// New function to save map position
+function saveMapPosition() {
+  const center = map.getCenter();
+  const position = {
+    center: { lat: center.lat(), lng: center.lng() },
+    zoom: map.getZoom()
+  };
+  sessionStorage.setItem('mapPosition', JSON.stringify(position));
 }
 
 function updateCursorMarker(event) {

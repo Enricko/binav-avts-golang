@@ -1,6 +1,31 @@
 let currentDevices = [];
 let markers = {};
 let dataDevices = {};
+let isCameraLocked = false;
+let lockedVesselId = null;
+
+function toggleCameraLock(isLocked) {
+  isCameraLocked = isLocked;
+  if (!isLocked) {
+    lockedVesselId = null;
+  } else {
+    lockedVesselId = currentSelectedMarker;
+  }
+  updateLockCameraButton();
+}
+
+function updateLockCameraButton() {
+  const lockCameraBtn = document.getElementById("lock-camera-btn");
+  if (lockCameraBtn) {
+    if (isCameraLocked) {
+      lockCameraBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock Camera';
+      lockCameraBtn.classList.replace("btn-primary", "btn-secondary");
+    } else {
+      lockCameraBtn.innerHTML = '<i class="fas fa-lock"></i> Lock Camera';
+      lockCameraBtn.classList.replace("btn-secondary", "btn-primary");
+    }
+  }
+}
 
 // Marker functions
 function updateMarkerIfNeeded(device, data) {
@@ -45,6 +70,9 @@ function updateMarkerIfNeeded(device, data) {
         contentString,
         nmea.status
       );
+    }
+    if (isCameraLocked && device === lockedVesselId) {
+      map.panTo(position);
     }
   }
 }
@@ -144,21 +172,32 @@ function dataKapalMarker(device) {
 }
 
 function getDataKapalMarker(device) {
-  const vessel_record_preview = document.getElementById(
-    "vessel_record_preview"
-  );
-  dataKapalMarker(device);
-  startToEndDatetimeFilterForm();
-
   if (currentSelectedMarker !== device) {
     currentSelectedMarker = device;
     resetVesselState();
+
+    // If this is the first vessel selection or if the camera is already locked,
+    // lock the camera to the newly selected vessel
+    if (!isCameraLocked || lockedVesselId === null) {
+      toggleCameraLock(true);
+    } else {
+      // If a different vessel is selected while the camera is locked,
+      // switch the lock to the new vessel
+      lockedVesselId = device;
+    }
+
+    const vessel_record_preview = document.getElementById(
+      "vessel_record_preview"
+    );
     vessel_record_preview.style.display = "block";
     isPreviewActive = true;
     toggleVesselDetailSidebar();
     defaultHistoryTable();
     if (document.getElementById("total_records"))
       document.getElementById("total_records").textContent = "0";
+
+    dataKapalMarker(device);
+    startToEndDatetimeFilterForm();
   }
 }
 
@@ -166,7 +205,7 @@ async function resetVesselState() {
   if (btnDownloadCSV) {
     btnPlay.disabled = btnDownloadCSV.disabled = true;
   }
-  
+
   await clearPolylines();
   if (historyMarker) {
     historyMarker.setMap(null);
