@@ -37,8 +37,8 @@ type VesselRecord struct {
 	WaterDepth          float64      `gorm:"" json:"water_depth" binding:"required"`
 	TelnetStatus        TelnetStatus `gorm:"type:enum('Connected','Disconnected');default:'Connected'" json:"telnet_status" binding:"required"`
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"-"`
+	CreatedAt time.Time `gorm:"type:datetime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:datetime" json:"-"`
 
 	Kapal *Kapal `gorm:"foreignKey:CallSign;association_foreignkey:CallSign" json:"-"`
 }

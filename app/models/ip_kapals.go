@@ -20,7 +20,7 @@ type IPKapal struct {
 	TypeIP    TypeIP    `gorm:"type:enum('all','gga','hdt','vtg','depth');not null" json:"type_ip" binding:"required"`
 	IP        string    `gorm:"type:varchar(16);not null;" json:"ip" binding:"required"`
 	Port      uint16    `json:"port" binding:"required"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `gorm:"type:datetime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:datetime" json:"updated_at"`
 	Kapal     *Kapal    `gorm:"foreignKey:CallSign;association_foreignkey:CallSign"`
 }

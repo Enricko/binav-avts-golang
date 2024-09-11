@@ -22,6 +22,6 @@ type User struct {
 	ResetOTP       string    `json:"reset_otp"`
 	ResetOTPExpiry time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"reset_otp_expiry"`
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `gorm:"type:datetime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:datetime" json:"updated_at"`
 }

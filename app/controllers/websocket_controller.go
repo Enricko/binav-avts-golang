@@ -3,8 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"golang-app/app/models"
-	"golang-app/database"
 	"log"
 	"net/http"
 	"sort"
@@ -14,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
+	"golang-app/app/models"
+	"golang-app/database"
 )
 
 var upgrader = websocket.Upgrader{
@@ -190,7 +190,6 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 	}
 
 	// Prepare the query
-	fmt.Println(request.Start,request.End)
 	query := database.DB.Where("call_sign = ? AND created_at BETWEEN ? AND ?", request.CallSign, request.Start, request.End)
 
 	// Count total records

@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"golang-app/app/models"
 	"log"
 	"os"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" // MYSQL
 
+	"golang-app/app/models"
 )
 
 var DB *gorm.DB
@@ -37,7 +37,7 @@ func Init() {
 		panic("failed to connect database")
 	}
 
-	err := DB.AutoMigrate(&models.User{}, &models.Mapping{}, &models.Kapal{}, &models.IPKapal{},&models.VesselRecord{}).Error
+	err := DB.AutoMigrate(&models.User{}, &models.Mapping{}, &models.Kapal{}, &models.IPKapal{}, &models.VesselRecord{}).Error
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

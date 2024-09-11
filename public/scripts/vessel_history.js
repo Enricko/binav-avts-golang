@@ -19,7 +19,7 @@ const modalInstance = new bootstrap.Modal(filterModal);
 
 document.addEventListener("DOMContentLoaded", () => {
   if (progressSlider) progressSlider.addEventListener("input", updateHistorybySlider);
-  if (btnLoad) btnLoad.addEventListener("click", () => loadVesselHistoryData(startDatetimeFilter, endDatetimeFilter));
+  if (btnLoad) btnLoad.addEventListener("click", () => loadVesselHistoryData(document.getElementById("filter_history_start").textContent, document.getElementById("filter_history_end").textContent));
   if (btnPlay) btnPlay.addEventListener("click", togglePlayPause);
   if (btnDownloadCSV) btnDownloadCSV.addEventListener("click", () => {
     downloadCSV(

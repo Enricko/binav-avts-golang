@@ -20,6 +20,6 @@ type Kapal struct {
 	MinimumKnotPerLiterGasoline float64   `gorm:"not null;" json:"minimum_knot_per_liter_gasoline" binding:"required"`
 	MaximumKnotPerLiterGasoline float64   `gorm:"not null;" json:"maximum_knot_per_liter_gasoline" binding:"required"`
 	RecordStatus                bool      `gorm:"not null;default:'1'" json:"record_status" binding:"required"`
-	CreatedAt                   time.Time `json:"created_at"`
-	UpdatedAt                   time.Time `json:"updated_at"`
+	CreatedAt time.Time `gorm:"type:datetime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:datetime" json:"updated_at"`
 }
