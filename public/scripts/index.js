@@ -7,7 +7,7 @@ function getBaseURLHost() {
   const baseURL = `${host}`;
   return baseURL;
 }
-const websocketUrl = `ws://${getBaseURLHost()}/ws`;
+const websocketUrl = `wss://${getBaseURLHost()}/ws`;
 
 function getBaseURL() {
   // Get the full URL

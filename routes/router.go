@@ -18,6 +18,9 @@ func SetupRouter(r *gin.Engine) {
 
 	// r.Use(middleware.UserAuthMiddleware())
 
+	r.GET("/kmz-info", mainController.KmzInfo)
+	r.GET("/kmz-chunk/:chunk", mainController.KmzChunk)
+
 	r.GET("/login", middleware.AlreadyLoggedIn(), mainController.Login)
 
 	r.POST("/auth/login", middleware.AlreadyLoggedIn(), userController.Login)

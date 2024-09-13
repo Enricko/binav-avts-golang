@@ -10,7 +10,7 @@
   <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Pipeline Table</h5>
+        <h5 class="modal-title">Overlay Table</h5>
         <button
           type="button"
           class="btn-close btn-close-white"
@@ -26,7 +26,7 @@
                 id="tambah_data"
                 data-bs-toggle="modal"
                 data-bs-target="#insertMapping">
-                <i class="fas fa-plus-circle me-2"></i>Add New Pipeline
+                <i class="fas fa-plus-circle me-2"></i>Add New Overlay
               </button>
             </div>
           </div>
@@ -150,15 +150,15 @@
     };
 
     Swal.fire({
-      title: "Are you sure you want to delete this pipeline?",
+      title: "Are you sure you want to delete this Overlay?",
       html: `
           <div style="text-align: left; color: #333;">
             <p style="color: #d9534f; font-weight: bold; font-size: 1.1em;">Warning: This action is irreversible!</p>
             <p>You are about to permanently delete:</p>
             <ul style="color: #0056b3;">
-                <li>This pipeline</li>
+                <li>This Overlay</li>
             </ul>
-            <p>To confirm, please type the pipeline name:</p>
+            <p>To confirm, please type the Overlay name:</p>
             <p style="font-weight: bold; color: #d9534f;">"${mappingName}"</p>
           </div>
         `,
