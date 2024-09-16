@@ -332,6 +332,15 @@
         // Add status as a boolean
         formData.set("record_status", formData.get("record_status") === "true");
 
+        Swal.fire({
+    title: 'Loading...',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    willOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
         fetch("/vessel/insert", {
           method: "POST",
           body: formData,
@@ -340,6 +349,7 @@
           },
         })
           .then((response) => {
+            Swal.close();
             if (!response.ok) {
               return response.json().then((err) => {
                 throw err;
