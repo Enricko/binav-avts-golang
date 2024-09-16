@@ -1,3 +1,4 @@
+// vessel_history.js
 const ANIMATION_DURATION = 75000; // 75 seconds in milliseconds
 
 let previewTimeoutID,
@@ -40,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `${currentSelectedMarker}_record_${formatDateTime(
           startDatetimeFilter
         )}_to_${formatDateTime(endDatetimeFilter)}.csv`,
-        vesselHistoryData.map((data) => data.record)
+        vesselHistoryData.records.map((data) => data.record)
       );
     });
   if (submitFilter)
@@ -112,22 +113,25 @@ async function displayVesselHistoryPolyline() {
   try {
     await clearPolylines();
     let currentSegment = [];
-    let currentColor = getPolylineColor(vesselHistoryData[0].status);
+    let currentColor = getPolylineColor(vesselHistoryData.records[0].status);
 
     for (let index = 0; index < totalVesselHistoryRecords; index++) {
       if (index < totalVesselHistoryRecords) {
-        const data = vesselHistoryData[index];
+        const data = vesselHistoryData.records[index];
         currentSegment.push(data.latlng);
 
+        // console.log(totalVesselHistoryRecords);
+        // console.log(index);
+        // console.log(data.status, vesselHistoryData.records[index + 1].status);
         if (
           index === totalVesselHistoryRecords - 1 ||
-          data.status !== vesselHistoryData[index + 1].status
+          data.status !== vesselHistoryData.records[index + 1].status
         ) {
           await createPolylineSegment(currentSegment, currentColor);
           currentSegment = [data.latlng];
           currentColor =
             index < totalVesselHistoryRecords - 1
-              ? getPolylineColor(vesselHistoryData[index + 1].status)
+              ? getPolylineColor(vesselHistoryData.records[index + 1].status)
               : currentColor;
         }
 
@@ -138,7 +142,7 @@ async function displayVesselHistoryPolyline() {
       }
     }
 
-    map.setCenter(vesselHistoryData[totalVesselHistoryRecords - 1].latlng);
+    map.setCenter(vesselHistoryData.records[totalVesselHistoryRecords - 1].latlng);
   } catch (error) {
     console.error("Error displaying vessel history polyline:", error);
   } finally {
@@ -175,16 +179,16 @@ function playVesselHistoryAnimation() {
 }
 
 function initializeHistoryMarker() {
-  if (!vesselHistoryData.length) return;
+  if (!vesselHistoryData.records.length) return;
   if (!historyMarker) {
     historyMarker = new VesselOverlayHistory(
       map,
-      vesselHistoryData[currentAnimationIndex].latlng,
+      vesselHistoryData.records[currentAnimationIndex].latlng,
       vesselHistoryData.kapal.top_range,
       vesselHistoryData.kapal.left_range,
       vesselHistoryData.kapal.width_m,
       vesselHistoryData.kapal.height_m,
-      (vesselHistoryData[currentAnimationIndex].record.heading_degree +
+      (vesselHistoryData.records[currentAnimationIndex].record.heading_degree +
         vesselHistoryData.kapal.calibration +
         vesselHistoryData.kapal.heading_direction) %
         360,
@@ -205,7 +209,7 @@ function animateMarker() {
     return;
   }
 
-  const position = vesselHistoryData[currentAnimationIndex].latlng;
+  const position = vesselHistoryData.records[currentAnimationIndex].latlng;
   map.setCenter(position);
   historyMarker.update(
     position,
@@ -213,7 +217,7 @@ function animateMarker() {
     vesselHistoryData.kapal.left_range,
     vesselHistoryData.kapal.width_m,
     vesselHistoryData.kapal.height_m,
-    (vesselHistoryData[currentAnimationIndex].record.heading_degree +
+    (vesselHistoryData.records[currentAnimationIndex].record.heading_degree +
       vesselHistoryData.kapal.calibration +
       vesselHistoryData.kapal.heading_direction) %
       360,
@@ -269,7 +273,7 @@ function updateHistorybySlider() {
     if (!historyMarker) {
       initializeHistoryMarker();
     } else {
-      const position = vesselHistoryData[progressValue].latlng;
+      const position = vesselHistoryData.records[progressValue].latlng;
       map.setCenter(position);
       historyMarker.update(
         position,
@@ -277,7 +281,7 @@ function updateHistorybySlider() {
         vesselHistoryData.kapal.left_range,
         vesselHistoryData.kapal.width_m,
         vesselHistoryData.kapal.height_m,
-        (vesselHistoryData[progressValue].record.heading_degree +
+        (vesselHistoryData.records[progressValue].record.heading_degree +
           vesselHistoryData.kapal.calibration +
           vesselHistoryData.kapal.heading_direction) %
           360,
@@ -290,8 +294,8 @@ function updateHistorybySlider() {
 }
 
 function updateHistoryTable(index) {
-  if (index < 0 || index >= vesselHistoryData.length) return;
-  const record = vesselHistoryData[index].record;
+  if (index < 0 || index >= vesselHistoryData.records.length) return;
+  const record = vesselHistoryData.records[index].record;
   document.getElementById("record_of_vessel").textContent = `${
     index + 1
   } of ${totalVesselHistoryRecords} Records`;

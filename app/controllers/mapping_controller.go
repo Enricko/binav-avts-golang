@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
 )
 
 type MappingController struct {
@@ -123,7 +122,7 @@ func (r *MappingController) GetMapping(c *gin.Context) {
 	id := c.Param("id")
 	var mapping models.Mapping
 	if err := database.DB.First(&mapping, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Mapping not found"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Overlay not found"})
 		return
 	}
 	c.JSON(http.StatusOK, mapping)
@@ -173,11 +172,11 @@ func (r *MappingController) InsertMapping(c *gin.Context) {
 	err = database.DB.Create(&mapping).Error
 	if err != nil {
 		// Handle potential errors
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create mapping", "error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create Overlay", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Mapping created successfully", "data": mapping})
+	c.JSON(http.StatusCreated, gin.H{"message": "Overlay created successfully", "data": mapping})
 }
 
 func (r *MappingController) UpdateMapping(c *gin.Context) {
@@ -237,11 +236,11 @@ func (r *MappingController) UpdateMapping(c *gin.Context) {
 
 	// Save the updated mapping to the database
 	if err := database.DB.Save(&mapping).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update mapping", "error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update Overlay", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Mapping updated successfully", "data": mapping})
+	c.JSON(http.StatusOK, gin.H{"message": "Overlay updated successfully", "data": mapping})
 }
 
 func (r *MappingController) DeleteMapping(c *gin.Context) {
@@ -267,13 +266,13 @@ func (r *MappingController) DeleteMapping(c *gin.Context) {
 	// Find the mapping in the database
 	var mapping models.Mapping
 	if err := database.DB.First(&mapping, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Mapping not found"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Overlay not found"})
 		return
 	}
 
 	// Check if the confirmation name matches the actual mapping name
 	if confirmationName != mapping.Name {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Confirmation name does not match the mapping name"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Confirmation name does not match the Overlay name"})
 		return
 	}
 
@@ -294,11 +293,11 @@ func (r *MappingController) DeleteMapping(c *gin.Context) {
 
 	// Delete the mapping from the database
 	if err := database.DB.Delete(&mapping).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete mapping from database", "error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete Overlay from database", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Mapping deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Overlay deleted successfully"})
 }
 
 // Helper function to generate a filename using datetime and input name

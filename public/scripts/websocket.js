@@ -61,9 +61,7 @@ async function handleVesselRecordsStart(payload) {
   btnLoad.disabled = true;
   
   // Reset batch processing
-  processedBatchCount = 0;
   totalBatchCount = 0;
-  nextBatchToProcess = 1;
   receivedBatches.clear();
 }
 
@@ -79,60 +77,54 @@ function handleVesselRecordsBatch(payload) {
   // Store the batch
   receivedBatches.set(batch_number, records);
 
-  // Process batches in order
-  processBatches();
+  // Update progress
+  document.getElementById("fetch_time").textContent = 
+    `Received ${receivedBatches.size} of ${totalBatchCount} batches`;
 
-  if (processedBatchCount === totalBatchCount && isProcessingComplete) {
-    processCompletedData();
-  }
-}
-
-function processBatches() {
-  while (receivedBatches.has(nextBatchToProcess)) {
-    const recordsToProcess = receivedBatches.get(nextBatchToProcess);
-    processedBatchCount++;
-
-    if (vesselHistoryData.length >= totalVesselHistoryRecords) {
-      break; // Already have all the records we need
-    }
-
-    const remainingSpace = totalVesselHistoryRecords - vesselHistoryData.length;
-    const recordsToAdd = recordsToProcess.slice(0, remainingSpace);
-
-    const newRecords = recordsToAdd.map((record) => ({
-      record,
-      latlng: {
-        lat: convertDMSToDecimal(record.latitude),
-        lng: convertDMSToDecimal(record.longitude),
-      },
-      dateTime: record.created_at,
-      status: record.telnet_status,
-    }));
-
-    vesselHistoryData.push(...newRecords);
-
-    document.getElementById("fetch_time").textContent = 
-      `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
-
-    console.log(`Processed batch ${nextBatchToProcess}`);
-    
-    // Remove the processed batch from the map
-    receivedBatches.delete(nextBatchToProcess);
-    nextBatchToProcess++;
+  // Check if all batches are received
+  if (receivedBatches.size === totalBatchCount && isProcessingComplete) {
+    processAllBatches();
   }
 }
 
 function handleVesselRecordsComplete() {
   isProcessingComplete = true;
   
-  // Try to process any remaining batches
-  processBatches();
-  
-  if (processedBatchCount === totalBatchCount) {
-    processCompletedData();
+  // Check if all batches are received
+  if (receivedBatches.size === totalBatchCount) {
+    processAllBatches();
   } else {
-    console.log(`Warning: Completed signal received, but only ${processedBatchCount} out of ${totalBatchCount} batches processed.`);
+    console.log(`Warning: Completed signal received, but only ${receivedBatches.size} out of ${totalBatchCount} batches received.`);
   }
+}
+
+function processAllBatches() {
+  const allRecords = [];
+
+  // Combine all batches
+  for (let i = 1; i <= totalBatchCount; i++) {
+    if (receivedBatches.has(i)) {
+      allRecords.push(...receivedBatches.get(i));
+    } else {
+      console.warn(`Missing batch ${i}`);
+    }
+  }
+
+  // Sort all records by id_vessel_record
+  allRecords.sort((a, b) => a.id_vessel_record - b.id_vessel_record);
+
+  // Process sorted records
+  vesselHistoryData.records = allRecords.map((record) => ({
+    record,
+    latlng: {
+      lat: convertDMSToDecimal(record.latitude),
+      lng: convertDMSToDecimal(record.longitude),
+    },
+    dateTime: record.created_at,
+    status: record.telnet_status,
+  }));
+
+  processCompletedData();
 }
 
 async function processCompletedData() {
@@ -140,8 +132,7 @@ async function processCompletedData() {
   const fetchDuration = fetchEndTime - fetchStartTime;
   displayFetchTime(fetchDuration);
 
-  // Sort the entire dataset by id_vessel_record
-  vesselHistoryData.sort((a, b) => a.record.id_vessel_record - b.record.id_vessel_record);
+  console.log("Processing complete",vesselHistoryData);
 
   initializeCompleteHistory();
   await displayVesselHistoryPolyline();
