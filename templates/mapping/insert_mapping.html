@@ -103,6 +103,16 @@
       if (this.checkValidity()) {
         const formData = new FormData(this);
 
+        Swal.fire({
+    title: 'Loading...',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    willOpen: () => {
+      Swal.showLoading();
+    }
+  });
+        
+
         fetch("/mapping/insert", {
           method: "POST",
           body: formData,
@@ -111,6 +121,7 @@
           },
         })
           .then((response) => {
+            Swal.close();
             if (!response.ok) {
               return response.json().then((err) => {
                 throw err;
