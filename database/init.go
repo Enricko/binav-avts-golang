@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"golang-app/app/models"
 	"log"
 	"os"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" // MYSQL
 
-	"golang-app/app/models"
 )
 
 var DB *gorm.DB

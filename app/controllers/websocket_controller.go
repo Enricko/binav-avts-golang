@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
+	"golang-app/app/models"
+	"golang-app/database"
 	"log"
 	"net/http"
 	"sort"
@@ -11,8 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
-	"golang-app/app/models"
-	"golang-app/database"
 )
 
 var upgrader = websocket.Upgrader{
@@ -201,13 +201,19 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 		return
 	}
 
-	// Send total count
+	const batchSize = 500
+	totalBatches := (totalRecords + int64(batchSize) - 1) / int64(batchSize)
+
+	// Send total count and batch information
 	recordsChan <- WebSocketMessage{
-		Type:    "vessel_records_count",
-		Payload: map[string]int64{"total_records": totalRecords},
+		Type: "vessel_records_count",
+		Payload: map[string]interface{}{
+			"total_records": totalRecords,
+			"batch_size":    batchSize,
+			"total_batches": totalBatches,
+		},
 	}
 
-	const batchSize = 1000
 	var offset int64 = 0
 
 	// Create a worker pool
@@ -234,6 +240,7 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 					Type: "vessel_records_batch",
 					Payload: map[string]interface{}{
 						"batch_number": job.batchNumber,
+						"total_batches": totalBatches,
 						"records":      job.records,
 					},
 				}
@@ -251,7 +258,7 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 	go func() {
 		for result := range results {
 			recordsChan <- result
-			time.Sleep(100 * time.Millisecond) // Basic rate limiting
+			time.Sleep(10 * time.Millisecond) // Basic rate limiting
 		}
 	}()
 
@@ -285,6 +292,7 @@ func (wsc *WebSocketController) handleVesselRecordsRequest(recordsChan chan<- We
 		Payload: map[string]interface{}{
 			"processing_time": processingTime,
 			"status":          "completed",
+			"total_batches":   totalBatches,
 		},
 	}
 }

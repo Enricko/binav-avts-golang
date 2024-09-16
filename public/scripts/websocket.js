@@ -5,8 +5,10 @@ const WEBSOCKET_RECONNECT_DELAY = 5000; // 5 seconds
 let websocket;
 let isProcessingComplete = false;
 let fetchStartTime;
-let receivedBatches = new Set();
-let expectedBatchNumber = 1;
+let receivedBatches = new Map();
+let processedBatchCount = 0;
+let totalBatchCount = 0;
+let nextBatchToProcess = 1;
 
 // WebSocket functions
 function connectWebSocket() {
@@ -59,12 +61,15 @@ async function handleVesselRecordsStart(payload) {
   btnLoad.disabled = true;
   
   // Reset batch processing
+  processedBatchCount = 0;
+  totalBatchCount = 0;
+  nextBatchToProcess = 1;
   receivedBatches.clear();
-  expectedBatchNumber = 1;
 }
 
 function handleVesselRecordsCount(payload) {
   totalVesselHistoryRecords = payload.total_records;
+  totalBatchCount = Math.ceil(totalVesselHistoryRecords / payload.batch_size);
   document.getElementById("total_records").textContent = totalVesselHistoryRecords;
 }
 
@@ -72,19 +77,27 @@ function handleVesselRecordsBatch(payload) {
   const { batch_number, records } = payload;
   
   // Store the batch
-  receivedBatches.add(batch_number);
+  receivedBatches.set(batch_number, records);
 
   // Process batches in order
-  while (receivedBatches.has(expectedBatchNumber)) {
-    const batchToProcess = expectedBatchNumber;
-    expectedBatchNumber++;
+  processBatches();
+
+  if (processedBatchCount === totalBatchCount && isProcessingComplete) {
+    processCompletedData();
+  }
+}
+
+function processBatches() {
+  while (receivedBatches.has(nextBatchToProcess)) {
+    const recordsToProcess = receivedBatches.get(nextBatchToProcess);
+    processedBatchCount++;
 
     if (vesselHistoryData.length >= totalVesselHistoryRecords) {
-      return; // Already have all the records we need
+      break; // Already have all the records we need
     }
 
     const remainingSpace = totalVesselHistoryRecords - vesselHistoryData.length;
-    const recordsToAdd = records.slice(0, remainingSpace);
+    const recordsToAdd = recordsToProcess.slice(0, remainingSpace);
 
     const newRecords = recordsToAdd.map((record) => ({
       record,
@@ -101,19 +114,24 @@ function handleVesselRecordsBatch(payload) {
     document.getElementById("fetch_time").textContent = 
       `Received ${vesselHistoryData.length} of ${totalVesselHistoryRecords} records`;
 
-    console.log(`Processed batch ${batchToProcess}`);
-  }
-
-  if (vesselHistoryData.length === totalVesselHistoryRecords && isProcessingComplete) {
-    processCompletedData();
+    console.log(`Processed batch ${nextBatchToProcess}`);
+    
+    // Remove the processed batch from the map
+    receivedBatches.delete(nextBatchToProcess);
+    nextBatchToProcess++;
   }
 }
 
 function handleVesselRecordsComplete() {
   isProcessingComplete = true;
   
-  if (vesselHistoryData.length >= totalVesselHistoryRecords) {
+  // Try to process any remaining batches
+  processBatches();
+  
+  if (processedBatchCount === totalBatchCount) {
     processCompletedData();
+  } else {
+    console.log(`Warning: Completed signal received, but only ${processedBatchCount} out of ${totalBatchCount} batches processed.`);
   }
 }
 

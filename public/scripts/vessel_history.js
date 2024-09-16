@@ -411,7 +411,7 @@ function downloadCSV(filename, data) {
         }
 
         if (header === "latitude" || header === "longitude") {
-          value = value.replace(/Â°/g, "°").replace(/"/g, '""');
+          value = dmsToDecimal(value);
         }
 
         if (header === "heading_degree") {
@@ -452,4 +452,21 @@ function downloadCSV(filename, data) {
   }
 
   processNextChunk();
+}
+
+function dmsToDecimal(dms) {
+  // Extract degrees, minutes, and seconds
+  const parts = dms.split('°');
+  const degrees = parseFloat(parts[0]);
+  const minutes = parseFloat(parts[1]);
+  
+  // Convert to decimal degrees
+  let decimalDegrees = Math.abs(degrees) + (minutes / 60);
+  
+  // Apply negative sign for South or West coordinates
+  if (dms.includes('S') || dms.includes('W')) {
+    decimalDegrees = -decimalDegrees;
+  }
+  
+  return decimalDegrees.toFixed(8);
 }

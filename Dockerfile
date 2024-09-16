@@ -5,7 +5,7 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache gcc musl-dev
 
 # Set the working directory inside the container
-WORKDIR /app
+WORKDIR /golang-app
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
@@ -22,21 +22,19 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
 # Start a new stage from scratch
 FROM alpine:latest  
 
-WORKDIR /app
+WORKDIR /golang-app
 
 # Copy the pre-built binary file from the previous stage
-COPY --from=builder /app/main .
+COPY --from=builder /golang-app/main .
 
-# Explicitly copy SSL certificates
-COPY certs/fullchain.pem /app/certs/fullchain.pem
-COPY certs/privkey.pem /app/certs/privkey.pem
+# Copy necessary directories and files
+COPY --from=builder /golang-app/templates ./templates
+COPY --from=builder /golang-app/public ./public
+COPY --from=builder /golang-app/certs ./certs
+COPY --from=builder /golang-app/.env .
 
-# Copy any other necessary files (like templates or static assets)
-COPY templates templates/
-COPY public public/
-
-# Copy the .env file
-COPY .env .
+# Ensure correct permissions
+RUN chmod -R 755 /golang-app
 
 # Create a startup script
 RUN echo '#!/bin/sh' > start.sh && \
@@ -49,9 +47,6 @@ RUN echo '#!/bin/sh' > start.sh && \
 
 # Expose the port the app runs on
 EXPOSE 443
-
-# Set the environment variable for the time zone
-ENV TZ=Asia/Jakarta
 
 # Command to run the startup script
 CMD ["./start.sh"]
