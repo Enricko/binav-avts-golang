@@ -33,7 +33,13 @@ COPY --from=builder /golang-app/public ./public
 COPY --from=builder /golang-app/certs ./certs
 COPY --from=builder /golang-app/.env .
 
-# Ensure correct permissions
+# Ensure the public/uploads directory exists and has correct permissions
+RUN mkdir -p /golang-app/public/uploads && chmod 755 /golang-app/public/uploads
+
+# Set environment variable for upload directory
+ENV UPLOAD_DIR=/golang-app/public/uploads
+
+# Ensure correct permissions for the entire app directory
 RUN chmod -R 755 /golang-app
 
 # Create a startup script
@@ -45,7 +51,7 @@ RUN echo '#!/bin/sh' > start.sh && \
     echo 'done' >> start.sh && \
     chmod +x start.sh
 
-# Expose the port the app runs on
+# Expose the port the app runs on   
 EXPOSE 443
 
 # Command to run the startup script
