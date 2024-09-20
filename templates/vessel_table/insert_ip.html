@@ -137,7 +137,7 @@
                   <div class="container">
                   <div class="row justify-content-md-center">
                           <div class="col-auto mb-1">
-                              <button class="btn btn-warning btn-xs" id="edit_data" onclick="editIp(${row.id_ip_kapal},${row.ip},${row.port},${row.type_ip})"><i class="fas fa-pencil"></i></button>
+                              <button class="btn btn-warning btn-xs" id="edit_data" onclick="editIp(${row.id_ip_kapal},'${row.ip}','${row.port}','${row.type_ip}')"><i class="fas fa-pencil"></i></button>
                           </div>
                   
                           <div class="col-auto mb-1">
@@ -162,11 +162,22 @@
         const formData = new FormData(form);
         console.log(formData);
 
+        // Show loading indicator
+        Swal.fire({
+          title: 'Loading...',
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          willOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
         fetch(`/vessel_ip/insert/${ipCallSignSelected}`, {
           method: "POST",
           body: formData,
         })
           .then((response) => {
+            Swal.close(); // Close loading indicator
             if (!response.ok) {
               return response.json().then((err) => {
                 throw err;
@@ -222,7 +233,7 @@
             <p style="font-weight: bold; color: #d9534f;">"${callSign}"</p>
           </div>
         `,
-      icon: "error", // Changed to error icon for danger
+      icon: "error",
       input: "text",
       inputAttributes: {
         autocapitalize: "off",
@@ -257,6 +268,10 @@
           const formData = new URLSearchParams({
             confirmation: inputValue,
           });
+
+          // Show loading indicator
+          Swal.showLoading();
+
           const response = await fetch(`/vessel_ip/delete/${ipId}`, {
             method: "POST",
             headers: {
@@ -301,11 +316,7 @@
       });
   }
 
-  function editIp(ipId,ip,port,type) {
-    console.log(ip);
-    console.log(port);
-    console.log(type);
-    
+  function editIp(ipId, ip, port, type) {
     const swalConfig = {
       backdrop: false,
       target: document.getElementById("insertIp"),
@@ -317,7 +328,6 @@
     };
 
     Swal.fire({
-      // title: "Are you sure you want to delete this IP?",
       html: `
           <div class="d-flex ">
             <div class="p-2 flex-fill ">
@@ -345,9 +355,9 @@
           </div>
           <div class="mb-3">
             <label for="type_ip" class="form-label">Type IP</label>
-            <select class="form-select" value="${type}" id="editType" name="type" required>
-              <option value="nmea">NMEA</option>
-              <option value="water_depth">Water Depth</option>
+            <select class="form-select" id="editType" name="type" required>
+              <option value="nmea" ${type === 'nmea' ? 'selected' : ''}>NMEA</option>
+              <option value="water_depth" ${type === 'water_depth' ? 'selected' : ''}>Water Depth</option>
             </select>
           </div>
         `,
@@ -363,16 +373,6 @@
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),
       ...swalConfig,
-      // didOpen: () => {
-      //   const input = Swal.getInput();
-      //   input.focus();
-      //   input.addEventListener("paste", (e) => {
-      //     e.preventDefault();
-      //     Swal.showValidationMessage(
-      //       "Pasting is not allowed. Please type the name manually."
-      //     );
-      //   });
-      // },
       preConfirm: async () => {
         const ip = document.getElementById("editIp").value;
         const port = document.getElementById("editPort").value;
@@ -391,6 +391,9 @@
           });
           console.log(formData.toString());
           
+          // Show loading indicator
+          Swal.showLoading();
+
           const response = await fetch(`/vessel_ip/update/${ipId}`, {
             method: "PUT",
             headers: {
@@ -409,7 +412,6 @@
         } catch (error) {
           Swal.showValidationMessage(`Request failed: ${error}`);
         }
-
       },
     }).then((result) => {
         if (result.isConfirmed) {

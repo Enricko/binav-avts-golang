@@ -130,109 +130,138 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('formUpdateVessel');
-    const updateButton = document.getElementById('updateVesselButton');
-
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        if (this.checkValidity()) {
-            const formData = new FormData(this);
-            const vesselId = formData.get('id');
-        
-            // Ensure all number fields are sent, even if they're 0
-            ['year_built', 'heading_direction', 'calibration', 'width_m', 'height_m', 'top_range', 'left_range', 'history_per_second'].forEach(function(field) {
-                const value = formData.get(field);
-                if (value === "") {
-                    formData.set(field, "0");
-                }
-            });
-
-            // Inside the form submit event listener
-            ['minimum_knot_per_liter_gasoline', 'maximum_knot_per_liter_gasoline'].forEach(function(field) {
-                const value = formData.get(field);
-                if (value === "") {
-                    formData.set(field, "0");
-                } else {
-                    formData.set(field, parseFloat(value).toString());
-                }
-            });
-
-            // Add status as a boolean
-            formData.set('record_status', formData.get('record_status') === 'true');
-
-            fetch(`/vessel/update/${vesselId}`, {
-                method: 'PUT',
-                body: formData,
-                headers: {
-                    "X-CSRF-Token": getCsrfToken(),
-                },
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Vessel updated:', data);
-                dataTableMap["vessel-table"].dataTable.ajax.reload();
-                const updateVesselModal = document.getElementById('updateVessel');
-                const modalInstance = bootstrap.Modal.getInstance(updateVesselModal);
-                modalInstance.hide();
-
-                const vesselTableModal = document.getElementById('vesselTable');
-                const vesselTableModalInstance = new bootstrap.Modal(vesselTableModal);
-                vesselTableModalInstance.show();
-
-                form.reset();
-                form.classList.remove('was-validated');
-                Swal.fire({
-                    title: 'Success',
-                    text: data.message || 'Vessel updated successfully',
-                    icon: 'success',
-                });
-            })
-            .catch(error => {
-                console.error('Error updating vessel:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: error.message || 'An error occurred while updating the vessel',
-                    icon: 'error',
-                });
-            });
+        const form = document.getElementById('formUpdateVessel');
+        const updateButton = document.getElementById('updateVesselButton');
+        let originalFormData;
+    
+        function getFormData(form) {
+            const formData = new FormData(form);
+            return Object.fromEntries(formData.entries());
         }
-        
-        this.classList.add('was-validated');
-    });
-
-    // Trigger form submission when the update button is clicked
-    updateButton.addEventListener('click', function() {
-        form.requestSubmit();
-    });
-
-    // File input change event handlers
-    ['updateImageMap', 'updateImage'].forEach(function(inputId) {
-        const input = document.getElementById(inputId);
-        input.addEventListener('change', function() {
-            const fileName = this.value.split('\\').pop();
-            const label = this.nextElementSibling;
-            if (label && label.classList.contains('custom-file-label')) {
-                label.textContent = fileName;
+    
+        function objectsEqual(obj1, obj2) {
+            return JSON.stringify(obj1) === JSON.stringify(obj2);
+        }
+    
+        const updateVesselModal = document.getElementById('updateVessel');
+        updateVesselModal.addEventListener('shown.bs.modal', function () {
+            originalFormData = getFormData(form);
+        });
+    
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (this.checkValidity()) {
+                const currentFormData = getFormData(this);
+                
+                if (objectsEqual(originalFormData, currentFormData)) {
+                    Swal.fire({
+                        title: 'No Changes Detected',
+                        text: 'The form data remains unchanged. No update is necessary.',
+                        icon: 'info',
+                    });
+                    return;
+                }
+    
+                const formData = new FormData(this);
+                const vesselId = formData.get('id');
+            
+                ['year_built', 'heading_direction', 'calibration', 'width_m', 'height_m', 'top_range', 'left_range', 'history_per_second'].forEach(function(field) {
+                    const value = formData.get(field);
+                    if (value === "") {
+                        formData.set(field, "0");
+                    }
+                });
+    
+                ['minimum_knot_per_liter_gasoline', 'maximum_knot_per_liter_gasoline'].forEach(function(field) {
+                    const value = formData.get(field);
+                    if (value === "") {
+                        formData.set(field, "0");
+                    } else {
+                        formData.set(field, parseFloat(value).toString());
+                    }
+                });
+    
+                formData.set('record_status', formData.get('record_status') === 'true');
+    
+                Swal.fire({
+                    title: 'Updating...',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+    
+                fetch(`/vessel/update/${vesselId}`, {
+                    method: 'PUT',
+                    body: formData,
+                    headers: {
+                        "X-CSRF-Token": getCsrfToken(),
+                    },
+                })
+                .then(response => {
+                    Swal.close();
+                    if (!response.ok) {
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Vessel updated:', data);
+                    dataTableMap["vessel-table"].dataTable.ajax.reload();
+                    const updateVesselModal = document.getElementById('updateVessel');
+                    const modalInstance = bootstrap.Modal.getInstance(updateVesselModal);
+                    modalInstance.hide();
+    
+                    const vesselTableModal = document.getElementById('vesselTable');
+                    const vesselTableModalInstance = new bootstrap.Modal(vesselTableModal);
+                    vesselTableModalInstance.show();
+    
+                    form.reset();
+                    form.classList.remove('was-validated');
+                    Swal.fire({
+                        title: 'Success',
+                        text: data.message || 'Vessel updated successfully',
+                        icon: 'success',
+                    });
+                })
+                .catch(error => {
+                    console.error('Error updating vessel:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'An error occurred while updating the vessel',
+                        icon: 'error',
+                    });
+                });
             }
+            
+            this.classList.add('was-validated');
+        });
+    
+        updateButton.addEventListener('click', function() {
+            form.requestSubmit();
+        });
+    
+        ['updateImageMap', 'updateImage'].forEach(function(inputId) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('change', function() {
+                const fileName = this.value.split('\\').pop();
+                const label = this.nextElementSibling;
+                if (label && label.classList.contains('custom-file-label')) {
+                    label.textContent = fileName;
+                }
+            });
+        });
+    
+        updateVesselModal.addEventListener('hidden.bs.modal', function () {
+            form.reset();
+            form.classList.remove('was-validated');
+            document.querySelectorAll('.custom-file-label').forEach(label => {
+                label.textContent = 'Choose file';
+            });
         });
     });
-
-    // Reset form when modal is hidden
-    const updateVesselModal = document.getElementById('updateVessel');
-    updateVesselModal.addEventListener('hidden.bs.modal', function () {
-        form.reset();
-        form.classList.remove('was-validated');
-        document.querySelectorAll('.custom-file-label').forEach(label => {
-            label.textContent = 'Choose file';
-        });
-    });
-});
-</script>
+    </script>
 {{end}}

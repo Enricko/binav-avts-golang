@@ -104,14 +104,13 @@
         const formData = new FormData(this);
 
         Swal.fire({
-    title: 'Loading...',
-    allowOutsideClick: false,
-    showConfirmButton: false,
-    willOpen: () => {
-      Swal.showLoading();
-    }
-  });
-        
+          title: "Loading...",
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          willOpen: () => {
+            Swal.showLoading();
+          },
+        });
 
         fetch("/mapping/insert", {
           method: "POST",
